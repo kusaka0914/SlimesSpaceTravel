@@ -468,11 +468,6 @@ void Renderer3D::RenderShadowMap(const glm::vec3& focusPosition) const
     }
     drawActors(scene.runtimeJewels, true);
 
-    const bool shouldDrawPlayers = !scene.hidesPlayersForCinematic;
-    if (shouldDrawPlayers) {
-        drawActors(scene.players, true);
-    }
-
     if (shouldDrawEnvironment) {
         DirectionalShadowShader* shadowShader = mDirectionalShadowMap->GetShader();
         if (shadowShader) {
@@ -806,7 +801,8 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
     glm::vec3 shadowCenter = surface->position;
     const auto surfaceNormal = surface->normal;
     const float surfaceDistance = surface->distance;
-    const bool isPlayer = dynamic_cast<const Player*>(actor) != nullptr;
+    const auto* player = dynamic_cast<const Player*>(actor);
+    const bool isPlayer = player != nullptr;
 
     glm::vec3 tangentX = actor->GetRightVec() - surfaceNormal * glm::dot(actor->GetRightVec(), surfaceNormal);
     if (glm::length(tangentX) <= 0.0001f) {
@@ -819,36 +815,48 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
 
     float radiusX = 0.34f;
     float radiusY = 0.27f;
+    if (player) {
+        // スキニング前の頂点境界は表示寸法と一致しないため、Playerはゲーム内の体サイズを使う。
+        constexpr float playerShadowBodySizeRatio = 0.75f;
+        const float halfCollisionScale = player->GetCollisionScaleMultiplier() * 0.5f * playerShadowBodySizeRatio;
+        radiusX = std::max(mPhysics.GetPlayerCollisionWidth() * halfCollisionScale, 0.05f);
+        radiusY = std::max(mPhysics.GetPlayerCollisionDepth() * halfCollisionScale, 0.05f);
+    }
     const LoadedModel* model = actor->GetLoadedModel();
-    if (model && model->hasBounds) {
+    if (!isPlayer && model && model->hasBounds) {
         const glm::vec3 modelSize = glm::abs((model->boundsMaximum - model->boundsMinimum) * actor->GetScale());
         radiusX = glm::clamp(modelSize.x * 0.31f, 0.21f, 2.5f);
         radiusY = glm::clamp(modelSize.z * 0.31f, 0.17f, 2.5f);
     }
 
-    constexpr float distanceFade = 1.0f;
     shadowCenter += surfaceNormal * 0.012f;
     const float distanceScale = isPlayer ? 1.0f : 1.0f + glm::clamp(surfaceDistance * 0.025f, 0.0f, 0.22f);
     radiusX *= distanceScale;
     radiusY *= distanceScale;
 
-    struct ShadowLayer {
-        float scale;
-        float alpha;
-    };
-    constexpr ShadowLayer layers[] = {
-        {1.00f, 0.17f},
-        {0.76f, 0.25f},
-        {0.50f, 0.36f},
-    };
     GLint previousUnlit = GL_FALSE;
     glGetUniformiv(mShader3D->GetShaderProgram(), mShader3D->GetLocIsUnlit(), &previousUnlit);
     // 裏側や建物の影の中でも、着地の目印となる簡易影は照明に依存させない。
     glUniform1i(mShader3D->GetLocIsUnlit(), 1);
-    for (const ShadowLayer& layer : layers) {
-        DrawAttackRangeVertices(CreateBlobShadowVertices(shadowCenter, surfaceNormal, tangentX, radiusX * layer.scale,
-                                                         radiusY * layer.scale),
-                                GL_TRIANGLE_FAN, glm::vec4(0.0f, 0.0f, 0.0f, layer.alpha * distanceFade));
+    if (isPlayer) {
+        constexpr float playerShadowOpacity = 0.4f;
+        DrawAttackRangeVertices(CreateBlobShadowVertices(shadowCenter, surfaceNormal, tangentX, radiusX, radiusY),
+                                GL_TRIANGLE_FAN, glm::vec4(0.0f, 0.0f, 0.0f, playerShadowOpacity));
+    } else {
+        struct ShadowLayer {
+            float scale;
+            float alpha;
+        };
+        constexpr ShadowLayer layers[] = {
+            {1.00f, 0.17f},
+            {0.76f, 0.25f},
+            {0.50f, 0.36f},
+        };
+        for (const ShadowLayer& layer : layers) {
+            DrawAttackRangeVertices(CreateBlobShadowVertices(shadowCenter, surfaceNormal, tangentX,
+                                                             radiusX * layer.scale, radiusY * layer.scale),
+                                    GL_TRIANGLE_FAN, glm::vec4(0.0f, 0.0f, 0.0f, layer.alpha));
+        }
     }
     glUniform1i(mShader3D->GetLocIsUnlit(), previousUnlit);
 }
@@ -1264,15 +1272,7 @@ void Renderer3D::DrawActorToShadowMap(Actor* actor, bool useOrient, const glm::v
         return;
     }
 
-    glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
-    if (const auto* player = dynamic_cast<const Player*>(actor)) {
-        const auto surface = CharacterShadow::FindSurface(*player, mPhysics);
-        if (!surface) {
-            return;
-        }
-        // 本体は空中に描いたまま、影の投影元だけを床へ下げて高さによる横ずれを抑える。
-        model = glm::translate(glm::mat4(1.0f), surface->position - player->GetRenderPosition()) * model;
-    }
+    const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
     glUniformMatrix4fv(shadowShader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
 
     const std::vector<glm::mat4>* skinningMatrices = actor->GetSkinningMatrices();

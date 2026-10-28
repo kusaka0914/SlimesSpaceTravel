@@ -80,7 +80,7 @@ public:
     // 操作中のPlayerを優先して注目位置を決め、通常ゲーム画面用の影を更新する。
     void RenderGameplayShadowMap() const;
 
-    // ワールド座標の注目位置を中心に、現在ステージの影を更新する。
+    // ワールド座標の注目位置を中心に、現在ステージの影を更新する。Playerは簡易影のみとし、対象に含めない。
     void RenderShadowMap(const glm::vec3& focusPosition) const;
 
     // 現在ステージの装飾を準備して描画する。UGCモードでは描画しない。
@@ -134,7 +134,8 @@ public:
 
     // アクティブ状態を変えずに指定の不透明度倍率で描画する。opacityは0〜1へ制限する。
     void DrawInactiveActorPreview(Actor* actor, float opacity) const;
-    // 光源に依存しない足元の簡易影。Playerは実際の支持面へ投影し、ジャンプ高度で大きさを変えない。
+    // 光源に依存しない足元の簡易影。Playerは体幅・奥行きに合わせた均一な黒で、実際の支持面へ投影する。
+    // Playerの影はジャンプ高度で大きさを変えない。
     void DrawBlobShadow(const CharacterActor* actor) const;
 
     // 直近のDrawSceneの視錐台に外接球が入るかを返す。視錐台未設定・nullptrの場合は除外せずtrue。
