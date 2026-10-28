@@ -320,7 +320,7 @@ void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::str
 void UIRenderer::DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
                                          const std::string& textureName, int activeSlotCount, int totalSlotCount,
                                          float inactiveSlotBrightness, float screenTopY, float uiScale,
-                                         const TextureSlotFlash* flash)
+                                         const TextureSlotFlash* flash, float activeSlotOpacity)
 {
     const auto textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
     if (!textureInfo || totalSlotCount <= 0) {
@@ -352,8 +352,9 @@ void UIRenderer::DrawLinedUpTextureSlots(const std::string& sceneName, const std
                                    : 0.0f;
         const float brightness = isDepleted ? glm::mix(inactiveBrightness, 1.0f, strength) : 1.0f;
         DrawTextureHandle(currentX, textureY, textureWidth, textureHeight, texture->second, false,
-                          textureInfo->rotationDegrees, 1.0f, glm::vec4(brightness, brightness, brightness, 1.0f),
-                          isDepleted, strength, flash ? flash->color : glm::vec3(1.0f));
+                          textureInfo->rotationDegrees, isDepleted ? 1.0f : activeSlotOpacity,
+                          glm::vec4(brightness, brightness, brightness, 1.0f), isDepleted, strength,
+                          flash ? flash->color : glm::vec3(1.0f));
         RecordRenderedUIElement(RenderedUIElementSource::CodeBoundTexture, sceneName, UIName,
                                 glm::vec2(currentX + textureWidth * 0.5f, textureY + textureHeight * 0.5f),
                                 glm::vec2(textureWidth, textureHeight), textureInfo->rotationDegrees);

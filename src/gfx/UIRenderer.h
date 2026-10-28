@@ -152,10 +152,11 @@ public:
                             int count, float screenTopY = 0.0f, float uiScale = 1.0f);
 
     // 間隔はUI定義のrepeatSpacingRatioを使う。先頭activeSlotCount個を通常表示し、残りはグレー化してinactiveSlotBrightnessの明るさで描く。
+    // activeSlotOpacity（0〜1）は残量のあるスロットだけに適用し、消費済みは不透明のまま描く。
     void DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
                                  const std::string& textureName, int activeSlotCount, int totalSlotCount,
                                  float inactiveSlotBrightness, float screenTopY = 0.0f, float uiScale = 1.0f,
-                                 const TextureSlotFlash* flash = nullptr);
+                                 const TextureSlotFlash* flash = nullptr, float activeSlotOpacity = 1.0f);
     void DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color);
 
     // talkIndexの本文を会話枠へ描画する。ルビ指定はその本文に対応するものを渡す。範囲外なら本文を描画しない。

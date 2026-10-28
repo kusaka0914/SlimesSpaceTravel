@@ -34,6 +34,7 @@ constexpr float splitPlayerArcHeightWorldUnits = 0.45f;
 constexpr float splitPositionMaximumCorrectionWorldUnits = 0.15f;
 constexpr float splitPositionMinimumWalkableNormalUpDot = 0.65f;
 constexpr int splitCollisionSweepSegmentCount = 8;
+constexpr float soulTransferDurationSeconds = 0.24f;
 
 float CalculateSmoothstep(float progress)
 {
@@ -125,6 +126,8 @@ void PlayerConfigurationController::Reset()
     mRuntimeState.mIsSplitMergeButtonHeld = false;
     mRuntimeState.mIsMergeGuideRequested = false;
     mRuntimeState.mSplitGuardState.Reset();
+    mRuntimeState.mSoulTransfer = {};
+    mRuntimeState.mPendingGuardBreakPlayerIndex = -1;
 }
 
 void PlayerConfigurationController::ConfigureAddedPlayer(Player& player)
@@ -166,6 +169,8 @@ void PlayerConfigurationController::JoinSecondPlayer()
     }
 
     mRuntimeState.mIsSecondPlayerJoined = true;
+    mRuntimeState.mSoulTransfer = {};
+    mRuntimeState.mPendingGuardBreakPlayerIndex = -1;
     SelectControlledPlayer(0);
 }
 
@@ -275,9 +280,17 @@ bool PlayerConfigurationController::TryConsumeSplitGuard(const Player& damagedPl
     }
 
     const std::vector<Player*>& players = mWorld.GetPlayers();
-    const bool isActiveSplitPlayer =
-        std::find(players.begin(), players.end(), &damagedPlayer) != players.end() && damagedPlayer.GetIsActive();
-    return isActiveSplitPlayer && mRuntimeState.mSplitGuardState.ConsumeOne();
+    const auto damagedPlayerEntry = std::find(players.begin(), players.end(), &damagedPlayer);
+    const bool isActiveSplitPlayer = damagedPlayerEntry != players.end() && damagedPlayer.GetIsActive();
+    if (!isActiveSplitPlayer || !mRuntimeState.mSplitGuardState.ConsumeOne()) {
+        return false;
+    }
+
+    if (mRuntimeState.mSplitGuardState.GetCount() == 0) {
+        // 被弾処理の途中で操作対象を変えず、全Actorの更新後に確定する。
+        mRuntimeState.mPendingGuardBreakPlayerIndex = static_cast<int>(damagedPlayerEntry - players.begin());
+    }
+    return true;
 }
 
 int PlayerConfigurationController::GetSplitGuardCount() const
@@ -290,8 +303,81 @@ int PlayerConfigurationController::GetMaximumSplitGuardCount() const
     return PlayerSplitGuardState::MaximumGuardCount;
 }
 
+PlayerSoulPresentation PlayerConfigurationController::CreateSoulPresentation() const
+{
+    PlayerSoulPresentation presentation;
+    const Player* controlledPlayer = GetControlledPlayer();
+    if (mRuntimeState.mIsSecondPlayerJoined || !IsPlayerSplit() || !controlledPlayer ||
+        !controlledPlayer->GetIsActive()) {
+        return presentation;
+    }
+
+    const auto& soul = mRuntimeState.mSoulTransfer;
+    presentation.controlledPlayer = controlledPlayer;
+    presentation.transferProgress = glm::clamp(soul.transferSeconds / soulTransferDurationSeconds, 0.0f, 1.0f);
+    presentation.transferStartPosition = soul.startPosition;
+    presentation.transferEndPosition = controlledPlayer->GetRenderPosition();
+    presentation.transferUpDirection = soul.upDirection;
+    return presentation;
+}
+
+void PlayerConfigurationController::BeginSoulTransfer(int previousPlayerIndex, int currentPlayerIndex)
+{
+    const auto& players = mWorld.GetPlayers();
+    if (mRuntimeState.mIsSecondPlayerJoined || !IsPlayerSplit() || previousPlayerIndex < 0 || currentPlayerIndex < 0 ||
+        previousPlayerIndex >= static_cast<int>(players.size()) ||
+        currentPlayerIndex >= static_cast<int>(players.size())) {
+        return;
+    }
+
+    const Player* source = players[static_cast<std::size_t>(previousPlayerIndex)];
+    const Player* destination = players[static_cast<std::size_t>(currentPlayerIndex)];
+    if (!source || !destination || !source->GetIsActive() || !destination->GetIsActive()) {
+        return;
+    }
+
+    auto& soul = mRuntimeState.mSoulTransfer;
+    soul.transferSeconds = 0.0f;
+    soul.startPosition = source->GetRenderPosition();
+    soul.upDirection = CalculateUpDirection(*source);
+}
+
+void PlayerConfigurationController::UpdateGuardBreakControlSwitch()
+{
+    if (mRuntimeState.mPendingGuardBreakPlayerIndex < 0) {
+        return;
+    }
+    if (!IsPlayerSplit() || mRuntimeState.mIsSecondPlayerJoined) {
+        mRuntimeState.mPendingGuardBreakPlayerIndex = -1;
+        return;
+    }
+    if (!CanChangeSoloConfiguration()) {
+        return;
+    }
+
+    const int targetIndex = mRuntimeState.mPendingGuardBreakPlayerIndex;
+    mRuntimeState.mPendingGuardBreakPlayerIndex = -1;
+    const auto& players = mWorld.GetPlayers();
+    if (targetIndex >= static_cast<int>(players.size()) || !players[static_cast<std::size_t>(targetIndex)] ||
+        !players[static_cast<std::size_t>(targetIndex)]->GetIsActive() ||
+        !players[static_cast<std::size_t>(targetIndex)]->IsAlive()) {
+        return;
+    }
+
+    // 古い合体・乗船予約で、強制的に移した操作対象が再び上書きされないようにする。
+    mRuntimeState.mIsMergeGuideRequested = false;
+    mRuntimeState.mControlState.CancelScheduledControlSwitch();
+    SelectControlledPlayer(targetIndex);
+    players[static_cast<std::size_t>(targetIndex)]->ProtectAfterGuardBreakControlSwitch();
+    mSceneSystem.OnPlayerSwitchSucceeded();
+}
+
 void PlayerConfigurationController::UpdateSplitMergeTransition(float deltaTime)
 {
+    const float elapsedSeconds = std::max(0.0f, deltaTime);
+    auto& soul = mRuntimeState.mSoulTransfer;
+    soul.transferSeconds = std::min(soul.transferSeconds + elapsedSeconds, soulTransferDurationSeconds);
+    UpdateGuardBreakControlSwitch();
     mRuntimeState.mSplitGuardState.Update(deltaTime);
     UpdatePendingSoloMergeRequest();
     UpdateMergeRecall(deltaTime);
@@ -616,6 +702,9 @@ bool PlayerConfigurationController::MergePlayerInto(int targetPlayerIndex,
         return false;
     }
 
+    mRuntimeState.mSoulTransfer = {};
+    mRuntimeState.mPendingGuardBreakPlayerIndex = -1;
+
     const std::optional<ControlledPlayerChange> selectionChange = mRuntimeState.mControlState.EndPlayerSplit();
     if (selectionChange) {
         if (cameraTransition == ControlledPlayerCameraTransition::Smooth) {
@@ -635,6 +724,7 @@ void PlayerConfigurationController::SelectControlledPlayer(int playerIndex,
     const std::optional<ControlledPlayerChange> selectionChange =
         mRuntimeState.mControlState.SelectControlledPlayer(playerIndex);
     if (selectionChange) {
+        BeginSoulTransfer(selectionChange->previousPlayerIndex, selectionChange->currentPlayerIndex);
         if (cameraTransition == ControlledPlayerCameraTransition::Smooth) {
             mCameraSystem.TransitionToControlledPlayer(selectionChange->previousPlayerIndex,
                                                        selectionChange->currentPlayerIndex);

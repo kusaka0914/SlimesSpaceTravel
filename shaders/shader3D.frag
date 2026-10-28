@@ -46,6 +46,9 @@ uniform bool applyOutputGamma;
 uniform vec3 emissiveColor;
 uniform float emissiveIntensity;
 
+// 非操作側の分裂Playerだけに適用する硬化表現。通常のActorでは0にする。
+uniform float hardeningAmount;
+
 // 平行光源のシャドウマップと、深度比較の誤差を吸収するバイアス。
 uniform mat4 lightSpaceMatrix;
 uniform sampler2D shadowMap;
@@ -186,8 +189,15 @@ void main()
 
     // 反射に使う色へ下限を設け、黒い材質が照明を完全に失わないようにする。
     vec3 visibleBaseColor = max(baseColor.rgb, vec3(materialMinimumReflectance));
+
+    // 硬化した体は陰影の境界を少し明確にする。形状やベース色は変えない。
+    if (hardeningAmount > 0.0) {
+        vec3 hardenedLighting = floor(lighting * 6.0 + 0.5) / 6.0;
+        lighting = mix(lighting, hardenedLighting, hardeningAmount * 0.6);
+    }
     vec3 finalColor = visibleBaseColor * lighting;
     finalColor += baseColor.rgb * emissiveColor * emissiveIntensity;
+
     finalColor = ApplyColorAdjustments(finalColor);
 
     outputColor = vec4(finalColor, baseColor.a);

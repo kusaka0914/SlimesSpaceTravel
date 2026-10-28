@@ -12,16 +12,26 @@
 #include "actor/player/PlayerStatus.h"
 #include "app/Game.h"
 #include "component/Component.h"
+#include "gfx/UIRenderer.h"
+#include "gfx/render3d/CharacterShadowSurface.h"
 #include "support/RuntimeStageSupport.h"
 #include "support/TestSupport.h"
+#include "system/ActorLoadSystem.h"
+#include "system/CameraSystem.h"
+#include "system/GameProgressController.h"
+#include "system/GamepadRumbleService.h"
 #include "system/MeshLoadSystem.h"
+#include "system/PauseMenuController.h"
 #include "system/PhysicsSystem.h"
+#include "system/PlayerConfigurationController.h"
+#include "system/SceneSystem.h"
 #include "system/camera/CameraCollisionResolver.h"
 #include "system/camera/EllipseCameraTransition.h"
 #include "system/camera/zones/CameraOrbitTransition.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/physics/ActorCollisionResolver.h"
 #include "system/physics/EllipsoidCollisionShapeGeometry.h"
+#include "system/sequence/SequenceSystem.h"
 #include "world/GameWorld.h"
 #include "world/Stage.h"
 
@@ -305,6 +315,81 @@ void StairCollisionProxiesRemoveNosingHeadContacts(Game& game)
     ExpectTrue(meshes->ResolveCollisionMeshGeometry("../assets/models/platform.obj") != nullptr,
                "models without a collision proxy keep using their original mesh");
     std::cout << "[PASS] Runtime.StairCollisionProxiesRemoveNosingHeadContacts\n";
+}
+
+void PlayerShadowsStayOnTheSupportingSurface(Game& game)
+{
+    auto* world = game.GetPhysicsSystem()->GetBulletWorld();
+    ExpectTrue(world != nullptr, "player shadow test has a physics world");
+    btBoxShape groundShape(btVector3(3, 0.05f, 3));
+    btBoxShape platformShape(btVector3(1, 0.05f, 1));
+    const glm::vec3 origin(1000, 1000, 1000);
+    for (float degrees : {0.0f, 90.0f, 180.0f}) {
+        const auto rotation = glm::angleAxis(glm::radians(degrees), glm::vec3(0, 0, 1));
+        const auto up = rotation * glm::vec3(0, 1, 0);
+        const auto side = rotation * glm::vec3(1, 0, 0);
+        struct Surfaces {
+            btDiscreteDynamicsWorld& world;
+            btCollisionObject ground;
+            btCollisionObject platform;
+            Surfaces(btDiscreteDynamicsWorld& world, btCollisionShape& groundShape, btCollisionShape& platformShape,
+                     const glm::vec3& origin, const glm::quat& rotation)
+                : world(world)
+            {
+                btTransform transform;
+                transform.setIdentity();
+                transform.setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+                const auto groundPosition = origin + rotation * glm::vec3(0, -0.05f, 0);
+                transform.setOrigin(btVector3(groundPosition.x, groundPosition.y, groundPosition.z));
+                ground.setCollisionShape(&groundShape);
+                ground.setWorldTransform(transform);
+                const auto platformPosition = origin + rotation * glm::vec3(0, 1.95f, 0);
+                transform.setOrigin(btVector3(platformPosition.x, platformPosition.y, platformPosition.z));
+                platform.setCollisionShape(&platformShape);
+                platform.setWorldTransform(transform);
+                world.addCollisionObject(&ground, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+                world.addCollisionObject(&platform, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+            }
+            ~Surfaces()
+            {
+                world.removeCollisionObject(&platform);
+                world.removeCollisionObject(&ground);
+            }
+        } surfaces(*world, groundShape, platformShape, origin, rotation);
+        Player player(&game), clone(&game);
+        player.SetUpVec(up);
+        player.SetOnGround(false);
+        clone.SetPlayerNum(2);
+        clone.SetUpVec(up);
+        clone.SetOnGround(false);
+        for (float height : {3.0f, 5.0f, 7.0f}) {
+            player.SetPos(origin + up * height);
+            const auto surface = CharacterShadow::FindSurface(player, *game.GetPhysicsSystem());
+            ExpectTrue(surface.has_value(), "shadow finds a floor during ascent and descent");
+            ExpectVectorNear(origin + up * 2.0f, surface->position, 0.001f,
+                             "changing jump height does not move the shadow off the platform");
+            ExpectTrue(glm::dot(up, surface->normal) > 0.999f, "side and back surfaces use local gravity");
+        }
+        clone.SetPos(origin + side * 1.5f + up * 5.0f);
+        const auto cloneSurface = CharacterShadow::FindSurface(clone, *game.GetPhysicsSystem());
+        ExpectTrue(cloneSurface.has_value(), "clone resolves its own landing surface");
+        ExpectVectorNear(origin + side * 1.5f, cloneSurface->position, 0.001f,
+                         "clone outside the platform projects onto the lower ground independently");
+        player.SetOnGround(true);
+        player.SetPos(origin + up * 2.05f);
+        const auto grounded = CharacterShadow::FindSurface(player, *game.GetPhysicsSystem());
+        ExpectTrue(grounded.has_value(), "grounded player still resolves the actual floor");
+        ExpectVectorNear(origin + up * 2.0f, grounded->position, 0.001f,
+                         "shadow does not float at the player's grounding offset");
+        player.SetOnGround(false);
+        player.SetPos(origin + side * 10.0f + up * 3.0f);
+        ExpectFalse(CharacterShadow::FindSurface(player, *game.GetPhysicsSystem()).has_value(),
+                    "a gap without a landing surface has no floating shadow");
+        player.SetPos(origin + up * 20.0f);
+        ExpectFalse(CharacterShadow::FindSurface(player, *game.GetPhysicsSystem()).has_value(),
+                    "surfaces beyond the projection range are ignored");
+    }
+    std::cout << "[PASS] Runtime.PlayerShadowsStayOnTheSupportingSurface\n";
 }
 
 void EllipseCameraTurnsOnHemisphereCrossing()
@@ -814,6 +899,90 @@ void WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(Game& game)
     std::cout << "[PASS] Runtime.WorldInvalidatesRegistriesBeforeActorDestruction\n";
 }
 
+void SoulOwnershipAndGuardBreakSwitchStayIndependentOfBodyIdentity(Game& game)
+{
+    Player mainPlayer(&game);
+    Player clone(&game);
+    mainPlayer.SetPlayerNum(1);
+    clone.SetPlayerNum(2);
+    mainPlayer.SetPos(glm::vec3(1000.0f));
+    mainPlayer.SetHp(6.0f);
+    clone.SetIsActive(false);
+    GameWorld world;
+    world.AddPlayer(&mainPlayer);
+    world.AddPlayer(&clone);
+    const std::string stagePath = game.GetCurrentStageYamlPath();
+    GameProgressController progress(world, *game.GetPhysicsSystem(), stagePath, false);
+    GamepadRumbleService gamepads;
+    PauseMenuController pause;
+    SceneSystem scene(&game, *game.GetUIRenderer()->GetUILoadSystem());
+    SequenceSystem sequences(&game);
+    scene.StartPlayingScene();
+    PlayerConfigurationController controller({world, game.GetActorLoadSystem()->GetPlayerLoader(), scene,
+                                              *game.GetCameraSystem(), sequences, progress, gamepads, pause,
+                                              *game.GetPhysicsSystem(), true});
+
+    ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == nullptr, "no split-only soul in one body");
+    ExpectTrue(controller.ToggleSplit() == PlayerConfigurationController::SplitToggleResult::Accepted,
+               "split begins in empty space");
+    controller.UpdateSplitMergeTransition(0.4f);
+    ExpectTrue(controller.GetControlledPlayer() == &clone, "split completion selects clone immediately");
+    ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == &clone, "soul follows selected body");
+    ExpectTrue(controller.SwitchControlledPlayer(), "manual transfer succeeds");
+    ExpectTrue(controller.GetControlledPlayer() == &mainPlayer, "control does not wait for the soul animation");
+    ExpectNear(0.0f, controller.CreateSoulPresentation().transferProgress, 0.0001f, "soul transfer starts at source");
+    ExpectFalse(controller.TryConsumeSplitGuard(mainPlayer), "soul-bearing body cannot use split guard");
+    ExpectTrue(controller.TryConsumeSplitGuard(clone), "first hit is guarded");
+    controller.UpdateSplitMergeTransition(0.1f);
+    ExpectTrue(controller.GetControlledPlayer() == &mainPlayer, "first guarded hit does not transfer control");
+    ExpectTrue(controller.TryConsumeSplitGuard(clone), "second hit is guarded");
+    ExpectTrue(controller.SwitchControlledPlayer(), "can transfer before guard breaks");
+    ExpectEqual(1, controller.GetSplitGuardCount(), "manual transfer does not refill shared guards");
+    ExpectTrue(controller.TryConsumeSplitGuard(mainPlayer), "last guard also protects original body");
+    ExpectTrue(controller.GetControlledPlayer() == &clone, "damage callback only schedules forced transfer");
+    const auto queuedState = controller.CaptureStageReloadState();
+    controller.Reset();
+    controller.RestoreStageReloadState(queuedState);
+    controller.UpdateSplitMergeTransition(0.0f);
+    ExpectTrue(controller.GetControlledPlayer() == &mainPlayer, "last guard forces transfer after Actor updates");
+    ExpectTrue(controller.IsPlayerSplit() && clone.GetIsActive(), "forced transfer does not merge bodies");
+    ExpectEqual(0, controller.GetSplitGuardCount(), "forced transfer leaves guard empty");
+    ExpectTrue(mainPlayer.IsInvincible(), "forced destination has damage grace");
+    ExpectEqual(1, mainPlayer.GetPlayerNum(), "original body identity remains fixed");
+    ExpectEqual(2, clone.GetPlayerNum(), "clone identity remains fixed");
+    ExpectFalse(controller.TryConsumeSplitGuard(clone), "empty shared guard cannot block another hit");
+    controller.UpdateSplitMergeTransition(0.3f);
+    ExpectNear(1.0f, controller.CreateSoulPresentation().transferProgress, 0.0001f, "transfer animation ends");
+    controller.UpdateSplitMergeTransition(9.7f);
+    ExpectEqual(1, controller.GetSplitGuardCount(), "existing ten-second guard recovery remains active");
+
+    clone.SetPos(mainPlayer.GetPos());
+    ExpectTrue(controller.ToggleSplit() == PlayerConfigurationController::SplitToggleResult::Accepted, "merge begins");
+    controller.UpdateSplitMergeTransition(0.4f);
+    ExpectFalse(controller.IsPlayerSplit(), "merge restores one body");
+    ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == nullptr, "merge clears soul presentation");
+    controller.JoinSecondPlayer();
+    ExpectTrue(controller.IsSecondPlayerJoined(), "two-player mode can still join");
+    ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == nullptr, "two players do not share one soul");
+    ExpectFalse(controller.TryConsumeSplitGuard(mainPlayer), "two-player mode has no passive guard");
+    game.GetCameraSystem()->SnapBehindControlledPlayer();
+    std::cout << "[PASS] Runtime.SoulOwnershipAndGuardBreakSwitchStayIndependentOfBodyIdentity\n";
+}
+
+void GuardBreakProtectionDoesNotShortenDamageInvincibility(Game& game)
+{
+    Player player(&game);
+    player.SetDefaultInvincibleTimer(2.0f);
+    player.ApplyDamageFromActor(glm::vec3(5.0f, 0.0f, 0.0f), 1.0f);
+    ExpectNear(2.0f, player.GetInvincibleTimer(), 0.0001f, "damage grants normal invincibility");
+    player.ProtectAfterGuardBreakControlSwitch();
+    ExpectNear(2.0f, player.GetInvincibleTimer(), 0.0001f, "guard-break grace preserves longer invincibility");
+    const float hp = player.GetHp();
+    player.ApplyDamageFromActor(glm::vec3(5.0f, 0.0f, 0.0f), 1.0f);
+    ExpectNear(hp, player.GetHp(), 0.0001f, "consecutive hit does not reduce HP during grace");
+    std::cout << "[PASS] Runtime.GuardBreakProtectionDoesNotShortenDamageInvincibility\n";
+}
+
 } // namespace
 
 void RunRuntimeGameplayTests(Game& game)
@@ -825,12 +994,15 @@ void RunRuntimeGameplayTests(Game& game)
     SweepsStopAtThinWallsAndResolveOverlap();
     LeaningSidesPreserveAirborneVerticalMovement(game);
     StairCollisionProxiesRemoveNosingHeadContacts(game);
+    PlayerShadowsStayOnTheSupportingSurface(game);
     LandingRequiresSupportingSurface(game);
     MovementActionsResetOnlyTheirOwnState(game);
     GravitySwitchHasHysteresisAndClearsOnLanding(game);
     NearCenterInternalPointStillProjectsOntoSurface();
     WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(game);
     CollisionFiltersSkipEmptyRegistryEntries(game);
+    SoulOwnershipAndGuardBreakSwitchStayIndependentOfBodyIdentity(game);
+    GuardBreakProtectionDoesNotShortenDamageInvincibility(game);
 }
 
 void RunRuntimeCombatTests(Game& game)

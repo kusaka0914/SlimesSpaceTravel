@@ -348,7 +348,13 @@ SceneRenderState Game::CreateSceneRenderState() const
         .isPlayer2Joined = GetIsPlayer2Joined(),
         .projection = {GetIsUGCMode() && GetIsUGCOrthographicView(), GetUGCOrthographicHalfHeight()},
     };
-    if (!scene.isGameUIHidden && GetIsPlayerSplit() && !scene.isPlayer2Joined) {
+    if (mPlayerConfigurationController) {
+        scene.soul = mPlayerConfigurationController->CreateSoulPresentation();
+    }
+
+    // 分裂完了時に操作対象が切り替わるため、演出途中の頭上ガードは表示しない。
+    if (!scene.isGameUIHidden && GetIsPlayerSplit() && !scene.isPlayer2Joined &&
+        (!mPlayerConfigurationController || !mPlayerConfigurationController->IsSplitMergeTransitionActive())) {
         scene.splitGuard = {scene.controlledPlayer, GetPlayerSplitGuardCount(), GetMaximumPlayerSplitGuardCount()};
     }
     if (!TryResolvePlayerMergeGuide(scene.mergeGuideTarget, scene.mergeGuideRadiusWorldUnits)) {

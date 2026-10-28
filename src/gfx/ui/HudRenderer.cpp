@@ -44,7 +44,8 @@ void HudRenderer::UpdateConsumptionFeedback(float deltaTime)
                                      allowsPlayerFeedback);
     }
     mGuardFeedback.Update(static_cast<float>(mGame->GetPlayerSplitGuardCount()),
-                          mGame->GetMaximumPlayerSplitGuardCount(), deltaTime, allowsFeedback && !isTwoPlayer);
+                          mGame->GetMaximumPlayerSplitGuardCount(), deltaTime,
+                          allowsFeedback && !isTwoPlayer && mGame->GetIsPlayerSplit());
 }
 
 void HudRenderer::ResetConsumptionFeedback()
@@ -196,12 +197,15 @@ void HudRenderer::DrawSplitGuardUI(float screenTopY, float uiScale)
         return;
     }
 
+    const bool isSplit = mGame->GetIsPlayerSplit();
     const int guardCount = mGame->GetPlayerSplitGuardCount();
     const UIRenderer::TextureSlotFlash flash{
         mGuardFeedback.GetFirstSlot(), mGuardFeedback.GetEndSlot(), mGuardFeedback.GetStrength(), {0.3f, 0.65f, 1.0f}};
-    constexpr float depletedGuardBrightness = 0.3f;
+    constexpr float depletedGuardBrightness = 0.12f;
+    constexpr float unavailableGuardOpacity = 0.45f;
     mRenderer->DrawLinedUpTextureSlots("default", "splitGuardTexture", "guard", guardCount, maximumGuardCount,
-                                       depletedGuardBrightness, screenTopY, uiScale, &flash);
+                                       depletedGuardBrightness, screenTopY, uiScale, isSplit ? &flash : nullptr,
+                                       isSplit ? 1.0f : unavailableGuardOpacity);
 }
 
 void HudRenderer::UpdateTalkableUIVisibility(const std::vector<Player*>& players, bool allowsPrompt)

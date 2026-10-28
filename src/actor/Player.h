@@ -261,6 +261,10 @@ public:
     void ApplyDamageFromActor(const glm::vec3& damageSourcePosition, float damage);
     void StartDamageKnockBack(const glm::vec3& damageSourcePosition);
     void RecoverFromFatigue();
+
+    // ガード切れで操作を移された直後の連続被弾を防ぐ。既に長い無敵があれば短縮しない。
+    void ProtectAfterGuardBreakControlSwitch();
+
     bool IsInvincible() const { return mStatus.IsInvincible(); }
     bool IsAlive() const { return mStatus.IsAlive(); }
     void SetHp(float hp) { mStatus.SetHp(hp); }
@@ -381,6 +385,7 @@ public:
     static constexpr float SplitBodyScaleMultiplier = 0.8f;
     void MoveTowardForMergeRecall(const glm::vec3& targetPosition, float deltaTime);
     void SetSplitForm(bool isSplitForm);
+    bool IsSplitForm() const { return mIsSplitForm; }
     float GetCollisionScaleMultiplier() const override { return mIsSplitForm ? SplitBodyScaleMultiplier : 1.0f; }
 
 private:

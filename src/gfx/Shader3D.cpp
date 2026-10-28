@@ -48,6 +48,7 @@ void Shader3D::Initialize()
     mLocApplyOutputGamma = glGetUniformLocation(mShaderProgram, "applyOutputGamma");
     mLocEmissiveColor = glGetUniformLocation(mShaderProgram, "emissiveColor");
     mLocEmissiveIntensity = glGetUniformLocation(mShaderProgram, "emissiveIntensity");
+    mLocHardeningAmount = glGetUniformLocation(mShaderProgram, "hardeningAmount");
     mLocLightSpaceMatrix = glGetUniformLocation(mShaderProgram, "lightSpaceMatrix");
     mLocShadowMap = glGetUniformLocation(mShaderProgram, "shadowMap");
     mLocUseShadows = glGetUniformLocation(mShaderProgram, "useShadows");

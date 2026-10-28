@@ -1,5 +1,6 @@
 #pragma once
 
+#include "actor/player/PlayerSoulPresentation.h"
 #include "effect/particle/ParticleTypes.h"
 #include "system/camera/CameraProjection.h"
 
@@ -38,6 +39,7 @@ struct SceneRenderState {
     bool isPlayer2Joined = false;
     CameraProjectionSettings projection{};
     SplitGuardRenderState splitGuard{};
+    PlayerSoulPresentation soul{};
     const Player* mergeGuideTarget = nullptr;
     float mergeGuideRadiusWorldUnits = 0.0f;
 

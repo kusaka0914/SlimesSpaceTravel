@@ -37,6 +37,7 @@ public:
     int GetLocApplyOutputGamma() const { return mLocApplyOutputGamma; }
     int GetLocEmissiveColor() const { return mLocEmissiveColor; }
     int GetLocEmissiveIntensity() const { return mLocEmissiveIntensity; }
+    int GetLocHardeningAmount() const { return mLocHardeningAmount; }
     int GetLocLightSpaceMatrix() const { return mLocLightSpaceMatrix; }
     int GetLocShadowMap() const { return mLocShadowMap; }
     int GetLocUseShadows() const { return mLocUseShadows; }
@@ -75,6 +76,7 @@ private:
     int mLocApplyOutputGamma;
     int mLocEmissiveColor;
     int mLocEmissiveIntensity;
+    int mLocHardeningAmount;
     int mLocLightSpaceMatrix;
     int mLocShadowMap;
     int mLocUseShadows;

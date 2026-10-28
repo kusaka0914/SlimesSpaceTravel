@@ -125,14 +125,16 @@ public:
     void EndTransparentDraw() const;
 
     // nullptr・非アクティブ・ほぼ透明なActorを除外してDrawActorへ渡す。useOrientはActorの姿勢を適用するか。
-    void TryDrawActor(Actor* actor, bool useOrient = true) const;
+    void TryDrawActor(Actor* actor, bool useOrient = true, const PlayerSoulPresentation& soul = {}) const;
 
     // Actorのメッシュと材質を描画する。非アクティブ状態は除外せず、プレビューにも使用する。
-    void DrawActor(Actor* actor, bool useOrient = true) const;
+    // soulは1人プレイの分裂Playerにだけ適用し、輪郭の個体識別とは独立して扱う。
+    void DrawActor(Actor* actor, bool useOrient = true, const PlayerSoulPresentation& soul = {}) const;
     void DrawUGCPlacementPreviewActor(Actor* actor) const;
 
     // アクティブ状態を変えずに指定の不透明度倍率で描画する。opacityは0〜1へ制限する。
     void DrawInactiveActorPreview(Actor* actor, float opacity) const;
+    // 光源に依存しない足元の簡易影。Playerは実際の支持面へ投影し、ジャンプ高度で大きさを変えない。
     void DrawBlobShadow(const CharacterActor* actor) const;
 
     // 直近のDrawSceneの視錐台に外接球が入るかを返す。視錐台未設定・nullptrの場合は除外せずtrue。

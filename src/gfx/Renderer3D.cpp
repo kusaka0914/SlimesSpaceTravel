@@ -9,6 +9,7 @@
 #include "actor/HazardActor.h"
 #include "actor/JewelItem.h"
 #include "actor/Key.h"
+#include "actor/MathUtils.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -24,6 +25,7 @@
 #include "gfx/Shader3D.h"
 #include "gfx/VertexArray.h"
 #include "gfx/particle/ParticleRenderer.h"
+#include "gfx/render3d/CharacterShadowSurface.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
 #include "gfx/render3d/NPCProximityMessageRenderer.h"
 #include "gfx/render3d/PlayerEffectRenderer.h"
@@ -33,7 +35,6 @@
 #include "system/mesh/LoadedMesh.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/mesh/TextureLoader.h"
-#include "actor/MathUtils.h"
 #include "world/Stage.h"
 
 #include <GL/glew.h>
@@ -55,6 +56,11 @@ constexpr float editorSelectionRed = 1.0f;
 constexpr float editorSelectionGreen = 0.45f;
 constexpr float editorSelectionBlue = 0.0f;
 constexpr float editorSelectionAlpha = 1.0f;
+
+// 指定色はsRGB。HDR合成後のガンマ補正で白っぽくならないよう、描画前にリニア化する。
+const glm::vec4 mainPlayerSplitOutlineColor(glm::pow(glm::vec3(40.0f, 115.0f, 214.0f) / 255.0f, glm::vec3(2.2f)), 1.0f);
+const glm::vec4 splitPlayerOutlineColor(glm::pow(glm::vec3(230.0f, 80.0f, 96.0f) / 255.0f, glm::vec3(2.2f)), 1.0f);
+constexpr float splitPlayerOutlineScaleMultiplier = 1.10f;
 constexpr int verticallyInvertedSunStageNumber = 0;
 
 struct EmissiveAppearance {
@@ -366,6 +372,7 @@ void Renderer3D::Initialize()
     const std::string basePath = "../assets/textures/";
     RegisterTexture(basePath + "guard.png", "guard");
     RegisterTexture(basePath + "tired_star.png", "tired_star");
+    RegisterTexture(basePath + "particles/spark_dot.png", "playerSoul");
     RegisterTexture(basePath + "textBg.png", "npcMessageBg");
 
     InitializeAttackRangeBuffer();
@@ -731,6 +738,7 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
     glUniform1i(mShader3D->GetLocApplyOutputGamma(), 0);
     glUniform3f(mShader3D->GetLocEmissiveColor(), 1.0f, 1.0f, 1.0f);
     glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
+    glUniform1f(mShader3D->GetLocHardeningAmount(), 0.0f);
     glUniform1i(mShader3D->GetLocUseInstancing(), 0);
     const bool shadowsAvailable = mDirectionalShadowMap && mDirectionalShadowMap->IsAvailable();
     glUniform1i(mShader3D->GetLocUseShadows(), shadowsAvailable ? 1 : 0);
@@ -761,13 +769,13 @@ void Renderer3D::EndTransparentDraw() const
     glDisable(GL_BLEND);
 }
 
-void Renderer3D::TryDrawActor(Actor* actor, bool useOrient) const
+void Renderer3D::TryDrawActor(Actor* actor, bool useOrient, const PlayerSoulPresentation& soul) const
 {
     if (!actor || !actor->GetIsActive() || actor->GetRenderOpacity() <= 0.001f) {
         return;
     }
 
-    DrawActor(actor, useOrient);
+    DrawActor(actor, useOrient, soul);
 }
 
 void Renderer3D::DrawUGCPlacementPreviewActor(Actor* actor) const
@@ -788,50 +796,17 @@ void Renderer3D::DrawInactiveActorPreview(Actor* actor, float opacity) const
 
 void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
 {
-    if (!actor || !actor->GetIsActive() || actor->GetRenderOpacity() <= 0.001f) {
+    if (!actor || !actor->GetIsActive() || actor->GetRenderOpacity() <= 0.001f || !mShader3D) {
         return;
     }
-
-    const float upLength = glm::length(actor->GetUpVec());
-    if (upLength <= 0.0001f) {
+    const auto surface = CharacterShadow::FindSurface(*actor, mPhysics);
+    if (!surface) {
         return;
     }
-    const glm::vec3 up = actor->GetUpVec() / upLength;
-
-    glm::vec3 shadowCenter = actor->GetPos();
-    glm::vec3 surfaceNormal = up;
-    float surfaceDistance = 0.0f;
-    if (!actor->GetOnGround()) {
-        const PhysicsSystem* physics = &mPhysics;
-        constexpr float rayStartOffset = 0.15f;
-        constexpr float maximumShadowDistance = 12.0f;
-        const glm::vec3 rayFrom = actor->GetPos() + up * rayStartOffset;
-        const glm::vec3 rayTo = actor->GetPos() - up * maximumShadowDistance;
-        const std::vector<PhysicsSystem::RayHitActor> hits = physics->RaycastStageSurfaces(rayFrom, rayTo);
-
-        bool foundSurface = false;
-        for (const PhysicsSystem::RayHitActor& hit : hits) {
-            if (hit.actor == actor || dynamic_cast<const CharacterActor*>(hit.actor)) {
-                continue;
-            }
-            const float normalLength = glm::length(hit.hitNormal);
-            if (normalLength <= 0.0001f) {
-                continue;
-            }
-            const glm::vec3 candidateNormal = hit.hitNormal / normalLength;
-            if (glm::dot(candidateNormal, up) < 0.35f) {
-                continue;
-            }
-            shadowCenter = hit.hitPos;
-            surfaceNormal = candidateNormal;
-            surfaceDistance = glm::length(actor->GetPos() - hit.hitPos);
-            foundSurface = true;
-            break;
-        }
-        if (!foundSurface || surfaceDistance >= maximumShadowDistance) {
-            return;
-        }
-    }
+    glm::vec3 shadowCenter = surface->position;
+    const auto surfaceNormal = surface->normal;
+    const float surfaceDistance = surface->distance;
+    const bool isPlayer = dynamic_cast<const Player*>(actor) != nullptr;
 
     glm::vec3 tangentX = actor->GetRightVec() - surfaceNormal * glm::dot(actor->GetRightVec(), surfaceNormal);
     if (glm::length(tangentX) <= 0.0001f) {
@@ -853,7 +828,7 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
 
     constexpr float distanceFade = 1.0f;
     shadowCenter += surfaceNormal * 0.012f;
-    const float distanceScale = 1.0f + glm::clamp(surfaceDistance * 0.025f, 0.0f, 0.22f);
+    const float distanceScale = isPlayer ? 1.0f : 1.0f + glm::clamp(surfaceDistance * 0.025f, 0.0f, 0.22f);
     radiusX *= distanceScale;
     radiusY *= distanceScale;
 
@@ -866,20 +841,39 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
         {0.76f, 0.25f},
         {0.50f, 0.36f},
     };
+    GLint previousUnlit = GL_FALSE;
+    glGetUniformiv(mShader3D->GetShaderProgram(), mShader3D->GetLocIsUnlit(), &previousUnlit);
+    // 裏側や建物の影の中でも、着地の目印となる簡易影は照明に依存させない。
+    glUniform1i(mShader3D->GetLocIsUnlit(), 1);
     for (const ShadowLayer& layer : layers) {
         DrawAttackRangeVertices(CreateBlobShadowVertices(shadowCenter, surfaceNormal, tangentX, radiusX * layer.scale,
                                                          radiusY * layer.scale),
                                 GL_TRIANGLE_FAN, glm::vec4(0.0f, 0.0f, 0.0f, layer.alpha * distanceFade));
     }
+    glUniform1i(mShader3D->GetLocIsUnlit(), previousUnlit);
 }
 
-void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
+void Renderer3D::DrawActor(Actor* actor, bool useOrient, const PlayerSoulPresentation& soul) const
 {
     if (!actor || !mShader3D || actor->GetRenderOpacity() <= 0.001f) {
         return;
     }
 
     SetSkinningEnabled(false);
+
+    const auto* player = dynamic_cast<const Player*>(actor);
+    // 分裂中の識別色は操作対象ではなく個体番号に固定する。
+    if (player && player->IsSplitForm()) {
+        const auto& outlineColor = player->GetPlayerNum() == 2 ? splitPlayerOutlineColor : mainPlayerSplitOutlineColor;
+        GLboolean previousDepthWriteMask = GL_TRUE;
+        glGetBooleanv(GL_DEPTH_WRITEMASK, &previousDepthWriteMask);
+        // 拡大メッシュが深度を書き込むと、面の向きによって後描きの本体まで隠してしまう。
+        glDepthMask(GL_FALSE);
+        glUniform1i(mShader3D->GetLocIsUnlit(), 1);
+        DrawActorOutlineUnderlay(actor, useOrient, outlineColor, splitPlayerOutlineScaleMultiplier);
+        glUniform1i(mShader3D->GetLocIsUnlit(), 0);
+        glDepthMask(previousDepthWriteMask);
+    }
 
     const bool isSelected = actor->GetIsEditorSelected();
     const bool isPlanet = dynamic_cast<const Planet*>(actor) != nullptr;
@@ -897,17 +891,29 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         const int layerDistance = std::abs(platform->GetUGCGridLayer() - mUGCEditLayer);
         layerBrightness = layerDistance == 1 ? 0.45f : 0.22f;
     }
-    glUniform3f(mShader3D->GetLocColorMultiplier(), layerBrightness, layerBrightness, layerBrightness);
-    glUniform1f(mShader3D->GetLocColorSaturation(), ResolveColorSaturation(actor));
+    const bool hasSoulAppearance = player && player->IsSplitForm() && soul.controlledPlayer;
+    const bool containsSoul = hasSoulAppearance && player == soul.controlledPlayer;
+    const bool isHardened = hasSoulAppearance && !containsSoul;
+    const float bodyBrightness = isHardened ? 0.50f : 1.0f;
+    const float brightness = layerBrightness * bodyBrightness;
+    glUniform3f(mShader3D->GetLocColorMultiplier(), brightness, brightness, brightness);
+    glUniform1f(mShader3D->GetLocColorSaturation(), isHardened ? 0.55f : ResolveColorSaturation(actor));
 
-    const EmissiveAppearance emissiveAppearance = ResolveEmissiveAppearance(actor);
+    EmissiveAppearance emissiveAppearance = ResolveEmissiveAppearance(actor);
+    if (isHardened) {
+        emissiveAppearance.intensity = 0.08f;
+    }
     glUniform3fv(mShader3D->GetLocEmissiveColor(), 1, glm::value_ptr(emissiveAppearance.color));
     glUniform1f(mShader3D->GetLocEmissiveIntensity(), emissiveAppearance.intensity);
 
-    const SurfaceLightingAppearance surfaceLightingAppearance = ResolveSurfaceLightingAppearance(actor);
+    SurfaceLightingAppearance surfaceLightingAppearance = ResolveSurfaceLightingAppearance(actor);
+    if (isHardened) {
+        surfaceLightingAppearance = {0.035f, 0.02f, 0.08f};
+    }
     glUniform1f(mShader3D->GetLocMaterialMinimumReflectance(), surfaceLightingAppearance.minimumReflectance);
     glUniform1f(mShader3D->GetLocMaterialRimBoost(), surfaceLightingAppearance.rimBoost);
     glUniform1f(mShader3D->GetLocMaterialDarkSurfaceLightBoost(), surfaceLightingAppearance.darkSurfaceLightBoost);
+    glUniform1f(mShader3D->GetLocHardeningAmount(), isHardened ? 1.0f : 0.0f);
 
     const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
@@ -922,6 +928,7 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         glUniform3f(mShader3D->GetLocColorMultiplier(), 1.0f, 1.0f, 1.0f);
         glUniform1f(mShader3D->GetLocColorSaturation(), 1.0f);
         glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
+        glUniform1f(mShader3D->GetLocHardeningAmount(), 0.0f);
         glUniform1f(mShader3D->GetLocMaterialMinimumReflectance(), 0.0f);
         glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
         glUniform1f(mShader3D->GetLocMaterialDarkSurfaceLightBoost(), 0.0f);
@@ -1000,6 +1007,7 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     glUniform1f(mShader3D->GetLocColorSaturation(), 1.0f);
     glUniform3f(mShader3D->GetLocEmissiveColor(), 1.0f, 1.0f, 1.0f);
     glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
+    glUniform1f(mShader3D->GetLocHardeningAmount(), 0.0f);
     glUniform1f(mShader3D->GetLocMaterialMinimumReflectance(), 0.0f);
     glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
     glUniform1f(mShader3D->GetLocMaterialDarkSurfaceLightBoost(), 0.0f);
@@ -1256,7 +1264,15 @@ void Renderer3D::DrawActorToShadowMap(Actor* actor, bool useOrient, const glm::v
         return;
     }
 
-    const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
+    glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
+    if (const auto* player = dynamic_cast<const Player*>(actor)) {
+        const auto surface = CharacterShadow::FindSurface(*player, mPhysics);
+        if (!surface) {
+            return;
+        }
+        // 本体は空中に描いたまま、影の投影元だけを床へ下げて高さによる横ずれを抑える。
+        model = glm::translate(glm::mat4(1.0f), surface->position - player->GetRenderPosition()) * model;
+    }
     glUniformMatrix4fv(shadowShader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
 
     const std::vector<glm::mat4>* skinningMatrices = actor->GetSkinningMatrices();

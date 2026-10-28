@@ -11,7 +11,7 @@ planets:
     stageNum: 0
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
-  - center: [44.42074, 50.59924, 1.4901161e-08]
+  - center: [44.42074, 50.59924, 0]
     scale: [2, 6, 6]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
@@ -882,10 +882,9 @@ NPCs:
       - "あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。"
       - "そこに行ってみたらどうだ？\n隣の惑星に行くためのロケットを探しな！"
       - "そうだな...まずはあいつのところまで行ってみたらどうだ？\n移動とジャンプを使えば行けるぞ！"
-      - "そうだそうだ。見たい場所が見えないとき、\nカメラを回転するといいぞ！覚えておきな！"
     pos:
-      - 1.42
-      - -3.56
+      - 1.41
+      - -3.58
       - 4.21
     facingYaw: 2.296081
     rotation:
@@ -1032,56 +1031,9 @@ NPCs:
             reading: い
           - text: けるぞ！
             ruby: false
-      - talkIndex: 4
-        segments:
-          - text: そうだそうだ。
-            ruby: false
-          - text: 見
-            ruby: true
-            reading: み
-          - text: たい
-            ruby: false
-          - text: 場
-            ruby: true
-            reading: ば
-          - text: 所
-            ruby: true
-            reading: しょ
-          - text: が
-            ruby: false
-          - text: 見
-            ruby: true
-            reading: み
-          - text: "えないとき、\nカメラを"
-            ruby: false
-          - text: 回
-            ruby: true
-            reading: かい
-          - text: 転
-            ruby: true
-            reading: てん
-          - text: するといいぞ！
-            ruby: false
-          - text: 覚
-            ruby: true
-            reading: おぼ
-          - text: えておきな！
-            ruby: false
     proximityMessage:
       mode: afterTalk
-      variants:
-        - talkIndex: 4
-          text: あいつのところまで行ってみろ！
-      rubies:
-        - talkIndex: 4
-          segments:
-            - text: あいつのところまで
-              ruby: false
-            - text: 行
-              ruby: true
-              reading: い
-            - text: ってみろ！
-              ruby: false
+      variants: []
       range: 3
       height: 1.8
       scale: 1
@@ -1494,10 +1446,8 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1661,8 +1611,7 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-        hideTargets:
-          []
+        hideTargets: []
   - currentPlanetNum: 0
     theta: -0.28730252
     phi: 0.12781243
@@ -1698,10 +1647,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet1
-        targets:
-          []
-        hideTargets:
-          []
+        targets: []
+        hideTargets: []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -1905,10 +1852,8 @@ platforms:
         targets:
           - platform_11
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -2072,8 +2017,7 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets:
-          []
+        hideTargets: []
   - currentPlanetNum: 3
     theta: 0.40818188
     phi: 0.1889368
@@ -2109,10 +2053,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets:
-          []
-        hideTargets:
-          []
+        targets: []
+        hideTargets: []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2220,10 +2162,8 @@ platforms:
           - platform_23
           - platform_24
           - platform_25
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2480,10 +2420,8 @@ platforms:
         targets:
           - platform_30
           - platform_31
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -4619,3 +4557,92 @@ cameraZones:
     textureTiling:
       - 6.6116533
       - 2.5210052
+jewelItems:
+  - currentPlanetNum: 0
+    theta: -1.1876677
+    phi: 0.96568954
+    height: 4.1116934
+    facingYaw: 0
+    modelPath: crystal.obj
+    textureOverride: textures/jewel.png
+    scale:
+      - 0.22
+      - 0.22
+      - 0.22
+    pos:
+      - 1.2996507
+      - 5.0265093
+      - -3.224579
+    upVec:
+      - 0.9630306
+      - 0.22487186
+      - -0.14834073
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 1.1662937
+    phi: 0.35791337
+    height: 2.5316653
+    facingYaw: 0
+    modelPath: crystal.obj
+    textureOverride: textures/jewel.png
+    scale:
+      - 0.22
+      - 0.22
+      - 0.22
+    pos:
+      - 1.6704693
+      - 1.5875357
+      - 3.9019551
+    upVec:
+      - 0.9877636
+      - 0.060123116
+      - 0.14390418
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 1.5645945
+    phi: 0.6359396
+    height: 5.913765
+    facingYaw: 0
+    modelPath: crystal.obj
+    textureOverride: textures/jewel.png
+    scale:
+      - 0.22
+      - 0.22
+      - 0.22
+    pos:
+      - 0.039484978
+      - 4.7002516
+      - 6.3666124
+    upVec:
+      - 0.11892275
+      - 0.5794912
+      - 0.8062553
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 1.7347722
+    phi: 0.6546601
+    height: 5.0724444
+    facingYaw: 0
+    modelPath: crystal.obj
+    textureOverride: textures/jewel.png
+    scale:
+      - 0.22
+      - 0.22
+      - 0.22
+    pos:
+      - -1.34
+      - 3.48
+      - 5.07
+    upVec:
+      - -0.89965636
+      - 0.26659682
+      - 0.34575248
+    textureTiling:
+      - 1
+      - 1

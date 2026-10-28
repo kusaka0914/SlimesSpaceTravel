@@ -55,7 +55,7 @@ void SceneObjectRenderer::DrawSceneObjects(const glm::mat4& viewMat, const Playe
 
     if (mPlayerEffectRenderer && shouldDrawPlayers) {
         mPlayerEffectRenderer->DrawPlayers(viewMat, scene.players, scene.isDebugEditorShowing, &mPhysics,
-                                           scene.splitGuard);
+                                           scene.splitGuard, scene.soul);
         if (scene.mergeGuideTarget) {
             mPlayerEffectRenderer->DrawPlayerMergeGuide(scene.mergeGuideTarget, scene.mergeGuideRadiusWorldUnits);
         }

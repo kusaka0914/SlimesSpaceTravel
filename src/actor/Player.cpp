@@ -296,6 +296,17 @@ void Player::UpdateStarCollectionCelebration(float deltaTime)
     StopStarCollectionCelebration();
 }
 
+void Player::ProtectAfterGuardBreakControlSwitch()
+{
+    constexpr float protectionSeconds = 0.75f;
+    if (mStatus.GetInvincibleTimer() < protectionSeconds) {
+        mStatus.StartDodgeInvincibility(protectionSeconds);
+    }
+    if (mStatus.GetDamageTimer() < protectionSeconds) {
+        mStatus.StartDamageCooldown(protectionSeconds);
+    }
+}
+
 void Player::RecoverFromFatigue()
 {
     if (!mStatus.IsTired()) {
