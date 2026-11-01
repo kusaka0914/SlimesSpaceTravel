@@ -1,6 +1,5 @@
 #include "actor/Enemy.h"
 
-#include "app/Game.h"
 #include "actor/CharacterActor.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -10,6 +9,7 @@
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStateMachine.h"
 #include "actor/enemy/behavior/EnemyBehaviorController.h"
+#include "app/Game.h"
 #include "state/UIState.h"
 #include "system/SceneSystem.h"
 
@@ -125,8 +125,30 @@ bool Enemy::ShouldAcceptLandingSurface(Actor* surfaceActor, const glm::vec3& sur
     return dynamic_cast<Enemy*>(surfaceActor) == nullptr;
 }
 
+void Enemy::OnLoadedModelChanged()
+{
+    mAttackAnimation.Configure(GetLoadedModel());
+}
+
+const std::vector<glm::mat4>* Enemy::GetSkinningMatrices() const
+{
+    return mAttackAnimation.GetSkinningMatrices();
+}
+
+void Enemy::SetAttackAnimationSpeed(float speed)
+{
+    mAttackAnimationSpeed = std::isfinite(speed) ? std::clamp(speed, 0.25f, 2.0f) : 1.0f;
+}
+
+void Enemy::StartAttackAnimation()
+{
+    mAttackAnimation.Start(mAttackAnimationSpeed);
+}
+
 void Enemy::ApplyConfig(const EnemyConfig& config)
 {
+    SetAttackAnimationSpeed(config.attackAnimationSpeed);
+    SetAttackHitDelaySeconds(config.attackHitDelaySeconds);
     SetIsBoss(config.isBoss);
     SetIsBossEncounter(config.isBossEncounter);
     SetIsNormalHitKnockBackEnabled(config.isNormalHitKnockBackEnabled);
@@ -172,6 +194,7 @@ void Enemy::UpdateActor(float deltaTime)
         return;
     }
 
+    mAttackAnimation.Update(deltaTime);
     mMovement->SeparateAfterOverlappingEnemyLanding(*this, deltaTime);
 
     mStatus.SetNearestPlayer(ResolvePursuitTarget());
@@ -189,6 +212,9 @@ void Enemy::UpdateActor(float deltaTime)
         break;
     }
 
+    if (mStateMachine->GetActionState() != ActionState::Attacking || !mStateMachine->IsAlive()) {
+        mAttackAnimation.Stop();
+    }
     mMovement->RestoreGroundedEnemyInsideMovementArea(*this);
 }
 

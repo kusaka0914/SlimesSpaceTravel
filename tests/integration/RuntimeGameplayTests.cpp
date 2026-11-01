@@ -1323,6 +1323,7 @@ void RunRuntimeCombatTests(Game& game)
     {
         EnemyStateMachine counterState;
         EnemyStatus counterStatus;
+        counterStatus.SetAttackHitDelaySeconds(0.0f);
         counterStatus.SetDefaultStandByAttackTimer(0.31f);
         counterState.StartPreparingAttack(reactingEnemy, counterStatus);
         ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus), "charge counter rejects earlier hits");
@@ -1342,6 +1343,22 @@ void RunRuntimeCombatTests(Game& game)
         counterState.SetActionState(EnemyStateMachine::ActionState::Attacking);
         ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus),
                     "charge counter rejects attacks already started");
+        counterStatus.SetAttackHitDelaySeconds(0.5f);
+        counterState.StartPreparingAttack(reactingEnemy, counterStatus);
+        counterStatus.SetStandByAttackTimer(0.1f);
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                    "preparation includes the animation windup");
+        counterState.StartAttacking(reactingEnemy, counterStatus);
+        ExpectFalse(counterState.IsAttackImpactActive(counterStatus),
+                    "attack animation starts without immediate damage");
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                    "early animation is outside the counter window");
+        ExpectFalse(counterStatus.AdvanceAttackStartup(0.2f), "attack hit waits for the configured delay");
+        ExpectTrue(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                   "counter is accepted during the last 0.3s of animation windup");
+        ExpectTrue(counterStatus.AdvanceAttackStartup(0.31f), "attack becomes active after windup");
+        ExpectTrue(counterState.IsAttackImpactActive(counterStatus),
+                   "hit indication matches animation windup completion");
     }
     {
         Enemy airborneEnemy(&game);

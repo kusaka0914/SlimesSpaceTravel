@@ -65,6 +65,10 @@ EnemyBehaviorActionResult EnemyRadialAttackAction::Update(EnemyBehaviorContext& 
         return EnemyBehaviorActionResult::Finished;
     }
 
+    if (!context.status.AdvanceAttackStartup(deltaTime)) {
+        return EnemyBehaviorActionResult::Running;
+    }
+
     context.status.DecreaseCanCounteredTimer(deltaTime);
     if (context.status.GetCanCounteredTimer() <= 0.0f) {
         context.status.SetCanCountered(false);

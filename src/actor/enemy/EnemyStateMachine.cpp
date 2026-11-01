@@ -473,6 +473,10 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
         return;
     }
 
+    if (!status.AdvanceAttackStartup(deltaTime)) {
+        return;
+    }
+
     status.DecreaseCanCounteredTimer(deltaTime);
     if (status.GetCanCounteredTimer() <= 0.0f) {
         status.SetCanCountered(false);
@@ -585,6 +589,8 @@ void EnemyStateMachine::StartAttacking(Enemy& enemy, EnemyStatus& status)
 {
     mActionState = ActionState::Attacking;
     mActiveAttackFrame = ResolveEnemyAttackFrame(enemy);
+    status.StartAttackStartup();
+    enemy.StartAttackAnimation();
     mShouldPreservePreparationTimer = false;
     status.ResetAttackMotionTimer();
     status.ClearIsHit();
@@ -758,9 +764,12 @@ bool EnemyStateMachine::IsJustBeforeAttack(const EnemyStatus& status) const
 bool EnemyStateMachine::TryConsumeChargedAttackCounter(const EnemyStatus& status)
 {
     constexpr float chargedAttackCounterWindowSeconds = 0.3f;
-    const float remainingSeconds = status.GetStandByAttackTimer();
-    if (!IsAlive() || mActionState != ActionState::PreparingAttack || mHasReceivedChargedAttackCounter ||
-        remainingSeconds <= 0.0f || remainingSeconds > chargedAttackCounterWindowSeconds) {
+    const bool isPreparing = mActionState == ActionState::PreparingAttack;
+    const bool isInStartup = mActionState == ActionState::Attacking && status.GetAttackStartupRemainingSeconds() > 0.0f;
+    const float remainingSeconds = isPreparing ? status.GetStandByAttackTimer() + status.GetAttackHitDelaySeconds()
+                                               : status.GetAttackStartupRemainingSeconds();
+    if (!IsAlive() || (!isPreparing && !isInStartup) || mHasReceivedChargedAttackCounter || remainingSeconds <= 0.0f ||
+        remainingSeconds > chargedAttackCounterWindowSeconds) {
         return false;
     }
     mHasReceivedChargedAttackCounter = true;
@@ -769,7 +778,8 @@ bool EnemyStateMachine::TryConsumeChargedAttackCounter(const EnemyStatus& status
 
 bool EnemyStateMachine::IsAttackImpactActive(const EnemyStatus& status) const
 {
-    return mActionState == ActionState::Attacking && status.GetCanCounteredTimer() > 0.0f;
+    return mActionState == ActionState::Attacking && status.GetAttackStartupRemainingSeconds() <= 0.0f &&
+           status.GetCanCounteredTimer() > 0.0f;
 }
 
 bool EnemyStateMachine::IsProgressing(const EnemyStatus& status) const

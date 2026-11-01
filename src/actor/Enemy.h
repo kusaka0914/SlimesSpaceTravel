@@ -2,6 +2,7 @@
 
 #include "actor/CharacterActor.h"
 #include "actor/enemy/EnemyStateMachine.h"
+#include "actor/enemy/EnemyAttackAnimationController.h"
 #include "actor/enemy/EnemyStatus.h"
 
 #include <glm/glm.hpp>
@@ -27,6 +28,13 @@ public:
     Enemy(Game* game);
     ~Enemy() override;
     void UpdateActor(float deltaTime) override;
+    const std::vector<glm::mat4>* GetSkinningMatrices() const override;
+    // 攻撃開始時に単発再生する。対応モデルがない場合も攻撃判定のタイマーは独立して進む。
+    void StartAttackAnimation();
+    void SetAttackAnimationSpeed(float speed);
+    float GetAttackAnimationSpeed() const { return mAttackAnimationSpeed; }
+    void SetAttackHitDelaySeconds(float seconds) { mStatus.SetAttackHitDelaySeconds(seconds); }
+    float GetAttackHitDelaySeconds() const { return mStatus.GetAttackHitDelaySeconds(); }
 
     // 設定値を反映し、HPとガード値も初期化する。
     void ApplyConfig(const EnemyConfig& config);
@@ -160,6 +168,7 @@ public:
     bool ShouldDrawAttackImpactFlash() const { return mStateMachine->IsAttackImpactActive(mStatus); }
 
 protected:
+    void OnLoadedModelChanged() override;
     bool ShouldAcceptLandingSurface(Actor* surfaceActor, const glm::vec3& surfaceNormal) const override;
 
     float ResolveMinimumUpdateIntervalSeconds() const override;
@@ -186,6 +195,8 @@ private:
 
 private:
     EnemyStatus mStatus;
+    EnemyAttackAnimationController mAttackAnimation;
+    float mAttackAnimationSpeed = 1.0f;
 
     std::unique_ptr<EnemyStateMachine> mStateMachine;
     std::unique_ptr<EnemyMovement> mMovement;

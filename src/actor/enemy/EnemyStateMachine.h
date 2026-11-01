@@ -98,7 +98,7 @@ public:
     bool IsJustBeforeAttack(const EnemyStatus& status) const;
     bool IsAttackImpactActive(const EnemyStatus& status) const;
 
-    // 攻撃準備の残り時間が0より大きく0.3秒以下なら、今回の準備で一度だけtrueを返す。
+    // 命中判定開始まで（アニメーションの予備動作を含む）残り0.3秒以内なら一度だけtrueを返す。
     bool TryConsumeChargedAttackCounter(const EnemyStatus& status);
     bool ShouldPreservePreparationTimer() const { return mShouldPreservePreparationTimer; }
     bool IsProgressing(const EnemyStatus& status) const;

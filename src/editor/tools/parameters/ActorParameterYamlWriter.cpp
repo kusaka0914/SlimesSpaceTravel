@@ -221,6 +221,10 @@ bool ActorParameterYamlWriter::SaveEnemies(const Enemy* normalEnemy, const Enemy
     const auto bossIndex = FindEntryIndex(config, sequenceName, "type", "boss");
     const Enemy* commonEnemy = normalEnemy ? normalEnemy : bossEnemy;
     if (commonEnemy && commonIndex) {
+        SetSequenceValue(config, sequenceName, *commonIndex, "attackAnimationSpeed",
+                         commonEnemy->GetAttackAnimationSpeed());
+        SetSequenceValue(config, sequenceName, *commonIndex, "attackHitDelaySeconds",
+                         commonEnemy->GetAttackHitDelaySeconds());
         SetSequenceValue(config, sequenceName, *commonIndex, "knockBackSpeed", commonEnemy->GetKnockBackSpeed());
         SetSequenceValue(config, sequenceName, *commonIndex, "defaultLaunchedTimer",
                          commonEnemy->GetDefaultLaunchedTimer());

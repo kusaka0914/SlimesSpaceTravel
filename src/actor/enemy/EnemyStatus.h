@@ -3,6 +3,8 @@
 #include "actor/enemy/EnemyGuardGauge.h"
 #include "actor/enemy/EnemyHealth.h"
 
+#include <algorithm>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <unordered_set>
 
@@ -52,6 +54,19 @@ public:
     void SetDetectionRange(float detectionRange) { mDetectionRange = detectionRange; }
     void SetAttackPreparationRange(float attackPreparationRange) { mAttackPreparationRange = attackPreparationRange; }
     void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
+    void SetAttackHitDelaySeconds(float seconds)
+    {
+        mAttackHitDelaySeconds = std::isfinite(seconds) ? std::clamp(seconds, 0.0f, 5.0f) : 0.25f;
+    }
+    float GetAttackHitDelaySeconds() const { return mAttackHitDelaySeconds; }
+    float GetAttackStartupRemainingSeconds() const { return mAttackStartupRemainingSeconds; }
+    void StartAttackStartup() { mAttackStartupRemainingSeconds = mAttackHitDelaySeconds; }
+    // 判定前の予備動作だけを進める。trueならこのフレームから攻撃判定を許可する。
+    bool AdvanceAttackStartup(float deltaTime)
+    {
+        mAttackStartupRemainingSeconds = std::max(0.0f, mAttackStartupRemainingSeconds - std::max(0.0f, deltaTime));
+        return mAttackStartupRemainingSeconds <= 0.0f;
+    }
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
 
     void FlipCanCountered() { mCanCountered = !mCanCountered; }
@@ -165,6 +180,8 @@ private:
     float mDyingTimer;
     float mKnockBackTimer;
     float mCanCounteredTimer;
+    float mAttackHitDelaySeconds = 0.25f;
+    float mAttackStartupRemainingSeconds = 0.0f;
 
     glm::vec3 mKnockBackFrom;
 
