@@ -17,6 +17,7 @@ constexpr const char* walkStartEffectId = "walk_start_dust";
 constexpr const char* landingEffectId = "landing_dust";
 constexpr const char* specialChargeEffectId = "player_special_charge";
 constexpr float specialChargeEmissionIntervalSeconds = 0.12f;
+constexpr float dashEmissionIntervalSeconds = 0.035f;
 
 glm::vec3 SafeNormalize(const glm::vec3& value, const glm::vec3& fallback)
 {
@@ -38,6 +39,38 @@ void PlayerParticleEffectController::UpdateWalking(Player& player, ParticleSyste
     }
 
     mWasWalking = isWalking;
+}
+
+void PlayerParticleEffectController::UpdateDashing(Player& player, ParticleSystem& particles, bool isDashing,
+                                                   const glm::vec3& direction, float deltaTime)
+{
+    if (!isDashing) {
+        mDashEmissionTimerSeconds = 0.0f;
+        return;
+    }
+
+    mDashEmissionTimerSeconds -= std::max(0.0f, deltaTime);
+    if (mDashEmissionTimerSeconds > 0.0f) {
+        return;
+    }
+    mDashEmissionTimerSeconds = dashEmissionIntervalSeconds;
+
+    const glm::vec3 up = SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::vec3 forward = SafeNormalize(direction, player.GetFacingForwardVec());
+    const glm::vec3 side = SafeNormalize(glm::cross(up, forward), player.GetLeftVec());
+    const float bodyScale = player.GetCollisionScaleMultiplier();
+    const glm::vec3 center = player.GetPos() + up * (0.30f * bodyScale);
+
+    // カメラの向きに依存せず、体の四方から実際のダッシュ方向と逆へ流す。
+    const glm::vec3 offsets[] = {side * 0.32f, -side * 0.32f, up * 0.25f, -up * 0.25f};
+    for (const glm::vec3& offset : offsets) {
+        ParticleSpawnContext context;
+        context.position = center + offset * bodyScale;
+        context.normal = up;
+        context.direction = -forward;
+        context.scale = bodyScale;
+        particles.Emit("player_dash_wind", context);
+    }
 }
 
 void PlayerParticleEffectController::UpdateSpecialCharging(Player& player, ParticleSystem& particles, bool isCharging,
@@ -118,6 +151,7 @@ void PlayerParticleEffectController::EmitLanding(Player& player, ParticleSystem&
 void PlayerParticleEffectController::Reset()
 {
     mWasWalking = false;
+    mDashEmissionTimerSeconds = 0.0f;
     mPreviousSpecialChargeStage = -1;
     mSpecialChargeEmissionTimerSeconds = 0.0f;
     mAirSlamEmissionTimerSeconds = 0.0f;

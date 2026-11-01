@@ -461,6 +461,7 @@ void Player::UpdateWhileControlLocked(float deltaTime)
     mParticleEffectController.UpdateSpecialCharging(*this, particles, false, deltaTime);
     mParticleEffectController.UpdateAirSlamReadiness(*this, particles, false, deltaTime);
     mParticleEffectController.UpdateWalking(*this, particles, false);
+    mParticleEffectController.UpdateDashing(*this, particles, false, mMovement.GetDodgeDirection(), deltaTime);
     mAnimationController.RequestAnimation(idleAnimationId, false);
     mAnimationController.Update(deltaTime);
 }
@@ -538,6 +539,8 @@ void Player::UpdatePresentation(PlayerActionState previousActionState, const Lan
                                          currentActionState != PlayerActionState::KnockedBack;
     mParticleEffectController.UpdateAirSlamReadiness(*this, particles, canShowAirSlamReadiness, deltaTime);
     mParticleEffectController.UpdateWalking(*this, particles, shouldWalk);
+    const bool isDashing = currentActionState == PlayerActionState::Dodging && GetIsActive() && IsAlive();
+    mParticleEffectController.UpdateDashing(*this, particles, isDashing, mMovement.GetDodgeDirection(), deltaTime);
 
     mAnimationController.RequestAnimation(shouldWalk ? walkAnimationId : idleAnimationId, false);
     RequestEnteredActionAnimation(previousActionState, currentActionState);
