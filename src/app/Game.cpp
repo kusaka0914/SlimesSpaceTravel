@@ -670,6 +670,9 @@ void Game::UpdateGame()
     const float deltaTime = std::min(0.04f, elapsedSeconds);
     mLastTime = currentTime;
     mLastDeltaTime = deltaTime;
+    if (mAudioSystem) {
+        mAudioSystem->Update();
+    }
     if (mUIRenderer) {
         mUIRenderer->UpdateOperationGuides(elapsedSeconds);
     }

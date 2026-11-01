@@ -1,5 +1,6 @@
 #pragma once
 
+#include "editor/tools/parameters/AudioParameterDebugPanel.h"
 #include "editor/tools/parameters/EnemyParameterDebugPanel.h"
 #include "editor/tools/parameters/EnemyPresetDebugPanel.h"
 #include "editor/tools/parameters/PlayerParameterDebugPanel.h"
@@ -7,7 +8,7 @@
 class CameraDebugPanel;
 struct DebugEditorContext;
 
-// Player・Enemy用パネルを所有し、パラメータ編集のメニューを切り替える。CameraDebugPanelは所有しない。
+// Player・Enemy・Audio用パネルを所有し、パラメータ編集のメニューを切り替える。CameraDebugPanelは所有しない。
 class ParameterDebugPanel {
 public:
     ParameterDebugPanel(DebugEditorContext& context, CameraDebugPanel& cameraPanel);
@@ -17,6 +18,7 @@ public:
 private:
     CameraDebugPanel& mCameraPanel;
     PlayerParameterDebugPanel mPlayerPanel;
+    AudioParameterDebugPanel mAudioPanel;
     EnemyPresetDebugPanel mEnemyPresetPanel;
     EnemyParameterDebugPanel mEnemyPanel;
     int mSelectedMenu = 0;

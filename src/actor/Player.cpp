@@ -322,6 +322,7 @@ void Player::RecoverFromFatigue()
 
 void Player::OnAttachedToAdhesivePlatform()
 {
+    RecordAirSlamGroundReference();
     // 接着直後は空中行動を解除し、接地状態として移動・攻撃の担当へ通知する。
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();
@@ -425,6 +426,10 @@ void Player::UpdateActor(float deltaTime)
     }
 
     const LandingUpdateResult landing = UpdateGrounding(deltaTime);
+    if (GetOnGround()) {
+        // 移動床への追従後、ジャンプ入力を処理する前の支持面を記録する。
+        RecordAirSlamGroundReference();
+    }
     const PlayerActionState previousActionState = UpdateActionState(deltaTime);
     UpdatePresentation(previousActionState, landing, deltaTime);
 }
@@ -599,6 +604,8 @@ void Player::InheritSplitActionState(const Player& source)
     mCombat.ResetForPlacementInheritance(source.mCombat, !source.GetOnGround());
     mStatus.InheritPlacementState(source.mStatus);
     mLastAirSlamGroundPosition = source.mLastAirSlamGroundPosition;
+    mLastAirSlamGroundUpDirection = source.mLastAirSlamGroundUpDirection;
+    mAirSlamUsesGroundContactHeight = source.mAirSlamUsesGroundContactHeight;
     mHasAirSlamGroundPosition = source.mHasAirSlamGroundPosition;
     mJewelGauge = source.mJewelGauge;
     mStateMachine.ResetForPlacementInheritance(source.mStateMachine);
@@ -652,14 +659,14 @@ float Player::CalculateAirSlamHeight() const
         return 0.0f;
     }
     const Planet* planet = GetCurrentPlanet();
-    if (planet && planet->GetPlanetShape() != Planet::PlanetShape::Normal) {
+    if (!mAirSlamUsesGroundContactHeight && planet && planet->GetPlanetShape() != Planet::PlanetShape::Normal) {
         return std::max(0.0f, planet->CalculateEllipseSurfaceProjection(GetPos()).distance);
     }
-    const float upLengthSquared = glm::dot(GetUpVec(), GetUpVec());
+    const float upLengthSquared = glm::dot(mLastAirSlamGroundUpDirection, mLastAirSlamGroundUpDirection);
     if (!mHasAirSlamGroundPosition || upLengthSquared <= 0.000001f) {
         return 0.0f;
     }
-    const glm::vec3 upDirection = GetUpVec() / std::sqrt(upLengthSquared);
+    const glm::vec3 upDirection = mLastAirSlamGroundUpDirection / std::sqrt(upLengthSquared);
     return std::max(0.0f, glm::dot(GetPos() - mLastAirSlamGroundPosition, upDirection));
 }
 
@@ -904,10 +911,17 @@ const std::vector<glm::mat4>* Player::GetSkinningMatrices() const
     return mAnimationController.GetSkinningMatrices();
 }
 
-void Player::OnLanded()
+void Player::RecordAirSlamGroundReference()
 {
     mLastAirSlamGroundPosition = GetPos();
+    mLastAirSlamGroundUpDirection = GetUpVec();
+    mAirSlamUsesGroundContactHeight = GetGroundActor() && !dynamic_cast<Planet*>(GetGroundActor());
     mHasAirSlamGroundPosition = true;
+}
+
+void Player::OnLanded()
+{
+    RecordAirSlamGroundReference();
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();
     mMovement.CancelJumpApexHover();

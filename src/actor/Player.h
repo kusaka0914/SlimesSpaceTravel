@@ -257,7 +257,8 @@ public:
     float GetAttackHitDelay() const { return mCombat.GetAttackHitDelay(); }
     float GetAirSlamEnemyDownwardSpeed() const { return mCombat.GetAirSlamEnemyDownwardSpeed(); }
 
-    // 惑星表面からの高さ。通常形状では最終接地位置を基準とし、基準がなければ0。
+    // 最後の支持面が足場なら離陸時の接地点・上方向、惑星なら惑星表面を基準に高さを返す。
+    // 通常形状の惑星では最終接地点を使い、基準がなければ0。
     float CalculateAirSlamHeight() const;
     float GetAirSlamStartHeight() const { return mCombat.GetAirSlamStartHeight(); }
 
@@ -422,6 +423,7 @@ private:
         float landingSpeed = 0.0f;
     };
 
+    void RecordAirSlamGroundReference();
     void ResolvePreUpdateCollisions();
     void UpdateWhileControlLocked(float deltaTime);
     LandingUpdateResult UpdateGrounding(float deltaTime);
@@ -458,6 +460,8 @@ private:
     PlayerAnimationController mAnimationController;
 
     glm::vec3 mLastAirSlamGroundPosition{0.0f};
+    glm::vec3 mLastAirSlamGroundUpDirection{0.0f, 1.0f, 0.0f};
+    bool mAirSlamUsesGroundContactHeight = false;
     bool mHasAirSlamGroundPosition = false;
     bool mUseSecondAttackAnimationNext = false;
     bool mControlLocked = false;
