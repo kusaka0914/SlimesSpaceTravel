@@ -39,8 +39,9 @@ public:
     void SuppressCombatInputUntilReleased();
     void UpdateInputAvailableTimer(float deltaTime);
     void UpdateAttackBuffer(float deltaTime);
+    void SetAttackBufferDuration(float seconds) { mAttackBufferDuration = seconds; }
 
-    // 空中Aの押し直しを最大0.2秒保持する。回避中や操作不能時の入力は持ち越さない。
+    // 空中Aの押し直しを最大0.2秒保持する。ダッシュ中や操作不能時の入力は持ち越さない。
     void CaptureAirDodgeInput(bool isAirborne, bool allowsBuffering);
     void UpdateAirDodgeBuffer(float deltaTime);
     bool HasBufferedAirDodgeInput() const { return mAirDodgeBufferRemaining > 0.0f; }

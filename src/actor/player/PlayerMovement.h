@@ -11,7 +11,7 @@ class Planet;
 class PhysicsSystem;
 class MathUtils;
 
-// カメラ基準の移動、ジャンプ・回避・攻撃移動を計算し、衝突解決後の位置と速度をPlayerへ反映する。
+// カメラ基準の移動、ジャンプ・ダッシュ・攻撃移動を計算し、衝突解決後の位置と速度をPlayerへ反映する。
 // 位置・方向はワールド空間。deltaTimeは秒。
 class PlayerMovement {
 public:
@@ -86,16 +86,19 @@ public:
     // 上昇・下降で異なる重力と頂点の滞空を適用し、衝突を解決して位置・速度を更新する。
     void ApplyJumpGravity(Player& player, float deltaTime);
     void StopAirborneVerticalMovement(Player& player) const;
+
+    // 空中の命中時だけ現在の上方向へ持ち上げる。天井・壁を貫通せず、接地中・固定中は動かさない。
+    void ApplyAirComboHitLift(Player& player, float height);
     void ApplyJumpGravityAndInputMovement(Player& player, const PlayerInput& input, float deltaTime,
                                           float speedMultiplier = 1.0f);
 
     // 上昇・滞空・落下の段階を進める。接地済み、または今回の落下で着地した場合にtrue。
     bool UpdateAirSlamMovement(Player& player, const PlayerCombat& combat, float deltaTime);
 
-    // 回避方向と時間を設定し、速度を0にする。回避可能かの確認は呼び出し側で行う。
+    // ダッシュ方向と時間を設定し、速度を0にする。ダッシュ可能かの確認は呼び出し側で行う。
     void StartDodgeMovement(Player& player, const PlayerInput& input);
 
-    // ワールド位置へ向かう直線回避を設定する。方向を決められなければfalse。
+    // ワールド位置へ向かう直線ダッシュを設定する。方向を決められなければfalse。
     bool StartDodgeMovementTowards(Player& player, const glm::vec3& targetPosition);
 
     // 床との固定を解除し、上昇速度とこのフレームの移動を反映する。通常の着地判定は停止する。
@@ -118,14 +121,14 @@ public:
     void StartKnockBack(Player& player, const glm::vec3& damageSourcePosition);
     void StartDodgeLock(float seconds) { mDodgeCooldownRemaining = seconds; }
 
-    // 分裂・合体で体を引き継ぐ際、回避の使用済み状態と残り待ち時間をコピーする。回避動作は開始しない。
+    // 分裂・合体で体を引き継ぐ際、ダッシュの使用済み状態と残り待ち時間をコピーする。ダッシュ動作は開始しない。
     void InheritDodgeAvailability(const PlayerMovement& source)
     {
         mHasUsedDodge = source.mHasUsedDodge;
         mDodgeCooldownRemaining = source.mDodgeCooldownRemaining;
     }
 
-    // 再配置する体の古い回避動作・方向保持を解除し、元の体の回避制限とジャンプの滞空状態を引き継ぐ。
+    // 再配置する体の古いダッシュ動作・方向保持を解除し、元の体のダッシュ制限とジャンプの滞空状態を引き継ぐ。
     void ResetForPlacementInheritance(const PlayerMovement& source);
 
     void RestoreAirDodge()

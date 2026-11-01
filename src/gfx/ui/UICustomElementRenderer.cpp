@@ -170,7 +170,7 @@ float UIRenderer::CalculateOperationGuideOpacity(const UILoadSystem::CustomEleme
     const bool isSpecialCharging = player->IsSpecialCharging() || player->GetCanSpecialAttack();
     const bool isContinuousAttack = player->IsContinuousAttacking();
     // 連続攻撃は地上にいる間だけ操作を占有する。空中では残り時間が
-    // 減るだけで、弱攻撃・回避・強攻撃を通常どおり受け付ける。
+    // 減るだけで、弱攻撃・ダッシュ・強攻撃を通常どおり受け付ける。
     const bool isGroundContinuousAttack = isContinuousAttack && player->GetOnGround();
     const bool isIdle = player->GetActionState() == Player::ActionState::Idle;
     const bool isWeakAttacking = player->GetActionState() == Player::ActionState::Attacking;
@@ -178,7 +178,7 @@ float UIRenderer::CalculateOperationGuideOpacity(const UILoadSystem::CustomEleme
     const bool canRecover = isIdle && !isSpecialCharging && !player->GetCanSpecialAttack() &&
                             player->GetJewelCount() >= 1 && player->GetHp() < player->GetMaxHp();
     const bool canStartChargeAttack =
-        (isIdle || isWeakAttacking) && !isGroundContinuousAttack && player->GetJewelCount() >= 2;
+        (isIdle || isWeakAttacking) && !isGroundContinuousAttack && player->GetJewelCount() >= 1;
     const bool canStartContinuousAttack = (isIdle || isWeakAttacking) && !isSpecialCharging &&
                                           !isGroundContinuousAttack && player->GetOnGround() &&
                                           player->GetJewelCount() >= PlayerJewelGauge::ContinuousAttackCost;
@@ -193,8 +193,8 @@ float UIRenderer::CalculateOperationGuideOpacity(const UILoadSystem::CustomEleme
                         ? (isIdle && !isSpecialCharging)
                         : (!isSpecialCharging && !isGroundContinuousAttack && (isIdle || isWeakAttacking));
     } else if (element.id == "buttonB" || element.id == "buttonTextB") {
-        // 回避の短いクールタイムでは点滅させず、連続攻撃中など入力が封じられる状態だけ示す。
-        // 溜め中は回避を受け付けない。
+        // ダッシュの短いクールタイムでは点滅させず、連続攻撃中など入力が封じられる状態だけ示す。
+        // 溜め中はダッシュを受け付けない。
         isEnabled = !isSpecialCharging && !isGroundContinuousAttack && (isIdle || isWeakAttacking);
     } else if (element.id == "buttonA_copy" || element.id == "buttonTextB_copy") {
         isEnabled = mGame->CanOpenPauseMenu();
@@ -290,7 +290,7 @@ void UIRenderer::DrawCustomUI()
     const bool isUGCEditing = mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
     const bool isUGCPlaytestActive = mGame->GetIsUGCPlaytestActive();
     static const std::string returnToEditorText = "作る画面に戻る";
-    static const std::string airDodgeAttackText = "空中回避";
+    static const std::string airDodgeAttackText = "空中ダッシュ";
     static const std::string disembarkBoatText = "降車";
     static const std::string assistAttackText = "攻撃";
     static const std::string assistRecoverText = "体力回復";

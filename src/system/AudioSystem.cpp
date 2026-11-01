@@ -62,6 +62,7 @@ void AudioSystem::CreateSEList()
     AddSE(basePath + "clear.wav", "clear_se");
     AddSE(basePath + "attack_air.wav", "attack_air_se");
     AddSE(basePath + "defeat.wav", "defeat_se");
+    AddSE(basePath + "all_kill.wav", "all_kill");
     AddSE(basePath + "damaged.wav", "damaged_se");
     AddSE(basePath + "destroy.wav", "destroy_se");
     AddSE(basePath + "break.wav", "break_se");

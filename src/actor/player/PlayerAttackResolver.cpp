@@ -68,10 +68,12 @@ bool CanReceiveGroundGuardDamage(const Enemy& enemy)
 } // namespace
 
 PlayerAttackResolver::PlayerAttackResolver(AudioSystem& audio, ParticleSystem* particles,
-                                           std::function<void(int)> onAttackHit)
+                                           std::function<void(int)> onAttackHit,
+                                           std::function<void(float)> requestHitStop)
     : mAudio(audio),
       mParticles(particles),
-      mOnAttackHit(std::move(onAttackHit))
+      mOnAttackHit(std::move(onAttackHit)),
+      mRequestHitStop(std::move(requestHitStop))
 {
 }
 
@@ -79,15 +81,14 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
                                          PlayerCombat& combat, const std::vector<Enemy*>& hitEnemies,
                                          bool didHitHazardActor, float deltaTime) const
 {
+    if (combat.IsComboAttack()) {
+        ResolveComboAttack(player, movement, combat, hitEnemies, didHitHazardActor, deltaTime);
+        return;
+    }
     if (hitEnemies.empty() && !didHitHazardActor) {
         combat.StartAfterAttackReaction(player, movement, status);
         mAudio.PlaySE("attack_miss_se");
 
-        if (combat.GetAttackComboIndex() != 3) {
-            return;
-        }
-
-        combat.ResetGroundAttackCombo();
         return;
     }
 
@@ -95,9 +96,6 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         mOnAttackHit(movement.GetPlayerNum());
         combat.StartAfterAttackReaction(player, movement, status);
         mAudio.PlaySE("attack_se");
-        if (combat.GetAttackComboIndex() == 3) {
-            combat.ResetGroundAttackCombo();
-        }
         return;
     }
 
@@ -139,9 +137,6 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         }
 
         mAudio.PlaySE(didBreakGuardSegment ? "destroy_se" : "attack_se");
-        if (combat.GetAttackComboIndex() == 3) {
-            combat.ResetGroundAttackCombo();
-        }
         return;
     }
 
@@ -167,6 +162,59 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         strongAttackSound = "attack_air_se";
     }
     mAudio.PlaySE(strongAttackSound);
+}
+
+void PlayerAttackResolver::ResolveComboAttack(Player& player, PlayerMovement& movement, PlayerCombat& combat,
+                                              const std::vector<Enemy*>& hitEnemies, bool didHitHazardActor,
+                                              float deltaTime) const
+{
+    const auto& attack = combat.GetCurrentComboAttackSettings();
+    bool didHit = didHitHazardActor;
+    bool didBreakGuard = false;
+    bool didFullyBreakGuard = false;
+    bool didHitEnemy = false;
+    for (Enemy* enemy : hitEnemies) {
+        if (!enemy || !enemy->GetIsActive() || !enemy->IsAlive() || enemy->GetIsDead()) {
+            continue;
+        }
+        bool didLaunchEnemy = false;
+        if (CanReceiveGroundGuardDamage(*enemy)) {
+            const auto guardResult = enemy->ApplyGuardDamage(attack.guardDamage, deltaTime);
+            didBreakGuard |= guardResult.DidBreakSegment();
+            didFullyBreakGuard |= guardResult.wasFullyBroken;
+            didLaunchEnemy = guardResult.wasFullyBroken;
+        }
+        ApplyDamageWithHitEffect(mParticles, *enemy, combat.GetAttack(), player, attack.effectScale);
+        if (combat.IsComboFinisher() && !didLaunchEnemy) {
+            // 地上5段目で空中の敵を横へ押さず、打ち上げ中の位置を維持する。
+            if (!combat.IsGroundFifthComboAttack() || enemy->IsOnGround()) {
+                enemy->ReactToComboFinisher(player, attack.knockBackSpeed, attack.knockBackSeconds);
+            }
+        } else if (!combat.IsComboFinisher() && !player.GetOnGround()) {
+            enemy->ApplyAirComboLift(combat.GetAirWeakEnemyLiftHeight());
+        }
+        didHitEnemy = true;
+        didHit = true;
+    }
+    if (!didHit) {
+        mAudio.PlaySE("attack_miss_se");
+        return;
+    }
+    if (didHitEnemy && !player.GetOnGround()) {
+        // 上昇は敵ごとではなく1ヒットにつき一度だけ。空振りや障害物だけへの命中では動かさない。
+        movement.ApplyAirComboHitLift(player, combat.GetComboSettings().airHitPlayerLiftHeight);
+        if (!combat.IsComboFinisher()) {
+            combat.RecordAirWeakAttackHit();
+            movement.RestoreAirDodge();
+        }
+    }
+    mOnAttackHit(movement.GetPlayerNum());
+    combat.NotifyComboHit(movement.GetPlayerNum(), didHitEnemy);
+    // ガード破壊時は打ち上げ側の停止設定を使い、通常命中の設定を重ねない。
+    if (mRequestHitStop && !didFullyBreakGuard) {
+        mRequestHitStop(attack.hitStopSeconds);
+    }
+    mAudio.PlaySE(didBreakGuard ? "destroy_se" : attack.sound);
 }
 
 bool PlayerAttackResolver::ResolveAirSlamAttack(Player& player, const PlayerMovement& movement, PlayerCombat& combat,
@@ -205,7 +253,7 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(Player& player, const PlayerMove
 bool PlayerAttackResolver::ResolveAirSlamContact(Player& player, const PlayerMovement& movement,
                                                  const std::vector<Enemy*>& hitEnemies, float enemyDownwardSpeed,
                                                  float maximumDamage, float fullDamageHeight, float minimumDamageRatio,
-                                                 bool shouldAssignImpactFeedback) const
+                                                 float attackHeight, bool shouldAssignImpactFeedback) const
 {
     bool didHitEnemy = false;
     bool canAssignImpactFeedback = shouldAssignImpactFeedback;
@@ -216,7 +264,7 @@ bool PlayerAttackResolver::ResolveAirSlamContact(Player& player, const PlayerMov
 
         const bool didStartGravitySlam =
             enemy->StartGravitySlam(player, enemyDownwardSpeed, maximumDamage, fullDamageHeight, minimumDamageRatio,
-                                    player.GetStrongAttackRange(), canAssignImpactFeedback);
+                                    player.GetStrongAttackRange(), attackHeight, canAssignImpactFeedback);
         if (!didStartGravitySlam) {
             continue;
         }
@@ -279,6 +327,8 @@ void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge
             continue;
         }
 
+        // ガード破壊でLaunchedへ移る前に、命中した時点の準備状態を確定する。
+        const bool isChargedAttackCounter = enemy->TryConsumeChargedAttackCounter();
         if (enemy->GetOnGround()) {
             const EnemyGuardDamageResult guardDamageResult = enemy->BreakGuard(deltaTime);
             if (guardDamageResult.DidBreakSegment()) {
@@ -286,9 +336,8 @@ void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge
             }
         }
 
-        if (enemy->GetCanCountered()) {
+        if (isChargedAttackCounter) {
             ApplyDamageWithHitEffect(mParticles, *enemy, chargedAttackDamage * counterDamageMultiplier, player, 1.7f);
-            enemy->FlipCanCountered();
             jewelGauge.RestoreFull();
             mAudio.PlaySE("just_attack_se");
         } else {

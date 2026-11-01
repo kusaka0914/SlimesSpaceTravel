@@ -8,13 +8,17 @@ class Player;
 class PlayerCombat;
 class PhysicsSystem;
 
-// 同じ惑星面にいる敵への攻撃命中を幾何判定する。ダメージや状態変更は行わない。
+// 攻撃命中の対象を選ぶ。空中コンボは同じ惑星の空中敵全体、それ以外は同じ惑星面で幾何判定する。
 class PlayerAttackHitDetector {
 public:
     explicit PlayerAttackHitDetector(PhysicsSystem& physicsSystem);
 
-    // 戻り値は非所有参照の一覧。惑星未設定なら空。Strongは接地中の敵を対象外とする。
+    // 戻り値は非所有参照の一覧。惑星未設定なら空。空中コンボの空中敵には距離・角度制限を適用しない。
+    // Strongは接地中の敵を対象外とする。
     std::vector<Enemy*> FindHitEnemies(Player& player, const PlayerCombat& combat) const;
+
+    // 距離・向き・惑星の表裏を問わず、同じ惑星で生存中の空中敵を返す。惑星未設定なら空。
+    std::vector<Enemy*> FindAirborneEnemiesOnCurrentPlanet(const Player& player) const;
 
     // Playerの位置から敵モデルの境界までを判定する。rangeはワールド距離で、負値は0として扱う。
     std::vector<Enemy*> FindEnemiesInRadius(Player& player, float range) const;

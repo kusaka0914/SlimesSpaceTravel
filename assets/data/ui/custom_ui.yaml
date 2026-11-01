@@ -879,7 +879,7 @@ elements:
       - 0.2
       - 0.05625
     textScaleRatio: 0.00013
-    text: 回避
+    text: ダッシュ
     texture: ""
     usesInputDeviceVariants: false
     keyboardText: ""

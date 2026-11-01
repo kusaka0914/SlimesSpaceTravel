@@ -23,7 +23,7 @@ planets:
     stageNum: 1
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
-  - center: [47.9321, 11.178402, 0]
+  - center: [47.93188, 11.178402, -2.7939677e-09]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
@@ -348,9 +348,9 @@ enemies:
     height: 2.3555999
     currentPlanetNum: 1
     pos:
-      - -1.4210358
-      - -1.9052544
-      - 3.6499195
+      - -1.42
+      - -1.91
+      - 3.65
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -1121,7 +1121,7 @@ NPCs:
       mode: always
       variants:
         - talkIndex: 0
-          text: 遠い足場にはジャンプして回避！
+          text: 遠い足場にはジャンプしてダッシュ！
       rubies:
         - talkIndex: 0
           segments:

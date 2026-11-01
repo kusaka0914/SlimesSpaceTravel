@@ -176,6 +176,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/StageProgressSystem.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerConfigLoader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerComboSettings.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyConfigLoader.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyGuardGauge.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerControlConfigurationState.cpp

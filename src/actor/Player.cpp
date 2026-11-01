@@ -69,10 +69,11 @@ PlayerCombatDependencies CreateCombatDependencies(Game& game)
         .physics = *game.GetPhysicsSystem(),
         .audio = *game.GetAudioSystem(),
         .particles = game.GetParticleSystem(),
-        .readControlStyle = [&game]() { return game.GetPlayerControlStyle(); },
         .onAttackHit = [&game](int playerNum) { game.OnPlayerAttackHit(playerNum); },
         .vibrate = [&game](int playerNum, int low, int high,
                            int duration) { game.VibrateControllerForPlayer(playerNum, low, high, duration); },
+        .requestHitStop = [&game](float seconds) { game.RequestHitStop(seconds); },
+        .onComboFinisherHit = [&game]() { game.OnComboFinisherHit(); },
     };
 }
 } // namespace
@@ -102,6 +103,8 @@ void Player::SetCurrentPlanet(Planet* currentPlanet)
 void Player::ApplyConfig(const PlayerConfig& config)
 {
     mStatus.ConfigureHp(config.hp);
+    mCombat.ConfigureCombo(config.combo);
+    mGame->SetHitStopSettings(config.hitStop);
     SetScale(glm::vec3(config.scale));
 
     mCombat.SetAttackSpeed(config.attackSpeed);
@@ -451,6 +454,7 @@ void Player::UpdateWhileControlLocked(float deltaTime)
     mVelocity = glm::vec3(0.0f);
     ParticleSystem& particles = *mGame->GetParticleSystem();
     mParticleEffectController.UpdateSpecialCharging(*this, particles, false, deltaTime);
+    mParticleEffectController.UpdateAirSlamReadiness(*this, particles, false, deltaTime);
     mParticleEffectController.UpdateWalking(*this, particles, false);
     mAnimationController.RequestAnimation(idleAnimationId, false);
     mAnimationController.Update(deltaTime);
@@ -523,6 +527,11 @@ void Player::UpdatePresentation(PlayerActionState previousActionState, const Lan
     }
     const bool isSpecialChargeActive = mCombat.IsSpecialCharging() || mCombat.GetCanSpecialAttack();
     mParticleEffectController.UpdateSpecialCharging(*this, particles, isSpecialChargeActive, deltaTime);
+    const bool isAirSlamActive = currentActionState == PlayerActionState::AirSlamAttacking;
+    const bool canShowAirSlamReadiness = GetIsActive() && IsAlive() && !GetOnGround() && !isSpecialChargeActive &&
+                                         (!mCombat.GetIsStrongAttacked() || isAirSlamActive) &&
+                                         currentActionState != PlayerActionState::KnockedBack;
+    mParticleEffectController.UpdateAirSlamReadiness(*this, particles, canShowAirSlamReadiness, deltaTime);
     mParticleEffectController.UpdateWalking(*this, particles, shouldWalk);
 
     mAnimationController.RequestAnimation(shouldWalk ? walkAnimationId : idleAnimationId, false);
@@ -543,6 +552,10 @@ void Player::RequestEnteredActionAnimation(PlayerActionState previousState, Play
         return;
 
     case PlayerActionState::Attacking:
+        if (mCombat.IsComboAttack()) {
+            RequestComboAttackAnimation();
+            return;
+        }
         if (mCombat.GetAttackKind() == PlayerAttackKind::Wide) {
             RequestNextWeakAttackAnimation();
             return;
@@ -585,6 +598,8 @@ void Player::InheritSplitActionState(const Player& source)
     mMovement.ResetForPlacementInheritance(source.mMovement);
     mCombat.ResetForPlacementInheritance(source.mCombat, !source.GetOnGround());
     mStatus.InheritPlacementState(source.mStatus);
+    mLastAirSlamGroundPosition = source.mLastAirSlamGroundPosition;
+    mHasAirSlamGroundPosition = source.mHasAirSlamGroundPosition;
     mJewelGauge = source.mJewelGauge;
     mStateMachine.ResetForPlacementInheritance(source.mStateMachine);
     mPlanetGravityController = source.mPlanetGravityController;
@@ -599,7 +614,7 @@ void Player::InheritCombatRestrictions(const Player& source)
         return;
     }
     const bool sharesAirborneBudget = !GetOnGround() && !source.GetOnGround();
-    mCombat.InheritControlRestrictions(source.mCombat, sharesAirborneBudget);
+    mCombat.InheritControlRestrictions(source.mCombat);
     const float dodgeCooldown = std::max(mMovement.GetDodgeCooldown(), source.mMovement.GetDodgeCooldown());
     if (sharesAirborneBudget) {
         mMovement.InheritDodgeAvailability(source.mMovement);
@@ -621,7 +636,7 @@ void Player::FinishSplitPlacementFrom(const Player& source)
     InheritSplitActionState(source);
     RefreshFallbackUpVec();
 
-    // 演出開始時の接地フラグを信用せず、現在の床でだけジャンプ・回避を回復させる。
+    // 演出開始時の接地フラグを信用せず、現在の床でだけジャンプ・ダッシュを回復させる。
     if (source.GetOnGround()) {
         TryLandOnSupportingSurface();
         if (!GetOnGround()) {
@@ -631,16 +646,46 @@ void Player::FinishSplitPlacementFrom(const Player& source)
     SetControlLocked(false);
 }
 
+float Player::CalculateAirSlamHeight() const
+{
+    if (GetOnGround() || IsAttachedToPlatform()) {
+        return 0.0f;
+    }
+    const Planet* planet = GetCurrentPlanet();
+    if (planet && planet->GetPlanetShape() != Planet::PlanetShape::Normal) {
+        return std::max(0.0f, planet->CalculateEllipseSurfaceProjection(GetPos()).distance);
+    }
+    const float upLengthSquared = glm::dot(GetUpVec(), GetUpVec());
+    if (!mHasAirSlamGroundPosition || upLengthSquared <= 0.000001f) {
+        return 0.0f;
+    }
+    const glm::vec3 upDirection = GetUpVec() / std::sqrt(upLengthSquared);
+    return std::max(0.0f, glm::dot(GetPos() - mLastAirSlamGroundPosition, upDirection));
+}
+
 float Player::CalculateOutgoingAttackDamage(float baseDamage) const
 {
     return baseDamage;
 }
 
-void Player::RequestNextWeakAttackAnimation()
+void Player::RequestComboAttackAnimation()
+{
+    const auto& attack = mCombat.GetCurrentComboAttackSettings();
+    const std::string animationId = NormalizePlayerAnimationId(attack.animation);
+    if (!mCombat.IsComboFinisher() && (animationId == NormalizePlayerAnimationId(attackAnimationId) ||
+                                       animationId == NormalizePlayerAnimationId(secondAttackAnimationId))) {
+        // 段数ではなく振った回数で交互にし、2段目の追加ヒットも同じ順番へ含める。
+        RequestNextWeakAttackAnimation(attack.animationSpeed);
+        return;
+    }
+    mAnimationController.RequestAnimation(attack.animation, true, attack.animationSpeed);
+}
+
+void Player::RequestNextWeakAttackAnimation(float playbackRate)
 {
     const std::string_view weakAttackAnimationId =
         mUseSecondAttackAnimationNext ? secondAttackAnimationId : attackAnimationId;
-    mAnimationController.RequestAnimation(weakAttackAnimationId);
+    mAnimationController.RequestAnimation(weakAttackAnimationId, true, playbackRate);
     mUseSecondAttackAnimationNext = !mUseSecondAttackAnimationNext;
 }
 
@@ -861,6 +906,8 @@ const std::vector<glm::mat4>* Player::GetSkinningMatrices() const
 
 void Player::OnLanded()
 {
+    mLastAirSlamGroundPosition = GetPos();
+    mHasAirSlamGroundPosition = true;
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();
     mMovement.CancelJumpApexHover();

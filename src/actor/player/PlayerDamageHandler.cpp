@@ -76,7 +76,8 @@ void PlayerDamageHandler::Apply(Player& player, PlayerInput& input, PlayerMoveme
         return;
     }
 
-    const bool canPerformJustDodgeCounter = stateMachine.IsDodging() && enemy->GetCanCountered();
+    const bool canPerformJustDodgeCounter =
+        (stateMachine.IsDodging() || status.IsDodgeCounterGraceActive()) && enemy->GetCanCountered();
     if (canPerformJustDodgeCounter) {
         player.GetGame()->OnPlayerCounter(movement.GetPlayerNum());
 

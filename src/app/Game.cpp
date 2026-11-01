@@ -1480,6 +1480,9 @@ void Game::OnEnemyDefeated(const Enemy& enemy)
     });
     if (!hasLivingEnemy) {
         mEnemyDefeatSlowMotionRemainingSeconds = enemyDefeatSlowMotionDurationSeconds;
+        if (mAudioSystem) {
+            mAudioSystem->PlaySE("all_kill");
+        }
     }
 }
 
@@ -1613,16 +1616,25 @@ void Game::OnPlayerAttackHit(int playerNum)
     VibrateControllerForPlayer(playerNum, 0, 10000, 200);
 }
 
+void Game::OnComboFinisherHit()
+{
+    if (mSceneSystem) {
+        mSceneSystem->OnStrongAttacked();
+    }
+}
+
 void Game::OnStrongAttacked(int playerNum)
 {
     mSceneSystem->OnStrongAttacked();
-    mHitStopTimer = 0.4f;
+    RequestHitStop(mHitStopSettings.airStrongAttackSeconds);
     VibrateControllerForPlayer(playerNum, 40000, 0, 500);
 }
 
 void Game::OnAirSlamAttackHit(int playerNum)
 {
-    OnStrongAttacked(playerNum);
+    mSceneSystem->OnStrongAttacked();
+    RequestHitStop(mHitStopSettings.airSlamSeconds);
+    VibrateControllerForPlayer(playerNum, 40000, 0, 500);
     if (mCameraSystem) {
         mCameraSystem->StartAirStrongAttackHitShake(playerNum);
     }
@@ -1630,7 +1642,7 @@ void Game::OnAirSlamAttackHit(int playerNum)
 
 void Game::OnPlayerCounter(int playerNum)
 {
-    mHitStopTimer = 0.3f;
+    RequestHitStop(mHitStopSettings.counterSeconds);
     VibrateControllerForPlayer(playerNum, 25000, 0, 500);
 }
 

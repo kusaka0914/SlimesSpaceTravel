@@ -12,6 +12,7 @@ void EnemyDamageHandler::ApplyDamage(Enemy& enemy, EnemyStatus& status, EnemySta
                                      EnemyMovement& movement, float damage, Player* player)
 {
     (void)player;
+    (void)movement;
 
     if (!stateMachine.IsAlive(enemy)) {
         return;
@@ -30,7 +31,7 @@ void EnemyDamageHandler::ApplyDamage(Enemy& enemy, EnemyStatus& status, EnemySta
         enemy.StartNormalHitReaction();
     }
 
-    if (status.GetIsStrongAttacked()) {
+    if (status.GetIsStrongAttacked() && (!status.GetIsBoss() || enemy.IsLaunched())) {
         // 強攻撃では通常被弾用の接線方向への補正を行わず、3Dの押し戻し方向を維持する。
         constexpr float knockBackTimer = 1.0f;
         stateMachine.StartKnockedBack(enemy, status, knockBackTimer);
@@ -41,16 +42,12 @@ void EnemyDamageHandler::ApplyDamage(Enemy& enemy, EnemyStatus& status, EnemySta
     }
 
     if (status.GetIsBoss()) {
+        status.ClearStrongAttacked();
         return;
     }
 
-    const bool canRestartNormalHitKnockBack =
-        enemy.IsOnGround() || stateMachine.GetActionState() == EnemyStateMachine::ActionState::KnockedBack;
-    if (status.IsNormalHitKnockBackEnabled() && canRestartNormalHitKnockBack) {
-        constexpr float knockBackTimer = 0.04f;
-        stateMachine.StartKnockedBack(enemy, status, knockBackTimer);
-        movement.StartNormalHitKnockBack(enemy, status);
-    }
+    // 通常被弾の見た目だけを更新し、準備中・発動中の行動と予兆タイマーは継続する。
+    status.ClearStrongAttacked();
 }
 
 void EnemyDamageHandler::ApplyCounter(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine,

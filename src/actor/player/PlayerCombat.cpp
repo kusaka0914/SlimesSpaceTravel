@@ -14,18 +14,15 @@
 #include <cmath>
 #include <glm/glm.hpp>
 #include <stdexcept>
-
-namespace {
-constexpr float attackDodgeCancelDelaySeconds = 0.5f;
-}
+#include <utility>
 
 PlayerCombat::PlayerCombat(const PlayerCombatDependencies& dependencies)
     : mDependencies(dependencies),
       mHitDetector(dependencies.physics),
-      mAttackResolver(dependencies.audio, dependencies.particles, dependencies.onAttackHit)
+      mAttackResolver(dependencies.audio, dependencies.particles, dependencies.onAttackHit, dependencies.requestHitStop)
 {
-    if (!mDependencies.readControlStyle || !mDependencies.onAttackHit || !mDependencies.vibrate) {
-        throw std::invalid_argument("PlayerCombat requires control state and feedback callbacks");
+    if (!mDependencies.onAttackHit || !mDependencies.vibrate) {
+        throw std::invalid_argument("PlayerCombat requires feedback callbacks");
     }
 }
 
@@ -41,64 +38,69 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
     (void)status;
     (void)deltaTime;
 
-    // 回避キャンセルで解除した空中弱攻撃の移動ロックは、次の攻撃開始時に
-    // だけ通常どおり有効へ戻す。
+    ResetComboOnGroundStateChange(player.GetOnGround());
+    if (attackInput == PlayerAttackInputKind::None ||
+        (attackInput == PlayerAttackInputKind::Normal && !CanStartComboFinisher())) {
+        return;
+    }
+
     mAirAttackMovementUnlockedByDodge = false;
-
-    if (!player.GetOnGround() && attackInput == PlayerAttackInputKind::Wide) {
-        if (!CanStartAirAttack()) {
-            return;
-        }
-
-        // 直前の空中弱だけを条件にするため、新しい空中弱を開始した時点で
-        // 前回の命中結果を破棄する。この攻撃が当たれば判定時に再設定される。
+    mIsComboFinisher = false;
+    mIsAirAttacking = !player.GetOnGround();
+    mComboStartedInAir = mIsAirAttacking;
+    if (mIsAirAttacking) {
         mHasAirWeakHitForNextDodge = false;
         player.RestartAirborneGravityFallbackDelay();
-        ResetGroundAttackCombo();
-        ++mAirAttackCount;
-        mAttackKind = PlayerAttackKind::Wide;
-        mAttackRange = mWideAttackRange;
-        mAttackAngle = mWideAttackAngle;
-        mAttackCooldownRemaining = mAirWeakAttackCooldownSeconds;
-        mAttack = mWideAttack;
-        mIsAirAttacking = true;
         movement.CancelJumpApexHover();
         movement.CancelAirborneActionHover();
         movement.StopAirborneVerticalMovement(player);
-        mAttackDodgeLockRemaining = attackDodgeCancelDelaySeconds;
-
-        StartAttackHitDelay();
-        return;
     }
 
-    if (!player.GetOnGround()) {
-        return;
+    mIsComboAttack = true;
+    const int currentComboStage = std::clamp(mAttackComboIndex, 0, 4);
+    mCurrentComboStageIndex = currentComboStage;
+    mIsComboFinisher = attackInput == PlayerAttackInputKind::Normal || (!mIsAirAttacking && currentComboStage == 4);
+    // 空中5段目は4段目の弱攻撃設定を共用し、自動で強攻撃へ派生させない。
+    const int weakAttackStage = std::min(currentComboStage, 3);
+    mCurrentComboAttack = mIsComboFinisher ? mComboSettings.stages.back()
+                                           : mComboSettings.stages[static_cast<std::size_t>(weakAttackStage)];
+    if (mIsAirAttacking && !mIsComboFinisher && currentComboStage == 4) {
+        mCurrentComboAttack.cooldownSeconds = mComboSettings.stages.back().cooldownSeconds;
     }
+    mAttackComboIndex = mIsComboFinisher || currentComboStage == 4 ? 0 : currentComboStage + 1;
+    mComboHitsRemaining = mCurrentComboAttack.hitCount;
+    mAttackKind = mIsComboFinisher ? PlayerAttackKind::Normal : PlayerAttackKind::Wide;
+    mAttackRange = mIsComboFinisher ? mNormalAttackRange : mWideAttackRange;
+    mAttackAngle = mIsComboFinisher ? mNormalAttackAngle : mWideAttackAngle;
+    mAttack = (mIsComboFinisher ? mNormalAttack : mWideAttack) * mCurrentComboAttack.damageMultiplier;
+    mAttackCooldownRemaining = 0.0f;
+    mAttackDodgeLockRemaining = mCurrentComboAttack.dodgeCancelSeconds;
+    mAttackMotionTimer = -1.0f;
+    mAttackHitDelayRemaining = mCurrentComboAttack.hitDelaySeconds;
+    mHasPendingAttackHit = true;
+    mComboKeepTimer = mCurrentComboAttack.hitDelaySeconds +
+                      (mCurrentComboAttack.hitCount - 1) * mCurrentComboAttack.hitIntervalSeconds +
+                      mCurrentComboAttack.motionSeconds + mComboSettings.continuationWindowSeconds;
+}
 
-    const bool shouldFinishAssistCombo = (mDependencies.readControlStyle() == PlayerControlStyle::Assist) &&
-                                         attackInput == PlayerAttackInputKind::Wide && mAttackComboIndex == 2;
-
-    if (attackInput == PlayerAttackInputKind::Normal || shouldFinishAssistCombo) {
-        mAttackKind = PlayerAttackKind::Normal;
-        mAttackRange = mNormalAttackRange;
-        mAttackAngle = mNormalAttackAngle;
-        mAttackCooldownRemaining = mLastAttackCooldown;
-        mAttack = mNormalAttack;
-    } else if (attackInput == PlayerAttackInputKind::Wide) {
-        mAttackKind = PlayerAttackKind::Wide;
-        mAttackRange = mWideAttackRange;
-        mAttackAngle = mWideAttackAngle;
-        mAttackCooldownRemaining = mGroundWeakAttackCooldownSeconds;
-        mAttack = mWideAttack;
+void PlayerCombat::NotifyComboHit(int playerNumber, bool didHitEnemy) const
+{
+    if (didHitEnemy && mIsComboFinisher && mDependencies.onComboFinisherHit) {
+        mDependencies.onComboFinisherHit();
     }
+    mDependencies.vibrate(playerNumber, mIsComboFinisher ? 16000 : 0, mIsComboFinisher ? 30000 : 10000,
+                          mIsComboFinisher ? 180 : 60);
+}
 
-    const bool isGroundWeakAttack = attackInput == PlayerAttackInputKind::Wide && !shouldFinishAssistCombo;
-    mAttackDodgeLockRemaining = isGroundWeakAttack ? 0.0f : attackDodgeCancelDelaySeconds;
-    StartAttackHitDelay();
+void PlayerCombat::ConfigureCombo(PlayerComboSettings settings)
+{
+    settings.Sanitize();
+    mComboSettings = std::move(settings);
 }
 
 void PlayerCombat::ConfigureStrongAttack()
 {
+    mIsComboAttack = false;
     mAttackKind = PlayerAttackKind::Strong;
     mAttackRange = mStrongAttackRange;
     mAttackAngle = mNormalAttackAngle;
@@ -106,8 +108,12 @@ void PlayerCombat::ConfigureStrongAttack()
     mAttack = mStrongAttack;
 }
 
-void PlayerCombat::StartAirSlamAttack()
+void PlayerCombat::StartAirSlamAttack(const Player& player)
 {
+    mAirSlamStartHeight = player.CalculateAirSlamHeight();
+    // 通常コンボからの派生でも、残った命中予約や硬直を叩きつけへ持ち越さない。
+    CancelCurrentAttack();
+    ResetAttackCombo();
     mHasAirWeakHitForNextDodge = false;
     mDidAirSlamContactEnemy = false;
     mAirSlamHitEnemies.clear();
@@ -121,10 +127,10 @@ void PlayerCombat::StartAirSlamAttack()
 
 bool PlayerCombat::UpdateAirSlamContact(Player& player, const PlayerMovement& movement)
 {
-    const std::vector<Enemy*> touchingEnemies = mHitDetector.FindEnemiesInRadius(player, mStrongAttackRange);
+    const std::vector<Enemy*> airborneEnemies = mHitDetector.FindAirborneEnemiesOnCurrentPlanet(player);
 
     std::vector<Enemy*> newlyHitEnemies;
-    for (Enemy* enemy : touchingEnemies) {
+    for (Enemy* enemy : airborneEnemies) {
         if (!enemy || enemy->IsOnGround() ||
             std::find(mAirSlamHitEnemies.begin(), mAirSlamHitEnemies.end(), enemy) != mAirSlamHitEnemies.end()) {
             continue;
@@ -136,7 +142,7 @@ bool PlayerCombat::UpdateAirSlamContact(Player& player, const PlayerMovement& mo
 
     const bool didStartGravitySlam = mAttackResolver.ResolveAirSlamContact(
         player, movement, newlyHitEnemies, mAirSlamEnemyDownwardSpeed, mStrongAttack, mAirSlamFullDamageHeight,
-        mAirSlamMinimumDamageRatio, !mDidAirSlamContactEnemy);
+        mAirSlamMinimumDamageRatio, mAirSlamStartHeight, !mDidAirSlamContactEnemy);
     mDidAirSlamContactEnemy |= didStartGravitySlam;
     return didStartGravitySlam;
 }
@@ -210,8 +216,23 @@ bool PlayerCombat::UpdatePendingAttackHit(Player& player, PlayerMovement& moveme
         return false;
     }
 
+    if (mIsComboAttack) {
+        if (mComboHitsRemaining < mCurrentComboAttack.hitCount) {
+            // 追加ヒットにも独立した振りを付け、1入力の2連撃を見た目でも区別する。
+            player.RequestComboAttackAnimation();
+        }
+        Attack(player, movement, status, deltaTime);
+        --mComboHitsRemaining;
+        if (mComboHitsRemaining > 0) {
+            // 同じ入力の2ヒット目を予約し、コンボ段数と攻撃後の硬直は最後のヒットでだけ進める。
+            mAttackHitDelayRemaining += mCurrentComboAttack.hitIntervalSeconds;
+        } else {
+            ClearPendingAttackHit();
+            StartAfterAttackReaction(player, movement, status);
+        }
+        return true;
+    }
     ClearPendingAttackHit();
-
     Attack(player, movement, status, deltaTime);
     return true;
 }
@@ -235,6 +256,7 @@ void PlayerCombat::Attack(Player& player, PlayerMovement& movement, PlayerStatus
 
 void PlayerCombat::WideAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime)
 {
+    mIsComboAttack = false;
     mAttackKind = PlayerAttackKind::Wide;
     mAttack = mWideAttack;
     mAttackRange = mWideAttackRange;
@@ -245,6 +267,7 @@ void PlayerCombat::WideAttack(Player& player, PlayerMovement& movement, PlayerSt
 
 void PlayerCombat::StrongAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime)
 {
+    mIsComboAttack = false;
     mAttackKind = PlayerAttackKind::Strong;
     mAttack = mStrongAttack;
     mAttackRange = mStrongAttackRange;
@@ -256,13 +279,18 @@ void PlayerCombat::StrongAttack(Player& player, PlayerMovement& movement, Player
 void PlayerCombat::SpecialAttack(Player& player, const PlayerMovement& movement, PlayerJewelGauge& jewelGauge,
                                  float deltaTime)
 {
+    if (mSpecialAttackJewelsConsumed < 1) {
+        return;
+    }
+    const float damageMultiplier = mSpecialAttackJewelsConsumed >= 2 ? 1.0f : 0.5f;
+    mAttack = mChargedAttackDamage * damageMultiplier;
     mAttackKind = PlayerAttackKind::Charged;
     mAttackRange = mChargedAttackRange;
     mAttackAngle = mChargedAttackAngle;
     ++mResolvedAttackSequence;
 
     const std::vector<Enemy*> enemies = mHitDetector.FindHitEnemies(player, *this);
-    mAttackResolver.ResolveSpecialAttack(player, jewelGauge, enemies, mChargedAttackDamage, deltaTime);
+    mAttackResolver.ResolveSpecialAttack(player, jewelGauge, enemies, mAttack, deltaTime);
 
     mDependencies.vibrate(movement.GetPlayerNum(), 0, 40000, 1000);
 
@@ -302,10 +330,26 @@ void PlayerCombat::AdvanceContinuousAttackDuration(float deltaTime)
 
 void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status)
 {
+    if (mIsComboAttack) {
+        mAttackMoveLockRemaining = mCurrentComboAttack.moveLockSeconds;
+        mAttackMotionTimer = mCurrentComboAttack.motionSeconds;
+        mAttackCooldownRemaining = mCurrentComboAttack.cooldownSeconds;
+        if (mIsAirAttacking) {
+            // クールタイム終了後も入力の猶予を残し、次の空中攻撃へつなげられるようにする。
+            mAirComboHoverRemainingSeconds =
+                mCurrentComboAttack.cooldownSeconds + mComboSettings.airAttackHoverExtraSeconds;
+        }
+        mComboKeepTimer = mCurrentComboAttack.motionSeconds + mCurrentComboAttack.cooldownSeconds +
+                          mComboSettings.continuationWindowSeconds;
+        if (mIsComboFinisher || mAttackComboIndex == 0) {
+            ResetAttackCombo();
+        }
+        return;
+    }
     mAttackMoveLockRemaining = 0.6f;
 
     if (!player.GetOnGround()) {
-        ResetGroundAttackCombo();
+        ResetAttackCombo();
         return;
     }
 
@@ -313,27 +357,11 @@ void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement
 
     mAttackMotionTimer = mDefaultAttackMotionTimer;
 
-    mAttackComboIndex++;
-
     if (mAttackKind == PlayerAttackKind::Normal) {
-        if (mAttackComboIndex != 3) {
-            ResetGroundAttackCombo();
-        }
+        ResetAttackCombo();
         StartGroundFinisherCooldown();
-        return;
-    }
-
-    if (mAttackKind == PlayerAttackKind::Strong) {
+    } else if (mAttackKind == PlayerAttackKind::Strong) {
         StartTiredLock(status, movement, 2.5f);
-        return;
-    }
-
-    if (mAttackComboIndex != 3) {
-        return;
-    }
-
-    if (mAttackKind == PlayerAttackKind::Wide && player.GetOnGround()) {
-        StartGroundFinisherCooldown();
     }
 }
 
@@ -345,7 +373,10 @@ void PlayerCombat::StartGroundFinisherCooldown()
 
 void PlayerCombat::StartSpecialAttackCharging()
 {
+    mIsComboAttack = false;
+    ResetAttackCombo();
     mSpecialAttackJewelsConsumed = 0;
+    mCanSpecialAttack = false;
     mAttackKind = PlayerAttackKind::Charged;
     mAttackRange = mChargedAttackRange;
     mAttackAngle = mChargedAttackAngle;
@@ -370,12 +401,17 @@ void PlayerCombat::CancelSpecialAttackAndRefund(PlayerJewelGauge& jewelGauge)
 
 void PlayerCombat::StartContinuousAttacking()
 {
+    mIsComboAttack = false;
+    ResetAttackCombo();
     mContinuousAttackingTimer = std::max(0.0f, mContinuousAttackDurationSeconds);
     mContinuousAttackingCooldown = 0.0f;
 }
 
 void PlayerCombat::EndContinuousAttacking()
 {
+    if (mContinuousAttackingTimer >= 0.0f) {
+        ResetAttackCombo();
+    }
     mContinuousAttackingTimer = -1.0f;
     mContinuousAttackingCooldown = -1.0f;
 }
@@ -420,6 +456,9 @@ void PlayerCombat::CancelSpecialAttack()
 
 void PlayerCombat::CancelCurrentAttack()
 {
+    mAirComboHoverRemainingSeconds = 0.0f;
+    mIsComboAttack = false;
+    mComboHitsRemaining = 0;
     ClearPendingAttackHit();
     mAttackMotionTimer = -1.0f;
     mAttackMoveLockRemaining = 0.0f;
@@ -435,19 +474,19 @@ void PlayerCombat::CancelAirAttackForDodge()
 
 void PlayerCombat::OnLanded()
 {
+    ResetComboOnGroundStateChange(true);
+    mAirComboHoverRemainingSeconds = 0.0f;
     mIsStrongAttacked = false;
     mIsAssistStrongAttack = false;
     mIsCharged = false;
     mIsAirAttacking = false;
     mAirAttackMovementUnlockedByDodge = false;
-    mAirAttackCount = 0;
     mHasAirWeakHitForNextDodge = false;
     EndAirDodgeAttack();
 }
 
 void PlayerCombat::PrepareAssistAirCombo()
 {
-    mAirAttackCount = 0;
     mHasAirWeakHitForNextDodge = false;
     mIsAirAttacking = false;
 }
@@ -486,16 +525,17 @@ void PlayerCombat::UpdateAirDodgeAttack(Player& player, PlayerMovement& movement
         mAirDodgeEnemyPushDampingPerSecond, mIsEnhancedAirDodgeAttackActive ? mAirComboDodgeEnemyLiftHeight : 0.0f,
         deltaTime);
     if (didHitEnemy) {
-        mAirAttackCount = 0;
-
-        // 空中回避攻撃を当てた場合だけ、次の空中回避を許可する。
-        // 外した場合は現在の回避を最後にして、着地まで再使用できない。
+        // 空中ダッシュ攻撃を当てた場合だけ、次の空中ダッシュを許可する。
+        // 外した場合は現在のダッシュを最後にして、着地まで再使用できない。
         movement.RestoreAirDodge();
     }
 }
 
 float PlayerCombat::CalculateCurrentGuardDamage(bool isPlayerGrounded) const
 {
+    if (mIsComboAttack) {
+        return mCurrentComboAttack.guardDamage;
+    }
     if (IsContinuousAttacking()) {
         return mContinuousAttackGuardDamage;
     }
@@ -513,27 +553,19 @@ float PlayerCombat::CalculateCurrentGuardDamage(bool isPlayerGrounded) const
         return mGroundWideGuardDamage;
     }
 
-    if (mAttackComboIndex == 1) {
-        return mGroundCombo1GuardDamage;
-    }
-    if (mAttackComboIndex == 2) {
-        return mGroundCombo2GuardDamage;
-    }
-    if (mAttackComboIndex >= 3) {
-        return mGroundCombo3GuardDamage;
-    }
     return mGroundWideGuardDamage;
 }
 
 bool PlayerCombat::ShouldEnsureCurrentGuardSegmentBreak(bool isPlayerGrounded) const
 {
+    if (mIsComboAttack) {
+        return false;
+    }
     if (!isPlayerGrounded || IsContinuousAttacking()) {
         return false;
     }
 
-    const bool isThirdGroundAttack =
-        mAttackComboIndex >= 3 && (mAttackKind == PlayerAttackKind::Normal || mAttackKind == PlayerAttackKind::Wide);
-    return isThirdGroundAttack;
+    return mAttackKind == PlayerAttackKind::Normal;
 }
 
 void PlayerCombat::EndAirDodgeAttack()
@@ -553,27 +585,44 @@ void PlayerCombat::StartAirWeakAttackCooldown()
     mAttackCooldownRemaining = std::max(mAttackCooldownRemaining, mAirWeakAttackCooldownSeconds);
 }
 
-void PlayerCombat::InheritControlRestrictions(const PlayerCombat& source, bool sharesAirborneAttackBudget)
+void PlayerCombat::ResetComboOnGroundStateChange(bool isOnGround)
 {
+    const bool isAirborne = !isOnGround;
+    if (mComboStartedInAir != isAirborne) {
+        ResetAttackCombo();
+    }
+}
+
+void PlayerCombat::InheritControlRestrictions(const PlayerCombat& source)
+{
+    mAttackComboIndex = source.mAttackComboIndex;
+    mComboStartedInAir = source.mComboStartedInAir;
+    mComboKeepTimer = source.mComboKeepTimer;
+    mAirComboHoverRemainingSeconds = source.mAirComboHoverRemainingSeconds;
     const float weakAttackCooldown =
         source.mIsAirAttacking ? source.mAirWeakAttackCooldownSeconds : source.mGroundWeakAttackCooldownSeconds;
-    float remainingAttack =
-        source.mAttackMotionTimer >= 0.0f ? source.mAttackMotionTimer + std::max(0.0f, weakAttackCooldown) : 0.0f;
-    if (source.mHasPendingAttackHit) {
+    float remainingAttack = std::max(0.0f, source.mAttackMotionTimer);
+    if (!source.mIsComboAttack && source.mAttackMotionTimer >= 0.0f) {
+        remainingAttack += std::max(0.0f, weakAttackCooldown);
+    }
+    if (source.mHasPendingAttackHit && !source.mIsComboAttack) {
         // 命中後に始まるモーションと待ち時間も含め、別の体で次の攻撃だけを先に始めないようにする。
         remainingAttack = std::max(remainingAttack, std::max(0.0f, source.mAttackHitDelayRemaining) +
                                                         std::max(0.0f, source.mDefaultAttackMotionTimer) +
                                                         std::max(0.0f, weakAttackCooldown));
+    }
+    if (source.mIsComboAttack && source.mHasPendingAttackHit) {
+        remainingAttack = std::max(
+            remainingAttack,
+            std::max(0.0f, source.mAttackHitDelayRemaining) +
+                std::max(0, source.mComboHitsRemaining - 1) * source.mCurrentComboAttack.hitIntervalSeconds +
+                std::max(source.mCurrentComboAttack.motionSeconds, source.mCurrentComboAttack.cooldownSeconds));
     }
     mControlTransferRecoveryRemaining =
         std::max({mControlTransferRecoveryRemaining, source.GetAttackCooldownRemaining(), remainingAttack,
                   source.mStrongAttackTimer, source.mContinuousAttackingTimer});
     mAttackMoveLockRemaining = std::max(mAttackMoveLockRemaining, source.mAttackMoveLockRemaining);
     mAttackDodgeLockRemaining = std::max(mAttackDodgeLockRemaining, source.mAttackDodgeLockRemaining);
-    if (sharesAirborneAttackBudget) {
-        // 命中で回復した使用枠も操作元を正とし、切替先の古い使用数で上書きしない。
-        mAirAttackCount = source.mAirAttackCount;
-    }
 }
 
 void PlayerCombat::ResetForPlacementInheritance(const PlayerCombat& source, bool isAirborne)
@@ -584,15 +633,17 @@ void PlayerCombat::ResetForPlacementInheritance(const PlayerCombat& source, bool
     CancelCurrentAttack();
     CancelSpecialAttack();
     OnLanded();
-    ResetGroundAttackCombo();
+    ResetAttackCombo();
     mStrongAttackTimer = -1.0f;
     mAttackCooldownRemaining = 0.0f;
     mControlTransferRecoveryRemaining = 0.0f;
-    InheritControlRestrictions(source, isAirborne);
+    (void)isAirborne;
+    InheritControlRestrictions(source);
 }
 
 void PlayerCombat::UpdateAttackCooldown(float deltaTime)
 {
+    mAirComboHoverRemainingSeconds = std::max(0.0f, mAirComboHoverRemainingSeconds - std::max(0.0f, deltaTime));
     mControlTransferRecoveryRemaining = std::max(0.0f, mControlTransferRecoveryRemaining - std::max(0.0f, deltaTime));
     if (mAttackCooldownRemaining >= 0.0f) {
         mAttackCooldownRemaining -= deltaTime;
@@ -623,7 +674,7 @@ void PlayerCombat::UpdateComboKeepTimer(float deltaTime)
         return;
     }
 
-    ResetGroundAttackCombo();
+    ResetAttackCombo();
 }
 
 bool PlayerCombat::CanAcceptMovementInput() const

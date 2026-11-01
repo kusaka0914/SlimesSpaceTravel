@@ -31,6 +31,9 @@ public:
     // 設定値を反映し、HPとガード値も初期化する。
     void ApplyConfig(const EnemyConfig& config);
 
+    // 復帰前の点滅期間中か。点滅の明暗にかかわらずtrueを返す。
+    bool IsRecoveryWarningActive() const;
+
     // 描画と被弾リアクション
     bool ShouldRenderSolidWhite() const override;
     glm::quat GetRenderModelRotationOffset() const override;
@@ -41,6 +44,9 @@ public:
     // 攻撃・被ダメージ・ガード
     // HPへのダメージに加え、攻撃元に応じてソロ分裂時の追跡対象を更新する。
     void ApplyDamage(float damage, Player* player);
+
+    // 通常敵へ強攻撃の中断・接線方向の押し戻しを適用する。発動済みの攻撃と打ち上げ状態は維持する。
+    void ReactToComboFinisher(const Player& player, float pushSpeed, float durationSeconds);
     EnemyGuardDamageResult ApplyGuardDamage(float guardDamage, float deltaTime);
 
     // 生存中の敵に対し、現在のガード区画を破壊できるダメージを適用する。死亡中は空の結果を返す。
@@ -64,6 +70,9 @@ public:
     void SetAttackSpeed(float attackSpeed) { mStatus.SetAttackSpeed(attackSpeed); }
     void FlipCanCountered() { mStatus.FlipCanCountered(); }
     bool GetCanCountered() const { return mStatus.GetCanCountered(); }
+
+    // 溜め攻撃用。攻撃開始前0.3秒の受付を一度だけ消費する。ダッシュ用の受付とは独立している。
+    bool TryConsumeChargedAttackCounter();
     float GetCurrentGuard() const { return mStatus.GetCurrentGuard(); }
     float GetMaxGuard() const { return mStatus.GetMaxGuard(); }
     float GetGuardValuePerSegment() const { return mStatus.GetGuardValuePerSegment(); }
@@ -80,10 +89,14 @@ public:
     void ApplyAirDodgePush(const glm::vec3& dodgeDirection, float pushSpeed, float pushDampingPerSecond);
     void ApplyAirComboLift(float liftHeight);
 
+    // ガード全破壊で打ち上げ中の場合だけ、頂点待機を通常の最大時間まで延長する。叩き落としは妨げない。
+    bool ExtendLaunchApexWait(float seconds);
+
     // 生存中かつ空中の場合のみ開始を試み、開始できなければfalseを返す。
-    // 開始高度がfullDamageHeight以上ならmaximumDamage、0ならそのminimumDamageRatio倍になる。
+    // attackHeightは発動時のプレイヤー高度。fullDamageHeight以上なら最大威力、0なら最低倍率になる。
     bool StartGravitySlam(Player& player, float downwardSpeed, float maximumDamage, float fullDamageHeight,
-                          float minimumDamageRatio, float groundImpactRadius, bool shouldPlayImpactFeedback);
+                          float minimumDamageRatio, float groundImpactRadius, float attackHeight,
+                          bool shouldPlayImpactFeedback);
     void SetIsNormalHitKnockBackEnabled(bool isEnabled) { mStatus.SetIsNormalHitKnockBackEnabled(isEnabled); }
     void SetDefaultLaunchedTimer(float defaultLaunchedTimer) { mStatus.SetDefaultLaunchedTimer(defaultLaunchedTimer); }
     void SetLaunchHeight(float launchHeight) { mStatus.SetLaunchHeight(launchHeight); }

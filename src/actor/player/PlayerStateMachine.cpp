@@ -50,6 +50,9 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
                                      PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
                                      float deltaTime)
 {
+    const auto& combo = combat.GetComboSettings();
+    input.SetAttackBufferDuration(player.GetGame()->IsAssistControlStyle() ? combo.assistInputBufferSeconds
+                                                                           : combo.inputBufferSeconds);
     input.UpdateCombatInput(deltaTime, player.GetGame()->IsAssistControlStyle(),
                             combat.IsSpecialCharging() || combat.GetCanSpecialAttack());
     const bool allowsAirDodgeBuffering = mActionState == PlayerActionState::Idle ||
@@ -85,7 +88,7 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
         UpdateIdle(player, input, movement, combat, jewelGauge, status, deltaTime);
         break;
     case PlayerActionState::Dodging:
-        UpdateDodging(player, input, movement, grounding, combat, deltaTime);
+        UpdateDodging(player, input, movement, grounding, combat, status, deltaTime);
         break;
     case PlayerActionState::Attacking:
         UpdateAttacking(player, input, movement, combat, status, deltaTime);
@@ -124,6 +127,7 @@ void PlayerStateMachine::UpdateTimer(Player& player, PlayerInput& input, PlayerM
     combat.UpdateAttackMoveLock(status, deltaTime);
     combat.UpdateAttackDodgeLock(deltaTime);
     status.UpdateInvincibleTimer(deltaTime);
+    status.UpdateDodgeCounterGrace(deltaTime);
     grounding.UpdateRayCastTimer(deltaTime);
     input.UpdateInputAvailableTimer(deltaTime);
     input.UpdateAttackBuffer(deltaTime);

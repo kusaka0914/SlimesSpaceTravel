@@ -920,6 +920,21 @@ void PlayerMovement::ApplyJumpGravity(Player& player, float deltaTime)
     ApplyJumpGravityMovement(player, glm::vec3(0.0f), deltaTime);
 }
 
+void PlayerMovement::ApplyAirComboHitLift(Player& player, float height)
+{
+    if (player.GetOnGround() || player.IsAttachedToPlatform() || !std::isfinite(height) || height <= 0.0f) {
+        return;
+    }
+    glm::vec3 upDirection;
+    if (!TryNormalizeDirection(player.GetUpVec(), upDirection)) {
+        return;
+    }
+    // 命中対象自身に上昇を妨げられないよう、空中の敵だけを衝突対象から外す。
+    constexpr float maximumLiftSubstepDistance = 0.05f;
+    (void)MoveWithCollisionSubsteps(mPhysicsSystem, player, upDirection * height, maximumLiftSubstepDistance,
+                                    ActorCollisionFilter::IgnoreAirborneEnemies);
+}
+
 void PlayerMovement::StopAirborneVerticalMovement(Player& player) const
 {
     if (player.GetOnGround()) {

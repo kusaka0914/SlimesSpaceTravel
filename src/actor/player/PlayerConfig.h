@@ -1,11 +1,14 @@
 #pragma once
 
 #include "actor/player/PlayerAnimationDefinition.h"
+#include "actor/player/PlayerComboSettings.h"
+#include "system/HitStopSettings.h"
 
 #include <string>
 
 // プレイヤー設定の既定値。時間は秒、距離はワールド単位、攻撃範囲の角度はラジアン。
 struct PlayerConfig {
+    HitStopSettings hitStop;
     float hp = 100.0f;
     float scale = 0.25f;
 
@@ -39,6 +42,8 @@ struct PlayerConfig {
     float airComboDodgePlayerLiftHeight = 0.8f;
     float airComboDodgeEnemyLiftHeight = 0.8f;
 
+    PlayerComboSettings combo;
+
     float normalAttackRange = 2.8f;
     float normalAttackAngle = 0.8f;
     float normalAttack = 10.0f;
@@ -67,12 +72,12 @@ struct PlayerConfig {
     float chargedAttackRange = 2.6f;
     float chargedAttackAngle = 6.283f;
     float chargedAttackDamage = 50.0f;
-    float chargedAttackChargeDurationSeconds = 3.0f;
+    float chargedAttackChargeDurationSeconds = 4.0f;
 
     float continuousAttackRange = 2.0f;
     float continuousAttackAngle = 6.283f;
     float continuousAttackDamage = 2.5f;
-    float continuousAttackGuardDamage = 2.5f;
+    float continuousAttackGuardDamage = 5.0f;
     float continuousAttackIntervalSeconds = 0.25f;
     float continuousAttackDurationSeconds = 6.0f;
 

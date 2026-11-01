@@ -95,6 +95,16 @@ void EnemyCombat::LaunchWhenGuardBreaks(Enemy& enemy, EnemyStatus& status, Enemy
     // 通常ノックバックの小さな浮きは地上コンボの途中状態なので、
     // ガードが尽きたら正式な打ち上げへ移行する。既に Launched の敵は浮き直さない。
     if (damageResult.wasFullyBroken && canStartLaunch) {
+        // 新たに打ち上げる敵自身は除外し、同じ惑星で既に打ち上げた敵を待たせる。
+        constexpr float guardBreakAirborneExtensionSeconds = 0.5f;
+        Planet* planet = enemy.GetCurrentPlanet();
+        if (planet) {
+            for (Enemy* airborneEnemy : planet->GetEnemies()) {
+                if (airborneEnemy && airborneEnemy != &enemy && airborneEnemy->GetCurrentPlanet() == planet) {
+                    airborneEnemy->ExtendLaunchApexWait(guardBreakAirborneExtensionSeconds);
+                }
+            }
+        }
         movement.LaunchIntoAir(enemy, status, stateMachine, deltaTime);
         if (!status.GetIsBoss()) {
             enemy.StartNormalHitReaction();

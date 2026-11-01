@@ -7,10 +7,10 @@ class Player;
 // 既存Player間の分裂・合体に伴う配置、操作状態、共有リソースの同期を行う。
 class PlayerSplitService {
 public:
-    // 先頭2人を分裂形態にし、2人目の配置・速度・攻撃と回避の使用制限を同期して有効化する。2人揃わなければfalse。
+    // 先頭2人を分裂形態にし、2人目の配置・速度・攻撃とダッシュの使用制限を同期して有効化する。2人揃わなければfalse。
     static bool ActivateSplit(const std::vector<Player*>& players);
 
-    // sourcePlayerIndex（0か1）の配置・攻撃と回避の使用制限を引き継いで先頭へ合体し、2人目を無効化する。
+    // sourcePlayerIndex（0か1）の配置・攻撃とダッシュの使用制限を引き継いで先頭へ合体し、2人目を無効化する。
     // Player不足・不正インデックスの場合はfalse。Actorは破棄しない。
     static bool MergeIntoMainPlayer(const std::vector<Player*>& players, int sourcePlayerIndex);
     static bool ArePlayersCloseEnoughToMerge(const std::vector<Player*>& players, float maximumDistance);

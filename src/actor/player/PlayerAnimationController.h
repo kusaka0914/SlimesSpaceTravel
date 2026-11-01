@@ -23,7 +23,8 @@ public:
 
     // 対応クリップがなければfalse。単発再生中の基本ループ要求は、単発終了後に反映する。
     // shouldRestartは単発再生の再要求時に、先頭から再生するかを指定する。
-    bool RequestAnimation(std::string_view animationId, bool shouldRestart = true);
+    // playbackRateは単発クリップの速度倍率。既定値1で元の速度を使う。
+    bool RequestAnimation(std::string_view animationId, bool shouldRestart = true, float playbackRate = 1.0f);
     bool HasAnimation(std::string_view animationId) const;
 
     void Update(float deltaTimeSeconds);
@@ -56,6 +57,7 @@ private:
     std::string mBaseAnimationId = "idle";
     std::string mCurrentAnimationId;
     bool mIsOneShotPlaying = false;
+    float mPlaybackRate = 1.0f;
 
     AnimationPlayer mAnimationPlayer;
 };

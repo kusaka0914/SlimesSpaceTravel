@@ -407,8 +407,14 @@ void LongPressCombatControlsUseIndependentDevices(Game& game)
         ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "long X does not heal");
         firstController.SetCombatInput(false, true, true);
         capture();
-        for (int frame = 0; frame < 40; ++frame) {
+        for (int frame = 0; frame < 41; ++frame) {
             fixture.Step(0.1f);
+            if (frame == 18) {
+                ExpectEqual(0, fixture.combat.GetSpecialAttackJewelsConsumed(), "no jewel spent before two seconds");
+            } else if (frame == 20) {
+                ExpectEqual(1, fixture.combat.GetSpecialAttackJewelsConsumed(), "first jewel is spent at stage one");
+                ExpectFalse(fixture.combat.GetCanSpecialAttack(), "stage one is not full charge");
+            }
         }
         ExpectTrue(fixture.combat.GetCanSpecialAttack(), "original hold does not fire completed charge");
         ExpectEqual(0, fixture.jewels.GetCount(), "charge retains original two-jewel cost");
@@ -441,11 +447,39 @@ void LongPressCombatControlsUseIndependentDevices(Game& game)
             capture();
             fixture.Step(0.01f);
             ExpectFalse(fixture.combat.IsSpecialCharging() || fixture.combat.GetCanSpecialAttack(),
-                        "early release cancels");
-            ExpectEqual(2, fixture.jewels.GetCount(), "early release refunds only consumed jewels");
-            ExpectEqual(before, fixture.combat.GetResolvedAttackSequence(), "early release does not fire");
+                        "release finishes or cancels the charge");
+            if (heldFrames < 20) {
+                ExpectEqual(2, fixture.jewels.GetCount(), "release before stage one consumes no jewels");
+                ExpectEqual(before, fixture.combat.GetResolvedAttackSequence(),
+                            "release before stage one does not fire");
+            } else {
+                ExpectEqual(1, fixture.jewels.GetCount(), "stage one consumes exactly one jewel");
+                ExpectEqual(before + 1, fixture.combat.GetResolvedAttackSequence(), "stage one fires on release");
+                ExpectNear(fixture.combat.GetChargedAttackDamage() * 0.5f, fixture.combat.GetAttack(), 0.0001f,
+                           "stage one deals half of the configured full damage");
+            }
             ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "cancellation cannot trigger assist recovery");
             ExpectNear(1.0f, fixture.combat.GetInputMovementSpeedMultiplier(), 0.0f, "cancel restores normal movement");
+        }
+        {
+            CombatControlsFixture oneJewel(game, source, 1);
+            oneJewel.jewels.SetCount(1);
+            firstController.SetCombatInput(false, true, false);
+            capture();
+            oneJewel.Step(0.7f);
+            for (int frame = 0; frame < 45; ++frame) {
+                oneJewel.Step(0.1f);
+            }
+            ExpectEqual(1, oneJewel.combat.GetSpecialAttackJewelsConsumed(), "one jewel permits stage one");
+            ExpectFalse(oneJewel.combat.GetCanSpecialAttack(), "without a second jewel full charge is unavailable");
+            const auto before = oneJewel.combat.GetResolvedAttackSequence();
+            firstController.SetCombatInput(false, false, false);
+            capture();
+            oneJewel.Step(0.01f);
+            ExpectEqual(before + 1, oneJewel.combat.GetResolvedAttackSequence(),
+                        "stage one remains usable after waiting");
+            ExpectNear(oneJewel.combat.GetChargedAttackDamage() * 0.5f, oneJewel.combat.GetAttack(), 0.0001f,
+                       "one-jewel charge deals half damage");
         }
         CombatControlsFixture interrupted(game, source, 1);
         interrupted.combat.StartSpecialAttackCharging();

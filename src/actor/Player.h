@@ -58,11 +58,14 @@ public:
     void StartStarCollectionCelebration(float durationSeconds);
     void StopStarCollectionCelebration();
     void SetBaseScale(const glm::vec3& scale);
-    void RequestNextWeakAttackAnimation();
+
+    // 通常攻撃は地上・空中とも振るたびに交互再生し、フィニッシュ・専用モーションは段の設定を使う。
+    void RequestComboAttackAnimation();
+    void RequestNextWeakAttackAnimation(float playbackRate = 1.0f);
     void RequestStrongAttackAnimation();
     const std::vector<glm::mat4>* GetSkinningMatrices() const override;
 
-    // 移動・ジャンプ・回避
+    // 移動・ジャンプ・ダッシュ
     void SetHasUsedDodge(bool hasUsedDodge) { mMovement.SetHasUsedDodge(hasUsedDodge); }
     void SetCurrentPlanetNum(int currentPlanetNum) { mMovement.SetCurrentPlanetNum(currentPlanetNum); }
     void SetPlayerNum(int playerNum) { mMovement.SetPlayerNum(playerNum); }
@@ -138,6 +141,9 @@ public:
     bool IsContinuousAttacking() const { return mCombat.IsContinuousAttacking(); }
     std::uint64_t GetResolvedAttackSequence() const { return mCombat.GetResolvedAttackSequence(); }
     bool HasPendingAttackHit() const { return mCombat.HasPendingAttackHit(); }
+    void SetComboSettings(const PlayerComboSettings& settings) { mCombat.ConfigureCombo(settings); }
+    const PlayerComboSettings& GetComboSettings() const { return mCombat.GetComboSettings(); }
+
     void SetAttack(float attack) { mCombat.SetAttack(attack); }
     void SetAttackSpeed(float attackSpeed) { mCombat.SetAttackSpeed(attackSpeed); }
     void SetGroundWeakAttackCooldownSeconds(float cooldownSeconds)
@@ -208,6 +214,7 @@ public:
     void SetAttackHitDelay(float attackHitDelay) { mCombat.SetAttackHitDelay(attackHitDelay); }
     bool GetIsStrongAttacked() const { return mCombat.GetIsStrongAttacked(); }
     bool GetCanSpecialAttack() const { return mCombat.GetCanSpecialAttack(); }
+    int GetSpecialAttackJewelsConsumed() const { return mCombat.GetSpecialAttackJewelsConsumed(); }
     float GetAttack() const { return mCombat.GetAttack(); }
     float CalculateOutgoingAttackDamage(float baseDamage) const;
     float GetAttackMotionTimer() const { return mCombat.GetAttackMotionTimer(); }
@@ -249,6 +256,13 @@ public:
     float GetDefaultAttackMotionTimer() const { return mCombat.GetDefaultAttackMotionTimer(); }
     float GetAttackHitDelay() const { return mCombat.GetAttackHitDelay(); }
     float GetAirSlamEnemyDownwardSpeed() const { return mCombat.GetAirSlamEnemyDownwardSpeed(); }
+
+    // 惑星表面からの高さ。通常形状では最終接地位置を基準とし、基準がなければ0。
+    float CalculateAirSlamHeight() const;
+    float GetAirSlamStartHeight() const { return mCombat.GetAirSlamStartHeight(); }
+
+    void SetAirSlamFullDamageHeight(float height) { mCombat.SetAirSlamFullDamageHeight(height); }
+    void SetAirSlamMinimumDamageRatio(float ratio) { mCombat.SetAirSlamMinimumDamageRatio(ratio); }
     float GetAirSlamFullDamageHeight() const { return mCombat.GetAirSlamFullDamageHeight(); }
     float GetAirSlamMinimumDamageRatio() const { return mCombat.GetAirSlamMinimumDamageRatio(); }
     ActionState GetActionState() const { return mStateMachine.GetActionState(); }
@@ -393,7 +407,7 @@ public:
     // 分裂演出後の位置を保って元の体の最新状態へ同期し、接地を再判定して通常操作を再開する。
     void FinishSplitPlacementFrom(const Player& source);
 
-    // 操作対象が変わっても攻撃・回避の待ち時間と疲労を維持する。両個体が空中なら使用枠の回復も引き継ぐ。
+    // 操作対象が変わっても攻撃・ダッシュの待ち時間と疲労を維持する。両個体が空中なら使用枠の回復も引き継ぐ。
     void InheritCombatRestrictions(const Player& source);
 
     // 共有する個数と回復の残り時間をまとめて同期する。
@@ -443,6 +457,8 @@ private:
     PlayerParticleEffectController mParticleEffectController;
     PlayerAnimationController mAnimationController;
 
+    glm::vec3 mLastAirSlamGroundPosition{0.0f};
+    bool mHasAirSlamGroundPosition = false;
     bool mUseSecondAttackAnimationNext = false;
     bool mControlLocked = false;
     bool mIsSplitForm = false;

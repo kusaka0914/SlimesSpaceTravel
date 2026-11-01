@@ -494,7 +494,7 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
 void EnemyStateMachine::UpdateKnockedBack(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime)
 {
     if (status.GetKnockBackTimer() > 0.0f) {
-        movement.MoveDuringKnockBack(enemy, status, deltaTime);
+        movement.MoveDuringKnockBack(enemy, status, deltaTime, mGroundFinisherPushSpeed);
         status.DecreaseKnockBackTimer(deltaTime);
     }
 
@@ -549,6 +549,7 @@ void EnemyStateMachine::UpdatePostRetreatRecovery(Enemy& enemy, EnemyStatus& sta
 
     // この復帰経路は通常の準備時間を使わず、選択した攻撃の1秒間の範囲予告だけを行う。
     constexpr float attackPreviewDurationSeconds = 1.0f;
+    mHasReceivedChargedAttackCounter = false;
     status.SetStandByAttackTimer(attackPreviewDurationSeconds);
     status.SetIsJustBeforeAttack(false);
     mHasEvaluatedPreAttackApproach = true;
@@ -573,6 +574,7 @@ void EnemyStateMachine::StartTracking(Enemy& enemy)
 void EnemyStateMachine::StartPreparingAttack(Enemy& enemy, EnemyStatus& status)
 {
     (void)enemy;
+    mHasReceivedChargedAttackCounter = false;
     mActionState = ActionState::PreparingAttack;
     mHasEvaluatedPreAttackApproach = false;
     mShouldPreservePreparationTimer = false;
@@ -587,7 +589,10 @@ void EnemyStateMachine::StartAttacking(Enemy& enemy, EnemyStatus& status)
     status.ResetAttackMotionTimer();
     status.ClearIsHit();
     status.SetIsJustBeforeAttack(false);
-    status.SetCanCounteredTimer(0.1f);
+
+    // ダッシュの動作時間と分離し、地上・空中とも同じ時間だけカウンターを受け付ける。
+    constexpr float counterWindowSeconds = 2.0f;
+    status.SetCanCounteredTimer(counterWindowSeconds);
     status.SetCanCountered(true);
     status.ClearHitPlayers();
 }
@@ -631,6 +636,7 @@ bool EnemyStateMachine::ShouldTriggerProbability(float probabilityPercent)
 
 void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, float knockBackTimer)
 {
+    mGroundFinisherPushSpeed = -1.0f;
     mActionState = ActionState::KnockedBack;
     status.SetKnockBackTimer(knockBackTimer);
 
@@ -646,6 +652,34 @@ void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, floa
     }
 
     status.ClearLaunchedTimer();
+}
+
+void EnemyStateMachine::StartGroundFinisherKnockBack(Enemy& enemy, EnemyStatus& status, const Player& player,
+                                                     float pushSpeed, float durationSeconds)
+{
+    StartKnockedBack(enemy, status, std::max(0.0f, durationSeconds));
+    // 中断した予兆・カウンター受付を残さず、次の攻撃には準備時間を取り直す。
+    status.ResetStandByAttackTimer();
+    status.SetIsJustBeforeAttack(false);
+    status.SetCanCountered(false);
+    mHasEvaluatedPreAttackApproach = false;
+    mShouldPreservePreparationTimer = false;
+    mGroundFinisherPushSpeed = std::max(0.0f, pushSpeed);
+    enemy.SetVelocity(glm::vec3(0.0f));
+    const glm::vec3 up = enemy.GetUpVec();
+    const float upLength = glm::length(up);
+    if (upLength <= 0.000001f) {
+        return;
+    }
+    const glm::vec3 normal = up / upLength;
+    glm::vec3 direction = enemy.GetPos() - player.GetPos();
+    direction -= normal * glm::dot(direction, normal);
+    if (glm::length(direction) <= 0.000001f) {
+        direction = player.GetFacingForwardVec() - normal * glm::dot(player.GetFacingForwardVec(), normal);
+    }
+    if (glm::length(direction) > 0.000001f) {
+        status.SetKnockBackFrom(glm::normalize(direction));
+    }
 }
 
 void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
@@ -719,6 +753,18 @@ bool EnemyStateMachine::IsJustBeforeAttack(const EnemyStatus& status) const
 
     constexpr float justBeforeAttackTime = 1.0f;
     return status.GetStandByAttackTimer() <= justBeforeAttackTime;
+}
+
+bool EnemyStateMachine::TryConsumeChargedAttackCounter(const EnemyStatus& status)
+{
+    constexpr float chargedAttackCounterWindowSeconds = 0.3f;
+    const float remainingSeconds = status.GetStandByAttackTimer();
+    if (!IsAlive() || mActionState != ActionState::PreparingAttack || mHasReceivedChargedAttackCounter ||
+        remainingSeconds <= 0.0f || remainingSeconds > chargedAttackCounterWindowSeconds) {
+        return false;
+    }
+    mHasReceivedChargedAttackCounter = true;
+    return true;
 }
 
 bool EnemyStateMachine::IsAttackImpactActive(const EnemyStatus& status) const

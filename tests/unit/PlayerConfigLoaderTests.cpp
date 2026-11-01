@@ -97,6 +97,65 @@ void GuardDamageParametersLoadFromPlayerConfig()
     ExpectNear(3.0f, config.continuousAttackGuardDamage, 0.0001f, "continuous attack guard damage");
 }
 
+void HitStopParametersLoadAndClampWithoutChangingDefaults()
+{
+    const auto defaults = PlayerConfigLoader::Parse(YAML::Load("players: [{}]"));
+    ExpectNear(0.1f, defaults.hitStop.guardBreakSeconds, 0.0001f, "guard break defaults to one tenth second");
+    ExpectNear(0.4f, defaults.hitStop.airStrongAttackSeconds, 0.0001f, "air strong attack keeps its previous duration");
+    const auto parsed =
+        PlayerConfigLoader::Parse(YAML::Load("players: [{hitStop: {guardBreakSeconds: 0.05, airStrongAttackSeconds: 0, "
+                                             "airSlamSeconds: 0.2, counterSeconds: 0.15}}]"));
+    ExpectNear(0.05f, parsed.hitStop.guardBreakSeconds, 0.0001f, "guard break is configurable");
+    ExpectNear(0.0f, parsed.hitStop.airStrongAttackSeconds, 0.0001f, "zero disables an event's hit stop");
+    ExpectNear(0.2f, parsed.hitStop.airSlamSeconds, 0.0001f, "slam is independent from air strong attack");
+    ExpectNear(0.15f, parsed.hitStop.counterSeconds, 0.0001f, "counter is configurable");
+    const auto invalid =
+        PlayerConfigLoader::Parse(YAML::Load("players: [{hitStop: {guardBreakSeconds: -1, counterSeconds: .nan}}]"));
+    ExpectNear(0.0f, invalid.hitStop.guardBreakSeconds, 0.0001f, "negative durations are clamped to zero");
+    ExpectNear(0.3f, invalid.hitStop.counterSeconds, 0.0001f, "nonfinite duration uses the default");
+}
+
+void GroundComboDefaultsAndRoundTripKeepStagesSeparateFromHits()
+{
+    PlayerComboSettings settings;
+    ExpectEqual(2, settings.stages[1].hitCount, "only the second stage starts with two hits");
+    int hits = 0;
+    for (const auto& stage : settings.stages) {
+        hits += stage.hitCount;
+    }
+    ExpectEqual(6, hits, "five default inputs produce six hit checks");
+    ExpectNear(1.0f, settings.stages[0].animationSpeed, 0.0001f, "short recovery does not speed up animation");
+    settings.airAttackHoverExtraSeconds = 1.25f;
+    settings.airHitPlayerLiftHeight = 0.2f;
+    settings.stages[1].animationSpeed = 0.9f;
+    settings.stages[1].hitIntervalSeconds = 0.07f;
+    settings.stages[4].damageMultiplier = 3.0f;
+    const auto saved = WritePlayerComboSettings(settings);
+    ExpectFalse(static_cast<bool>(saved["earlyFinisher"]), "saving writes only one finisher setting");
+    const auto restored = ReadPlayerComboSettings(saved);
+    ExpectNear(1.25f, restored.airAttackHoverExtraSeconds, 0.0001f, "air attack hover extension survives save and load");
+    ExpectNear(0.2f, restored.airHitPlayerLiftHeight, 0.0001f, "air hit player lift survives save and load");
+    ExpectNear(0.9f, restored.stages[1].animationSpeed, 0.0001f, "animation speed survives save and load");
+    ExpectNear(0.07f, restored.stages[1].hitIntervalSeconds, 0.0001f, "multi hit interval survives save and load");
+    ExpectNear(3.0f, restored.stages[4].damageMultiplier, 0.0001f, "finisher damage survives save and load");
+    const auto parsed =
+        PlayerConfigLoader::Parse(YAML::Load("players: [{groundCombo: {stages: [{hitDelaySeconds: 0.11}, {hitCount: "
+                                             "2}], earlyFinisher: {knockBackSpeed: 4}}}]"));
+    ExpectNear(0.11f, parsed.combo.stages[0].hitDelaySeconds, 0.0001f,
+               "ground timing is read separately from air timing");
+    ExpectNear(4.0f, parsed.combo.stages.back().knockBackSpeed, 0.0001f,
+               "legacy early finisher migrates to the shared finisher");
+    const auto common = PlayerConfigLoader::Parse(YAML::Load(
+        "players: [{combo: {stages: [{damageMultiplier: 2.5}]}, groundCombo: {stages: [{damageMultiplier: 9}]}}]"));
+    ExpectNear(2.5f, common.combo.stages[0].damageMultiplier, 0.0001f,
+               "common combo settings take precedence over the legacy ground only key");
+    settings.stages[4].hitCount = 2;
+    settings.stages[0].hitIntervalSeconds = -1.0f;
+    settings.Sanitize();
+    ExpectEqual(1, settings.stages[4].hitCount, "a finisher remains a single hit");
+    ExpectTrue(settings.stages[0].hitIntervalSeconds > 0.0f, "invalid hit interval cannot cause a zero time loop");
+}
+
 void ParsedPlayerYamlProducesConfigWithoutFileAccess()
 {
     const YAML::Node playerRoot = YAML::Load("players:\n"
@@ -113,6 +172,9 @@ void ParsedPlayerYamlProducesConfigWithoutFileAccess()
 
 void RegisterPlayerConfigLoaderTests(TestRegistry& tests)
 {
+    tests.emplace_back("PlayerConfigLoader.HitStopParameters", HitStopParametersLoadAndClampWithoutChangingDefaults);
+    tests.emplace_back("PlayerConfigLoader.GroundComboRoundTrip",
+                       GroundComboDefaultsAndRoundTripKeepStagesSeparateFromHits);
     tests.emplace_back("PlayerConfigLoader.AirDodgeAttackParametersLoadIndependentlyFromWeakAttack",
                        AirDodgeAttackParametersLoadIndependentlyFromWeakAttack);
     tests.emplace_back("PlayerConfigLoader.ParsedPlayerYamlProducesConfigWithoutFileAccess",

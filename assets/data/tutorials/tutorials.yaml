@@ -537,7 +537,7 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: true
       - id: lets_try
-        text: "打ち上げ後も連打で攻撃、最後は惑星に叩きつけられるから\n敵の攻撃をよけるのに集中しながら連打しよう！"
+        text: "打ち上げ後も連打で、繰り返し攻撃できるよ！\n敵が点滅したら、攻撃ボタンで叩きつけるよ！"
         ruby:
           common:
             - text: 打
@@ -737,95 +737,8 @@ tutorials:
           flipVertical: false
       - id: air_weak_attack
         text: ""
-        controllerText: "空中でも3回しかYで攻撃できないけど、\nBの回避で敵にぶつかるとまた攻撃できるようになるよ！"
-        keyboardText: "空中でも3回しかJで攻撃できないけど、\nUの回避で敵にぶつかるとまた攻撃できるようになるよ！"
-        ruby:
-          controller:
-            - text: 空
-              ruby: true
-              reading: くう
-            - text: 中
-              ruby: true
-              reading: ちゅう
-            - text: でも3
-              ruby: false
-            - text: 回
-              ruby: true
-              reading: かい
-            - text: しかYで
-              ruby: false
-            - text: 攻
-              ruby: true
-              reading: こう
-            - text: 撃
-              ruby: true
-              reading: げき
-            - text: "できないけど、\nBの"
-              ruby: false
-            - text: 回
-              ruby: true
-              reading: かい
-            - text: 避
-              ruby: true
-              reading: ひ
-            - text: で
-              ruby: false
-            - text: 敵
-              ruby: true
-              reading: てき
-            - text: にぶつかるとまた
-              ruby: false
-            - text: 攻
-              ruby: true
-              reading: こう
-            - text: 撃
-              ruby: true
-              reading: げき
-            - text: できるようになるよ！
-              ruby: false
-          keyboard:
-            - text: 空
-              ruby: true
-              reading: くう
-            - text: 中
-              ruby: true
-              reading: ちゅう
-            - text: でも3
-              ruby: false
-            - text: 回
-              ruby: true
-              reading: かい
-            - text: しかJで
-              ruby: false
-            - text: 攻
-              ruby: true
-              reading: こう
-            - text: 撃
-              ruby: true
-              reading: げき
-            - text: "できないけど、\nUの"
-              ruby: false
-            - text: 回
-              ruby: true
-              reading: かい
-            - text: 避
-              ruby: true
-              reading: ひ
-            - text: で
-              ruby: false
-            - text: 敵
-              ruby: true
-              reading: てき
-            - text: にぶつかるとまた
-              ruby: false
-            - text: 攻
-              ruby: true
-              reading: こう
-            - text: 撃
-              ruby: true
-              reading: げき
-            - text: できるようになるよ！
-              ruby: false
+        controllerText: "空中でもYを5回押して、5段コンボ！\nその後もYを押せば、続けて攻撃できるよ！"
+        keyboardText: "空中でもJを5回押して、5段コンボ！\nその後もJを押せば、続けて攻撃できるよ！"
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -839,87 +752,8 @@ tutorials:
           flipVertical: true
       - id: summary_air_attack
         text: ""
-        controllerText: "つまり、Y→Y→Y→B→Y→Y→Y→...を繰り返すと、\n何度も攻撃できて、大ダメージを与えられるんだ！"
-        keyboardText: "つまり、J→J→J→U→J→J→J→...を繰り返すと、\n何度も攻撃できて、大ダメージを与えられるんだ！"
-        ruby:
-          controller:
-            - text: つまり、Y→Y→Y→B→Y→Y→Y→...を
-              ruby: false
-            - text: 繰
-              ruby: true
-              reading: く
-            - text: り
-              ruby: false
-            - text: 返
-              ruby: true
-              reading: かえ
-            - text: "すと、\n"
-              ruby: false
-            - text: 何
-              ruby: true
-              reading: なん
-            - text: 度
-              ruby: true
-              reading: ど
-            - text: も
-              ruby: false
-            - text: 攻
-              ruby: true
-              reading: こう
-            - text: 撃
-              ruby: true
-              reading: げき
-            - text: できて、
-              ruby: false
-            - text: 大
-              ruby: true
-              reading: だい
-            - text: ダメージを
-              ruby: false
-            - text: 与
-              ruby: true
-              reading: あた
-            - text: えられるんだ！
-              ruby: false
-          keyboard:
-            - text: つまり、J→J→J→U→J→J→J→...を
-              ruby: false
-            - text: 繰
-              ruby: true
-              reading: く
-            - text: り
-              ruby: false
-            - text: 返
-              ruby: true
-              reading: かえ
-            - text: "すと、\n"
-              ruby: false
-            - text: 何
-              ruby: true
-              reading: なん
-            - text: 度
-              ruby: true
-              reading: ど
-            - text: も
-              ruby: false
-            - text: 攻
-              ruby: true
-              reading: こう
-            - text: 撃
-              ruby: true
-              reading: げき
-            - text: できて、
-              ruby: false
-            - text: 大
-              ruby: true
-              reading: だい
-            - text: ダメージを
-              ruby: false
-            - text: 与
-              ruby: true
-              reading: あた
-            - text: えられるんだ！
-              ruby: false
+        controllerText: "空中でもY→Y→Y→Y→Yで5段コンボ！\n攻撃を続けて、次のコンボにつなごう！"
+        keyboardText: "空中でもJ→J→J→J→Jで5段コンボ！\n攻撃を続けて、次のコンボにつなごう！"
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -1010,121 +844,8 @@ tutorials:
           flipVertical: true
       - id: air_strong_attack
         text: ""
-        controllerText: "そして、空中でXを押すと、敵を惑星に叩きつけ\n一番強い攻撃が出せるよ！"
-        keyboardText: "そして、空中でKを押すと、敵を惑星に叩きつけて大ダメージ！\n高ければ高いほどダメージが大きくなるよ！"
-        ruby:
-          controller:
-            - text: そして、
-              ruby: false
-            - text: 空
-              ruby: true
-              reading: くう
-            - text: 中
-              ruby: true
-              reading: ちゅう
-            - text: でXを
-              ruby: false
-            - text: 押
-              ruby: true
-              reading: お
-            - text: すと、
-              ruby: false
-            - text: 敵
-              ruby: true
-              reading: てき
-            - text: を
-              ruby: false
-            - text: 惑
-              ruby: true
-              reading: わく
-            - text: 星
-              ruby: true
-              reading: せい
-            - text: に
-              ruby: false
-            - text: 叩
-              ruby: true
-              reading: たた
-            - text: "きつけ\n"
-              ruby: false
-            - text: 一
-              ruby: true
-              reading: いち
-            - text: 番
-              ruby: true
-              reading: ばん
-            - text: 強
-              ruby: true
-              reading: つよ
-            - text: い
-              ruby: false
-            - text: 攻
-              ruby: true
-              reading: こう
-            - text: 撃
-              ruby: true
-              reading: げき
-            - text: が
-              ruby: false
-            - text: 出
-              ruby: true
-              reading: だ
-            - text: せるよ！
-              ruby: false
-          keyboard:
-            - text: そして、
-              ruby: false
-            - text: 空
-              ruby: true
-              reading: くう
-            - text: 中
-              ruby: true
-              reading: ちゅう
-            - text: でKを
-              ruby: false
-            - text: 押
-              ruby: true
-              reading: お
-            - text: すと、
-              ruby: false
-            - text: 敵
-              ruby: true
-              reading: てき
-            - text: を
-              ruby: false
-            - text: 惑
-              ruby: true
-              reading: わく
-            - text: 星
-              ruby: true
-              reading: せい
-            - text: に
-              ruby: false
-            - text: 叩
-              ruby: true
-              reading: たた
-            - text: きつけて
-              ruby: false
-            - text: 大
-              ruby: true
-              reading: だい
-            - text: "ダメージ！\n"
-              ruby: false
-            - text: 高
-              ruby: true
-              reading: たか
-            - text: ければ
-              ruby: false
-            - text: 高
-              ruby: true
-              reading: たか
-            - text: いほどダメージが
-              ruby: false
-            - text: 大
-              ruby: true
-              reading: おお
-            - text: きくなるよ！
-              ruby: false
+        controllerText: "こまかくスタイルは、空中でXを短く押すと叩きつけ！\nYの5段目は弱攻撃のままだよ！"
+        keyboardText: "こまかくスタイルは、空中でKを短く押すと叩きつけ！\nJの5段目は弱攻撃のままだよ！"
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -1138,147 +859,8 @@ tutorials:
           flipVertical: true
       - id: break_summary
         text: ""
-        controllerText: "ガードを壊して打ち上げる！空中でY→Y→Y→Bを繰り返す！\n高く上げて最後はXで叩きつけ！これで敵を倒していこう！"
-        keyboardText: "ガードを壊して打ち上げる！空中でJ→J→J→Uを繰り返す！\n高く上げて最後はKで叩きつけ！これで敵を倒していこう！"
-        ruby:
-          controller:
-            - text: ガードを
-              ruby: false
-            - text: 壊
-              ruby: true
-              reading: こわ
-            - text: して
-              ruby: false
-            - text: 打
-              ruby: true
-              reading: う
-            - text: ち
-              ruby: false
-            - text: 上
-              ruby: true
-              reading: あ
-            - text: げる！
-              ruby: false
-            - text: 空
-              ruby: true
-              reading: くう
-            - text: 中
-              ruby: true
-              reading: ちゅう
-            - text: でY→Y→Y→Bを
-              ruby: false
-            - text: 繰
-              ruby: true
-              reading: く
-            - text: り
-              ruby: false
-            - text: 返
-              ruby: true
-              reading: かえ
-            - text: "す！\n"
-              ruby: false
-            - text: 高
-              ruby: true
-              reading: たか
-            - text: く
-              ruby: false
-            - text: 上
-              ruby: true
-              reading: あ
-            - text: げて
-              ruby: false
-            - text: 最
-              ruby: true
-              reading: さい
-            - text: 後
-              ruby: true
-              reading: ご
-            - text: はXで
-              ruby: false
-            - text: 叩
-              ruby: true
-              reading: たた
-            - text: きつけ！これで
-              ruby: false
-            - text: 敵
-              ruby: true
-              reading: てき
-            - text: を
-              ruby: false
-            - text: 倒
-              ruby: true
-              reading: たお
-            - text: していこう！
-              ruby: false
-          keyboard:
-            - text: ガードを
-              ruby: false
-            - text: 壊
-              ruby: true
-              reading: こわ
-            - text: して
-              ruby: false
-            - text: 打
-              ruby: true
-              reading: う
-            - text: ち
-              ruby: false
-            - text: 上
-              ruby: true
-              reading: あ
-            - text: げる！
-              ruby: false
-            - text: 空
-              ruby: true
-              reading: くう
-            - text: 中
-              ruby: true
-              reading: ちゅう
-            - text: でJ→J→J→Uを
-              ruby: false
-            - text: 繰
-              ruby: true
-              reading: く
-            - text: り
-              ruby: false
-            - text: 返
-              ruby: true
-              reading: かえ
-            - text: "す！\n"
-              ruby: false
-            - text: 高
-              ruby: true
-              reading: たか
-            - text: く
-              ruby: false
-            - text: 上
-              ruby: true
-              reading: あ
-            - text: げて
-              ruby: false
-            - text: 最
-              ruby: true
-              reading: さい
-            - text: 後
-              ruby: true
-              reading: ご
-            - text: はKで
-              ruby: false
-            - text: 叩
-              ruby: true
-              reading: たた
-            - text: きつけ！これで
-              ruby: false
-            - text: 敵
-              ruby: true
-              reading: てき
-            - text: を
-              ruby: false
-            - text: 倒
-              ruby: true
-              reading: たお
-            - text: していこう！
-              ruby: false
+        controllerText: "ガードを壊して打ち上げ、空中でも5段コンボ！\nらくらくスタイルは、Yだけで追撃や叩きつけもできるよ！"
+        keyboardText: "ガードを壊して打ち上げ、空中でも5段コンボ！\nらくらくスタイルは、Jだけで追撃や叩きつけもできるよ！"
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -1298,7 +880,7 @@ tutorials:
     textScaleRatio: 0.000333333
     pages:
       - id: introduction
-        text: "左上のジュエルを1個使うと回復、\n2個使うと連続攻撃か溜め攻撃ができるよ！"
+        text: "左上のジュエルを1個使うと回復、\n連続攻撃は2個、溜め攻撃は1〜2個使うよ！"
         ruby:
           common:
             - text: 左
@@ -1541,7 +1123,7 @@ tutorials:
               ruby: false
         advance: confirm
       - id: timing
-        text: "敵が攻撃する直前に、敵に向かって回避をすると\n突進して敵のガードを1つ壊せるんだ！"
+        text: "敵が攻撃する直前に、敵に向かってダッシュをすると\n突進して敵のガードを1つ壊せるんだ！"
         ruby:
           common:
             - text: 敵

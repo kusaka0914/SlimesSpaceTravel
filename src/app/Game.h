@@ -4,6 +4,7 @@
 #include "app/GameWindow.h"
 #include "gfx/performance/FramePerformanceTracker.h"
 #include "state/ProgressUpdateResult.h"
+#include "system/HitStopSettings.h"
 #include "system/StageFlowController.h"
 #include "system/UGCModeRuntime.h"
 
@@ -194,6 +195,8 @@ public:
     void OnPlayerInsufficientJewels(int playerNum, int requiredJewels);
 
     void OnPlayerAttackHit(int playerNum);
+    // 通常コンボの強攻撃命中を進行へ通知する。停止時間と振動は共通コンボの設定側で適用する。
+    void OnComboFinisherHit();
     void OnStrongAttacked(int playerNum);
     void OnAirSlamAttackHit(int playerNum);
     void OnPlayerCounter(int playerNum);
@@ -248,7 +251,22 @@ public:
     void OnEnemyDefeated(const Enemy& enemy);
     bool IsEnemyDefeatSlowMotionActive() const { return mEnemyDefeatSlowMotionRemainingSeconds > 0.0f; }
 
-    void SetHitStopTimer(float hitStopTimer) { mHitStopTimer = hitStopTimer; }
+    const HitStopSettings& GetHitStopSettings() const { return mHitStopSettings; }
+
+    // 次回のイベントから反映する。実行中の停止時間は変更しない。
+    void SetHitStopSettings(HitStopSettings settings)
+    {
+        settings.Sanitize();
+        mHitStopSettings = settings;
+    }
+
+    // より長い既存のヒットストップを短縮せずに、命中の停止時間を要求する。
+    void RequestHitStop(float seconds)
+    {
+        if (seconds > 0.0f && seconds > mHitStopTimer) {
+            mHitStopTimer = seconds;
+        }
+    }
 
     // 接地判定レイの長さをワールド単位で設定し、最小0.01に制限する。
     void SetGroundNormalRayLength(float rayLength) { mGroundNormalRayLength = rayLength > 0.01f ? rayLength : 0.01f; }
@@ -444,6 +462,7 @@ private:
     std::unique_ptr<SequenceSystem> mSequenceSystem;
     std::unique_ptr<EnemyJewelDropSystem> mEnemyJewelDropSystem;
 
+    HitStopSettings mHitStopSettings;
     float mHitStopTimer = -1.0f;
     float mEnemyDefeatSlowMotionRemainingSeconds = 0.0f;
     float mGroundNormalRayLength = 5.0f;

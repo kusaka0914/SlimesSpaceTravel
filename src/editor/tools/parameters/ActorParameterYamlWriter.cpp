@@ -126,6 +126,15 @@ bool ActorParameterYamlWriter::SavePlayer(const Player& player) const
     set("scale", player.GetBaseScale().x);
     set("attack", player.GetAttack());
     set("attackSpeed", player.GetAttackSpeed());
+    set("combo", WritePlayerComboSettings(player.GetComboSettings()));
+    config[sequenceName][index].remove("groundCombo");
+    const auto& hitStop = player.GetGame()->GetHitStopSettings();
+    YAML::Node hitStopNode;
+    hitStopNode["guardBreakSeconds"] = hitStop.guardBreakSeconds;
+    hitStopNode["airStrongAttackSeconds"] = hitStop.airStrongAttackSeconds;
+    hitStopNode["airSlamSeconds"] = hitStop.airSlamSeconds;
+    hitStopNode["counterSeconds"] = hitStop.counterSeconds;
+    set("hitStop", hitStopNode);
     set("moveSpeed", player.GetMoveSpeed());
     set("maximumStepHeight", player.GetMaximumStepHeight());
     set("jumpHeight", player.GetJumpHeight());

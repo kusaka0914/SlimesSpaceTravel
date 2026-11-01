@@ -30,11 +30,14 @@ public:
     float MoveAwayFromPlayerQuickly(Enemy& enemy, const EnemyStatus& status, float speed, float deltaTime);
     void MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status, const EnemyStateMachine& stateMachine,
                              float deltaTime);
-    void MoveDuringKnockBack(Enemy& enemy, const EnemyStatus& status, float deltaTime);
+    void MoveDuringKnockBack(Enemy& enemy, const EnemyStatus& status, float deltaTime, float groundPushSpeed = -1.0f);
 
     // 押し戻し方向を接平面へ補正し、上向き速度を設定して接地・通常着地判定を解除する。
     void StartNormalHitKnockBack(Enemy& enemy, EnemyStatus& status);
     void MoveDuringDying(Enemy& enemy, float deltaTime);
+
+    // 打ち上げ状態を変えず、指定秒数だけ接平面方向へ押し戻す。
+    void StartComboFinisherPush(Enemy& enemy, const glm::vec3& direction, float speed, float durationSeconds);
 
     // 接平面方向の押し出し速度を予約する。叩き落とし中や有効な方向を求められない場合は何もしない。
     void ApplyAirDodgePush(Enemy& enemy, const glm::vec3& dodgeDirection, float pushSpeed, float pushDampingPerSecond);
@@ -42,11 +45,15 @@ public:
     // 頂点待機中は位置を持ち上げ、それ以外は上向き速度を加える。叩き落とし中は変更しない。
     void ApplyAirComboLift(Enemy& enemy, float liftHeight);
 
+    // ガード全破壊後の頂点待機を通常の最大時間まで延長する。上昇中は頂点で最大時間になるため加算しない。
+    // 待機終了後・叩き落とし中・無効な秒数は対象外。延長できた場合にtrueを返す。
+    bool ExtendLaunchApexWait(Enemy& enemy, EnemyStatus& status, float seconds);
+
     // 下向き速度を設定してLaunchedへ遷移し、通常着地判定を停止する。既に実行中・上方向が無効ならfalse。
-    // playerは着地時まで有効な非所有参照として保持し、開始高度に応じたダメージを着地時に適用する。
+    // playerは着地時まで有効な非所有参照として保持し、attackHeightに応じたダメージを着地時に適用する。
     bool StartGravitySlam(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, Player& player,
                           float downwardSpeed, float maximumDamage, float fullDamageHeight, float minimumDamageRatio,
-                          float groundImpactRadius, bool shouldPlayImpactFeedback);
+                          float groundImpactRadius, float attackHeight, bool shouldPlayImpactFeedback);
 
     // 記録済みの接地面から設定高度へ打ち上げ、Launchedへ遷移する。Gameへ通知し、ヒットストップも設定する。
     void LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime);
@@ -76,6 +83,7 @@ private:
 
     EnemyGrounding mGrounding;
     glm::vec3 mAirDodgePushVelocity{0.0f};
+    float mComboFinisherPushRemainingSeconds = 0.0f;
     float mAirDodgePushDampingPerSecond = 8.0f;
     float mEnemyBlockedFallSeconds = 0.0f;
     bool mShouldSeparateAfterLanding = false;

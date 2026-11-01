@@ -5,12 +5,16 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
+#include "actor/enemy/EnemyStatus.h"
+#include "actor/enemy/EnemyMovement.h"
 #include "actor/player/PlanetGravityCandidateSelector.h"
 #include "actor/player/PlayerCombat.h"
+#include "actor/player/PlayerAttackHitDetector.h"
 #include "actor/player/PlayerInput.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerPlanetGravityController.h"
 #include "actor/player/PlayerStatus.h"
+#include "actor/player/PlayerTargetingAssist.h"
 #include "app/Game.h"
 #include "component/Component.h"
 #include "component/PlatformPressDetection.h"
@@ -1138,7 +1142,7 @@ void RunRuntimeCombatTests(Game& game)
     } restore{game, game.GetPlayerControlStyle()};
 
     auto invalidDependencies = MakeTestCombatDependencies(game);
-    invalidDependencies.readControlStyle = {};
+    invalidDependencies.onAttackHit = {};
     bool rejected = false;
     try {
         PlayerCombat invalid(invalidDependencies);
@@ -1157,6 +1161,27 @@ void RunRuntimeCombatTests(Game& game)
     secondMovement.SetPlayerNum(2);
     PlayerStatus firstStatus;
     PlayerStatus secondStatus;
+
+    {
+        PlayerCombat transitionCombat(MakeTestCombatDependencies(game));
+        firstPlayer.SetOnGround(true);
+        for (int stage = 0; stage < 3; ++stage) {
+            transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            transitionCombat.CancelCurrentAttack();
+        }
+        firstPlayer.SetOnGround(false);
+        transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectEqual(1, transitionCombat.GetAttackComboIndex(), "ground combo progress does not carry into air");
+        transitionCombat.CancelCurrentAttack();
+        transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectEqual(2, transitionCombat.GetAttackComboIndex(), "air attacks continue within the same airborne combo");
+        transitionCombat.CancelCurrentAttack();
+        firstPlayer.SetOnGround(true);
+        transitionCombat.OnLanded();
+        ExpectEqual(0, transitionCombat.GetAttackComboIndex(), "landing clears air combo progress");
+        transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectEqual(1, transitionCombat.GetAttackComboIndex(), "the first ground attack restarts at stage one");
+    }
     PlayerCombat secondCombat(MakeTestCombatDependencies(game));
     secondCombat.SetAttackHitDelay(0.2f);
 
@@ -1164,21 +1189,31 @@ void RunRuntimeCombatTests(Game& game)
         game.SetPlayerControlStyle(style);
         PlayerCombat combat(MakeTestCombatDependencies(game));
         combat.SetAttackHitDelay(0.2f);
-        for (int step = 1; step <= 3; ++step) {
+        const auto comboStart = combat.GetResolvedAttackSequence();
+        for (int step = 1; step <= 5; ++step) {
             combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
-            const PlayerAttackKind expected =
-                style == PlayerControlStyle::Assist && step == 3 ? PlayerAttackKind::Normal : PlayerAttackKind::Wide;
-            ExpectTrue(combat.GetAttackKind() == expected, "third assist weak input becomes the normal finisher");
-            ExpectFalse(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 0.1f),
-                        "attack cannot resolve before its delay");
+            ExpectTrue(combat.IsComboFinisher() == (step == 5), "both styles finish on the fifth input");
+            const auto attack = combat.GetCurrentComboAttackSettings();
             const auto before = combat.GetResolvedAttackSequence();
-            ExpectTrue(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 0.11f),
-                       "delayed attack resolves once even without a target");
-            ExpectEqual(before + 1, combat.GetResolvedAttackSequence(), "one sequence per resolved attack");
+            ExpectFalse(
+                combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, attack.hitDelaySeconds * 0.5f),
+                "attack waits for its configured animation hit time");
+            ExpectTrue(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus,
+                                                     attack.hitDelaySeconds * 0.5f + 0.001f),
+                       "first hit resolves at its configured time");
+            if (step == 2) {
+                ExpectTrue(combat.HasPendingAttackHit(), "second stage reserves its second hit without another input");
+                ExpectTrue(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus,
+                                                         attack.hitIntervalSeconds + 0.001f),
+                           "automatic second hit resolves");
+            }
+            ExpectEqual(before + (step == 2 ? 2 : 1), combat.GetResolvedAttackSequence(),
+                        "each hit has an independent attack sequence");
             ExpectFalse(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f),
-                        "resolved attack does not repeat");
-            ExpectEqual(step == 3 ? 0 : step, combat.GetAttackComboIndex(), "ground combo advances and then resets");
+                        "finished stage cannot repeat a hit");
+            ExpectEqual(step == 5 ? 0 : step, combat.GetAttackComboIndex(), "finisher resets the combo");
         }
+        ExpectEqual(comboStart + 6, combat.GetResolvedAttackSequence(), "five inputs produce six hits");
 
         combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
         secondCombat.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
@@ -1194,24 +1229,384 @@ void RunRuntimeCombatTests(Game& game)
         ExpectEqual(secondBefore + 1, secondCombat.GetResolvedAttackSequence(),
                     "second player's sequence is independent");
     }
+    for (int weakInputs : {0, 1}) {
+        PlayerCombat combat(MakeTestCombatDependencies(game));
+        if (weakInputs == 1) {
+            combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+        }
+        const auto before = combat.GetResolvedAttackSequence();
+        ExpectFalse(combat.CanStartComboFinisher(), "ground finisher requires two completed weak stages");
+        combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Normal, firstMovement, firstStatus, 0.0f);
+        ExpectFalse(combat.HasPendingAttackHit(), "early strong input does not queue a standalone ground attack");
+        ExpectEqual(weakInputs, combat.GetAttackComboIndex(), "rejected strong input preserves combo progress");
+        ExpectEqual(before, combat.GetResolvedAttackSequence(), "rejected strong input cannot deal damage");
+    }
+    for (int weakInputs : {2, 3, 4}) {
+        PlayerCombat earlyCombat(MakeTestCombatDependencies(game));
+        for (int inputIndex = 0; inputIndex < weakInputs; ++inputIndex) {
+            earlyCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            while (earlyCombat.HasPendingAttackHit()) {
+                earlyCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+            }
+        }
+        earlyCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Normal, firstMovement, firstStatus, 0.0f);
+        ExpectTrue(earlyCombat.IsComboFinisher(), "strong input after two or more weak inputs finishes the combo");
+        const auto& sharedFinisher = earlyCombat.GetComboSettings().stages.back();
+        ExpectNear(sharedFinisher.damageMultiplier, earlyCombat.GetCurrentComboAttackSettings().damageMultiplier,
+                   0.0001f, "early and fifth stage finishers share damage settings");
+        ExpectNear(sharedFinisher.hitDelaySeconds, earlyCombat.GetCurrentComboAttackSettings().hitDelaySeconds, 0.0001f,
+                   "early and fifth stage finishers share timing settings");
+        earlyCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+        earlyCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectEqual(1, earlyCombat.GetAttackComboIndex(), "early finisher restarts the next combo at stage one");
+    }
+    PlayerCombat doubleHitCombat(MakeTestCombatDependencies(game));
+    doubleHitCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+    doubleHitCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+    doubleHitCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+    const auto doubleHitSettings = doubleHitCombat.GetCurrentComboAttackSettings();
+    doubleHitCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, doubleHitSettings.hitDelaySeconds);
+    PlayerCombat transferredCombat(MakeTestCombatDependencies(game));
+    transferredCombat.ResetForPlacementInheritance(doubleHitCombat, false);
+    ExpectEqual(2, transferredCombat.GetAttackComboIndex(),
+                "split inherits combo progress during an automatic double hit");
+    ExpectTrue(transferredCombat.GetAttackCooldownRemaining() >= doubleHitSettings.hitIntervalSeconds,
+               "split cannot bypass the reserved second hit");
+    const auto beforeCancel = doubleHitCombat.GetResolvedAttackSequence();
+    doubleHitCombat.CancelCurrentAttack();
+    ExpectFalse(doubleHitCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f),
+                "dodge cancellation also removes the automatic second hit");
+    ExpectEqual(beforeCancel, doubleHitCombat.GetResolvedAttackSequence(), "canceled second hit never resolves");
+
+    PlayerCombat oldFinisherCombat(MakeTestCombatDependencies(game));
+    for (int stage = 0; stage < 2; ++stage) {
+        oldFinisherCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        while (oldFinisherCombat.HasPendingAttackHit()) {
+            oldFinisherCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+        }
+    }
+    oldFinisherCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Normal, firstMovement, firstStatus, 0.0f);
+    oldFinisherCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+    oldFinisherCombat.InheritControlRestrictions(transferredCombat);
+    PlayerCombat nextBodyCombat(MakeTestCombatDependencies(game));
+    nextBodyCombat.InheritControlRestrictions(oldFinisherCombat);
+    ExpectEqual(2, nextBodyCombat.GetAttackComboIndex(),
+                "an old finisher cannot erase inherited progress on the next switch");
+
+    Enemy reactingEnemy(&game);
+    reactingEnemy.SetHp(100.0f);
+    reactingEnemy.SetIsBoss(false);
+    reactingEnemy.SetOnGroundForEnemy(true);
+    reactingEnemy.SetDefaultStandByAttackTimer(2.0f);
+    reactingEnemy.SetActionState(Enemy::ActionState::PreparingAttack);
+    const float preparationBefore = reactingEnemy.GetStandByAttackTimer();
+    reactingEnemy.ApplyDamage(1.0f, &firstPlayer);
+    ExpectTrue(reactingEnemy.GetActionState() == Enemy::ActionState::PreparingAttack,
+               "ordinary damage preserves a normal enemy's preparation state");
+    ExpectNear(preparationBefore, reactingEnemy.GetStandByAttackTimer(), 0.0001f,
+               "ordinary damage does not restart the preparation timer");
+    reactingEnemy.ReactToComboFinisher(firstPlayer, 3.0f, 0.3f);
+    ExpectTrue(reactingEnemy.GetActionState() == Enemy::ActionState::KnockedBack,
+               "a ground finisher interrupts preparation and starts knockback");
+    ExpectNear(2.0f, reactingEnemy.GetStandByAttackTimer(), 0.0001f, "finisher resets preparation");
+    reactingEnemy.SetActionState(Enemy::ActionState::Attacking);
+    reactingEnemy.ReactToComboFinisher(firstPlayer, 3.0f, 0.3f);
+    ExpectTrue(reactingEnemy.GetActionState() == Enemy::ActionState::Attacking,
+               "a finisher does not interrupt an attack already in progress");
+    reactingEnemy.SetIsBoss(true);
+    reactingEnemy.SetActionState(Enemy::ActionState::PreparingAttack);
+    reactingEnemy.ApplyDamage(1.0f, &firstPlayer);
+    reactingEnemy.ReactToComboFinisher(firstPlayer, 3.0f, 0.3f);
+    ExpectTrue(reactingEnemy.GetActionState() == Enemy::ActionState::PreparingAttack,
+               "boss preparation survives ordinary damage and ground finishers");
+    {
+        EnemyStateMachine counterState;
+        EnemyStatus counterStatus;
+        counterStatus.SetDefaultStandByAttackTimer(0.31f);
+        counterState.StartPreparingAttack(reactingEnemy, counterStatus);
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus), "charge counter rejects earlier hits");
+        counterStatus.SetStandByAttackTimer(0.3f);
+        ExpectTrue(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                   "charge counter includes the 0.3s boundary");
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                    "charge counter is consumed once per preparation");
+        counterState.StartPreparingAttack(reactingEnemy, counterStatus);
+        counterStatus.SetStandByAttackTimer(0.1f);
+        ExpectTrue(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                   "the next attack preparation accepts another counter");
+        counterState.StartPreparingAttack(reactingEnemy, counterStatus);
+        counterStatus.SetStandByAttackTimer(0.0f);
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus), "charge counter excludes attack start");
+        counterStatus.SetStandByAttackTimer(0.1f);
+        counterState.SetActionState(EnemyStateMachine::ActionState::Attacking);
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                    "charge counter rejects attacks already started");
+    }
+    {
+        Enemy airborneEnemy(&game);
+        airborneEnemy.SetHp(100.0f);
+        airborneEnemy.SetOnGroundForEnemy(false);
+        airborneEnemy.SetActionState(Enemy::ActionState::Launched);
+        EnemyStatus airborneStatus;
+        airborneStatus.ConfigureGuard(1, 20.0f);
+        airborneStatus.BreakGuard();
+        airborneStatus.SetDefaultLaunchedTimer(3.0f);
+        airborneStatus.SetLaunchedTimer(2.5f);
+        EnemyMovement airborneMovement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+        ExpectTrue(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                   "guard-broken airborne enemies accept a hover extension");
+        ExpectNear(2.8f, airborneStatus.GetLaunchedTimer(), 0.0001f, "one guard break adds 0.3 seconds");
+        airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f);
+        ExpectNear(3.0f, airborneStatus.GetLaunchedTimer(), 0.0001f, "extension is capped at the default maximum");
+        ExpectFalse(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                    "further guard breaks do not exceed the maximum");
+        airborneEnemy.SetOnGroundForEnemy(true);
+        ExpectFalse(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                    "grounded enemies do not receive airborne time");
+        airborneEnemy.SetOnGroundForEnemy(false);
+        airborneStatus.ResetGuard();
+        ExpectFalse(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                    "an enemy with restored guard cannot be kept airborne again");
+        airborneStatus.BreakGuard();
+        airborneStatus.ClearLaunchedTimer();
+        airborneEnemy.SetVelocity({0, 2, 0});
+        ExpectFalse(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                    "ascending enemies already receive the maximum duration at their apex");
+        ExpectNear(-1.0f, airborneStatus.GetLaunchedTimer(), 0.0001f,
+                   "extension does not start the apex timer while ascending");
+        ExpectVectorNear({0, 2, 0}, airborneEnemy.GetVelocity(), 0.0001f, "extension preserves ascent velocity");
+    }
     std::cout << "[PASS] Runtime.CombatComboDelayStyleAndPlayerIsolation\n";
 
+    for (const PlayerControlStyle style : {PlayerControlStyle::Standard, PlayerControlStyle::Assist}) {
+        game.SetPlayerControlStyle(style);
+        PlayerCombat groundCombo(MakeTestCombatDependencies(game));
+        PlayerCombat airCombo(MakeTestCombatDependencies(game));
+        firstPlayer.SetOnGround(true);
+        secondPlayer.SetOnGround(false);
+        for (int stage = 0; stage < 5; ++stage) {
+            groundCombo.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+            if (stage < 4) {
+                ExpectNear(groundCombo.GetAttack(), airCombo.GetAttack(), 0.0001f,
+                           "air and ground use the same damage");
+                ExpectNear(groundCombo.GetAttackRange(), airCombo.GetAttackRange(), 0.0001f,
+                           "air and ground share range");
+                ExpectNear(groundCombo.GetAttackAngle(), airCombo.GetAttackAngle(), 0.0001f,
+                           "air and ground share angle");
+                ExpectTrue(groundCombo.IsComboFinisher() == airCombo.IsComboFinisher(),
+                           "first four air and ground stages are weak attacks");
+            } else {
+                ExpectFalse(airCombo.IsComboFinisher(), "fifth air input stays a weak attack in both styles");
+                ExpectNear(airCombo.GetWideAttack() * airCombo.GetComboSettings().stages[3].damageMultiplier,
+                           airCombo.GetAttack(), 0.0001f, "fifth air input shares the fourth weak attack settings");
+            }
+            while (groundCombo.HasPendingAttackHit()) {
+                groundCombo.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+                airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+            }
+            ExpectEqual(groundCombo.GetResolvedAttackSequence(), airCombo.GetResolvedAttackSequence(),
+                        "air and ground share hit counts");
+            ExpectNear(airCombo.GetCurrentComboAttackSettings().cooldownSeconds + 0.5f,
+                       airCombo.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                       "every air stage hovers for its cooldown plus half a second");
+            if (stage < 4) {
+                ExpectNear(groundCombo.GetAttackMotionTimer(), airCombo.GetAttackMotionTimer(), 0.0001f,
+                           "air and ground share motion recovery");
+                ExpectNear(groundCombo.GetAttackCooldownRemaining(), airCombo.GetAttackCooldownRemaining(), 0.0001f,
+                           "air and ground share cooldown");
+                ExpectNear(groundCombo.GetAttackMoveLockRemaining(), airCombo.GetAttackMoveLockRemaining(), 0.0001f,
+                           "air and ground share movement lock");
+            }
+        }
+        ExpectEqual(std::uint64_t{6}, airCombo.GetResolvedAttackSequence(),
+                    "one air combo has five inputs and six hits");
+        ExpectEqual(0, airCombo.GetAttackComboIndex(), "fifth air stage ends the combo");
+        ExpectFalse(airCombo.IsComboFinisher(), "fifth air stage never automatically starts a strong attack");
+
+        const float fifthAirCooldown = airCombo.GetComboSettings().stages.back().cooldownSeconds;
+        const float fifthAirHover = fifthAirCooldown + 0.5f;
+        ExpectNear(fifthAirCooldown, airCombo.GetAttackCooldownRemaining(), 0.0001f,
+                   "fifth air input shares the ground finisher cooldown");
+        ExpectNear(fifthAirHover, airCombo.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                   "fifth air stage hovers for the cooldown plus half a second");
+        airCombo.UpdateAttackCooldown(0.25f);
+        ExpectNear(fifthAirHover - 0.25f, airCombo.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                   "fall suppression counts elapsed time after the final hit check");
+        PlayerCombat hoverClone(MakeTestCombatDependencies(game));
+        hoverClone.InheritControlRestrictions(airCombo);
+        ExpectNear(fifthAirHover - 0.25f, hoverClone.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                   "switching bodies inherits the remaining hover without restarting it");
+        const auto airSequence = airCombo.GetResolvedAttackSequence();
+        airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+        ExpectTrue(airCombo.HasPendingAttackHit(), "a sixth air input starts the next loop without a dodge");
+        ExpectEqual(1, airCombo.GetAttackComboIndex(), "sixth air input returns to the first stage");
+        ExpectNear(fifthAirHover - 0.25f, airCombo.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                   "the next attack preserves the fifth stage's remaining hover");
+        ExpectFalse(airCombo.CanAcceptMovementInput(), "movement input is blocked during fifth stage hover");
+        ExpectFalse(hoverClone.CanAcceptMovementInput(), "switching bodies preserves the hover movement lock");
+        hoverClone.UpdateAttackCooldown(fifthAirHover);
+        ExpectFalse(hoverClone.IsAirComboFallSuppressed(), "fall suppression expires after the requested duration");
+        airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+        ExpectEqual(airSequence + 1, airCombo.GetResolvedAttackSequence(), "next air loop resolves another weak hit");
+        for (int loop = 0; loop < 3; ++loop) {
+            for (int stage = 0; stage < 5; ++stage) {
+                airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+                ExpectFalse(airCombo.IsComboFinisher(), "air loops never automatically start a strong attack");
+                while (airCombo.HasPendingAttackHit()) {
+                    airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+                }
+            }
+        }
+        ExpectEqual(airSequence + 19, airCombo.GetResolvedAttackSequence(),
+                    "repeated loops keep producing six hits per five inputs");
+        airCombo.StartAirSlamAttack(secondPlayer);
+        ExpectTrue(airCombo.GetIsStrongAttacked(), "slam can start after all five weak air inputs");
+        ExpectFalse(airCombo.HasPendingAttackHit(), "slam does not duplicate a queued combo hit");
+        ExpectEqual(0, airCombo.GetAttackComboIndex(), "slam clears old combo progress");
+
+        airCombo.OnLanded();
+
+        airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+        airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+        airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+        airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+        airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+        ExpectTrue(airCombo.CanStartComboFinisher(), "air strong attack becomes available after two stages");
+        airCombo.PreserveComboDuringAssistDodge(0.4f);
+        airCombo.CancelAirAttackForDodge();
+        airCombo.UpdateComboKeepTimer(0.4f);
+        ExpectEqual(2, airCombo.GetAttackComboIndex(), "assist dodge preserves the interrupted combo stage");
+        airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Normal, secondMovement, secondStatus, 0.0f);
+        ExpectTrue(airCombo.IsComboFinisher(), "air early finisher uses the common combo branch");
+    }
+    {
+        PlayerCombat transitionCombat(MakeTestCombatDependencies(game));
+        firstPlayer.SetOnGround(true);
+        for (int stage = 0; stage < 4; ++stage) {
+            transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            while (transitionCombat.HasPendingAttackHit()) {
+                transitionCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+            }
+        }
+        firstPlayer.SetOnGround(false);
+        transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectFalse(transitionCombat.IsComboFinisher(), "leaving ground changes the fifth input to an air weak attack");
+        ExpectEqual(0, transitionCombat.GetAttackComboIndex(), "shared fifth stage resets combo progress");
+    }
+    {
+        Planet airAttackPlanet(nullptr);
+        Player airAttackPlayer(&game);
+        airAttackPlayer.Actor::SetCurrentPlanet(&airAttackPlanet);
+        airAttackPlayer.SetOnGround(false);
+        PlayerCombat airAttackCombat(MakeTestCombatDependencies(game));
+        airAttackCombat.StartAttacking(airAttackPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus,
+                                       0.0f);
+        Enemy firstAirEnemy(&game);
+        Enemy secondAirEnemy(&game);
+        Enemy groundedEnemy(&game);
+        for (Enemy* enemy : {&firstAirEnemy, &secondAirEnemy, &groundedEnemy}) {
+            enemy->SetCurrentPlanet(&airAttackPlanet);
+            enemy->SetHp(100.0f);
+            enemy->SetOnGroundForEnemy(false);
+            airAttackPlanet.AddEnemy(enemy);
+        }
+        firstAirEnemy.SetPos({10000, 10000, 10000});
+        secondAirEnemy.SetPos({-10000, -10000, -10000});
+        groundedEnemy.SetPos({20000, 20000, 20000});
+        groundedEnemy.SetOnGroundForEnemy(true);
+        PlayerAttackHitDetector detector(*game.GetPhysicsSystem());
+        const auto hits = detector.FindHitEnemies(airAttackPlayer, airAttackCombat);
+        const auto slamTargets = detector.FindAirborneEnemiesOnCurrentPlanet(airAttackPlayer);
+        ExpectEqual(2U, slamTargets.size(), "slam includes all airborne enemies regardless of range or direction");
+        ExpectTrue(std::find(slamTargets.begin(), slamTargets.end(), &firstAirEnemy) != slamTargets.end(),
+                   "slam includes the first distant airborne enemy");
+        ExpectTrue(std::find(slamTargets.begin(), slamTargets.end(), &secondAirEnemy) != slamTargets.end(),
+                   "slam includes the opposite airborne enemy");
+        ExpectEqual(2U, hits.size(), "air combos hit all airborne enemies regardless of range or direction");
+        ExpectTrue(std::find(hits.begin(), hits.end(), &firstAirEnemy) != hits.end(),
+                   "first airborne enemy is included");
+        ExpectTrue(std::find(hits.begin(), hits.end(), &secondAirEnemy) != hits.end(),
+                   "second airborne enemy is included");
+        ExpectTrue(std::find(hits.begin(), hits.end(), &groundedEnemy) == hits.end(),
+                   "distant ground enemies remain out of range");
+    }
+    {
+        Planet chasePlanet(nullptr);
+        chasePlanet.SetScale(glm::vec3(10.0f));
+        Player chasePlayer(&game);
+        chasePlayer.Actor::SetCurrentPlanet(&chasePlanet);
+        chasePlayer.SetPos({0, 10, 0});
+        chasePlayer.SetUpVec({0, 1, 0});
+        chasePlayer.SetOnGround(false);
+        const auto selectFollowup = [&]() {
+            return PlayerTargetingAssist::FindAirDodgeFollowupTarget(chasePlayer, 3.0f, glm::two_pi<float>(), 2.0f);
+        };
+        ExpectTrue(selectFollowup() == nullptr, "no enemy never triggers an automatic dodge");
+        Enemy chaseEnemy(&game);
+        chaseEnemy.SetCurrentPlanet(&chasePlanet);
+        chaseEnemy.SetHp(100.0f);
+        chaseEnemy.SetRadius(0.0f);
+        chaseEnemy.SetOnGroundForEnemy(false);
+        chaseEnemy.SetActionState(Enemy::ActionState::Launched);
+        chasePlanet.AddEnemy(&chaseEnemy);
+        chaseEnemy.SetPos({2, 10, 0});
+        ExpectTrue(selectFollowup() == nullptr, "a reachable attack continues without inserting dodge");
+        chaseEnemy.SetPos({4, 10, 0});
+        ExpectTrue(selectFollowup() == &chaseEnemy, "a target just outside attack range permits a mid combo chase");
+        chaseEnemy.SetPos({6, 10, 0});
+        ExpectTrue(selectFollowup() == nullptr, "a target beyond attack plus dodge reach never triggers chase");
+        chasePlayer.SetOnGround(true);
+        ExpectTrue(selectFollowup() == nullptr, "grounded players do not start air chase");
+    }
+    {
+        Player liftPlayer(&game);
+        PlayerMovement liftMovement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+        PlayerStatus liftStatus;
+        PlayerCombat liftCombat(MakeTestCombatDependencies(game));
+        liftPlayer.SetPos({10000, 10000, 10000});
+        liftPlayer.SetUpVec({0, 1, 0});
+        liftPlayer.SetOnGround(false);
+        liftCombat.StartAttacking(liftPlayer, PlayerAttackInputKind::Wide, liftMovement, liftStatus, 0.0f);
+        Enemy firstTarget(&game), secondTarget(&game);
+        for (Enemy* target : {&firstTarget, &secondTarget}) {
+            target->SetHp(100.0f);
+            target->SetOnGroundForEnemy(false);
+        }
+        PlayerAttackResolver liftResolver(*game.GetAudioSystem(), nullptr, [](int) {});
+        const glm::vec3 before = liftPlayer.GetPos();
+        liftResolver.ResolveAttack(liftPlayer, liftMovement, liftStatus, liftCombat, {&firstTarget, &secondTarget},
+                                   false, 0.0f);
+        const glm::vec3 lifted = liftPlayer.GetPos();
+        ExpectVectorNear(before + glm::vec3(0, liftCombat.GetComboSettings().airHitPlayerLiftHeight, 0), lifted, 0.002f,
+                         "one hit on multiple enemies lifts the player only once");
+        liftResolver.ResolveAttack(liftPlayer, liftMovement, liftStatus, liftCombat, {}, false, 0.0f);
+        ExpectVectorNear(lifted, liftPlayer.GetPos(), 0.0f, "a missed air attack does not lift the player");
+        liftResolver.ResolveAttack(liftPlayer, liftMovement, liftStatus, liftCombat, {}, true, 0.0f);
+        ExpectVectorNear(lifted, liftPlayer.GetPos(), 0.0f, "hitting only a hazard does not lift the player");
+        liftPlayer.SetOnGround(true);
+        liftResolver.ResolveAttack(liftPlayer, liftMovement, liftStatus, liftCombat, {&firstTarget}, false, 0.0f);
+        ExpectVectorNear(lifted, liftPlayer.GetPos(), 0.0f, "a grounded attack does not lift the player");
+    }
     firstPlayer.NotLand();
     PlayerCombat airCombat(MakeTestCombatDependencies(game));
-    for (int index = 0; index < 3; ++index) {
-        ExpectTrue(airCombat.CanStartAirAttack(), "three airborne weak attacks available");
+    for (int index = 0; index < 5; ++index) {
+
         airCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
         ExpectTrue(airCombat.IsAirAttacking(), "air weak attack locks airborne movement");
-        ExpectFalse(airCombat.CanDodgeDuringAttack(), "air weak attack initially prevents dodge");
+        ExpectTrue(airCombat.CanDodgeDuringAttack() ==
+                       (airCombat.GetCurrentComboAttackSettings().dodgeCancelSeconds <= 0.0f),
+                   "air attack uses the shared dodge cancellation window");
         airCombat.UpdateAttackDodgeLock(0.51f);
         ExpectTrue(airCombat.CanDodgeDuringAttack(), "dodge cancel opens after delay");
         airCombat.CancelAirAttackForDodge();
         ExpectFalse(airCombat.HasPendingAttackHit(), "dodge cancel clears pending air hit");
         ExpectTrue(airCombat.CanMoveDuringAttack(), "dodge cancel permits air movement");
     }
-    ExpectFalse(airCombat.CanStartAirAttack(), "cancel does not bypass airborne attack limit");
+
     airCombat.PrepareAssistAirCombo();
-    ExpectTrue(airCombat.CanStartAirAttack(), "assist combo prepares a fresh airborne attack allowance");
+
     airCombat.RecordAirWeakAttackHit();
     airCombat.StartAirDodgeAttack();
     ExpectTrue(airCombat.IsEnhancedAirDodgeAttackActive(), "preceding air weak hit enhances the next dodge");
@@ -1241,33 +1636,33 @@ void RunRuntimeCombatTests(Game& game)
     destinationCombat.ResetForPlacementInheritance(sourceCombat, false);
     ExpectFalse(destinationCombat.HasPendingAttackHit(), "split does not duplicate a pending hit or keep an old hit");
     ExpectTrue(sourceCombat.HasPendingAttackHit(), "split leaves the original attack with its original body");
-    const float recovery = sourceCombat.GetAttackHitDelay() + sourceCombat.GetDefaultAttackMotionTimer() +
-                           sourceCombat.GetGroundWeakAttackCooldownSeconds();
+    const auto sourceAttack = sourceCombat.GetCurrentComboAttackSettings();
+    const float recovery = sourceAttack.hitDelaySeconds + sourceAttack.motionSeconds + sourceAttack.cooldownSeconds;
     ExpectNear(recovery, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
                "split inherits pending hit and motion recovery");
     destinationCombat.UpdateAttackCooldown(0.1f);
     sourceCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 0.1f);
     sourceCombat.UpdateAttackCooldown(0.1f);
-    sourceCombat.InheritControlRestrictions(destinationCombat, false);
+    sourceCombat.InheritControlRestrictions(destinationCombat);
     ExpectNear(recovery - 0.1f, sourceCombat.GetAttackCooldownRemaining(), 0.0001f,
                "switching back preserves remaining recovery without restarting or shortening it");
-    destinationCombat.InheritControlRestrictions(sourceCombat, false);
+    destinationCombat.InheritControlRestrictions(sourceCombat);
     ExpectNear(recovery - 0.1f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
                "repeated switching cannot bypass recovery");
 
     firstPlayer.SetOnGround(false);
     PlayerCombat airborneCombat(MakeTestCombatDependencies(game));
-    for (int attack = 0; attack < 3; ++attack) {
+    for (int attack = 0; attack < 7; ++attack) {
         airborneCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
-        airborneCombat.CancelCurrentAttack();
+        while (airborneCombat.HasPendingAttackHit()) {
+            airborneCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+        }
     }
     destinationCombat.ResetForPlacementInheritance(airborneCombat, true);
-    ExpectFalse(destinationCombat.CanStartAirAttack(), "split preserves the exhausted airborne attack allowance");
-    airborneCombat.PrepareAssistAirCombo();
-    destinationCombat.InheritControlRestrictions(airborneCombat, true);
-    ExpectTrue(destinationCombat.CanStartAirAttack(), "switching preserves a restored airborne attack allowance");
-    airborneCombat.InheritControlRestrictions(destinationCombat, true);
-    ExpectTrue(airborneCombat.CanStartAirAttack(), "switching back cannot revive an exhausted old allowance");
+    ExpectEqual(airborneCombat.GetAttackComboIndex(), destinationCombat.GetAttackComboIndex(),
+                "split during later air loops preserves combo progress");
+    airborneCombat.InheritControlRestrictions(destinationCombat);
+    ExpectEqual(2, airborneCombat.GetAttackComboIndex(), "switching back preserves progress within the next air loop");
 
     sourceCombat.StartTiredLock(firstStatus, firstMovement, 2.5f);
     destinationCombat.ResetForPlacementInheritance(sourceCombat, false);
@@ -1288,7 +1683,7 @@ void RunRuntimeCombatTests(Game& game)
 
     PlayerCombat freshCombat(MakeTestCombatDependencies(game));
     destinationCombat.ResetForPlacementInheritance(freshCombat, true);
-    ExpectTrue(destinationCombat.CanStartAirAttack(), "a reused body discards its previous airborne attack count");
+
     ExpectNear(0.0f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
                "a reused body discards old recovery when the source has none");
     std::cout << "[PASS] Runtime.ControlTransfersPreserveAttackRestrictionsWithoutDuplicatingHits\n";

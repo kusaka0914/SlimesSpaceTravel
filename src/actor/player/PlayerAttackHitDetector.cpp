@@ -35,8 +35,17 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, cons
     }
 
     for (Enemy* enemy : player.GetCurrentPlanet()->GetEnemies()) {
-        if (!enemy || enemy->GetIsDead() || !enemy->GetIsActive() ||
-            !player.GetCurrentPlanet()->ArePositionsOnSameSurfaceFace(player.GetPos(), enemy->GetPos())) {
+        if (!enemy || enemy->GetIsDead() || !enemy->IsAlive() || !enemy->GetIsActive()) {
+            continue;
+        }
+
+        // 空中コンボは同じ惑星の空中敵全体を巻き込み、距離・向き・惑星の表裏で対象を絞らない。
+        if (combat.IsComboAttack() && combat.IsAirAttacking() && !enemy->GetOnGround() &&
+            enemy->GetCurrentPlanet() == player.GetCurrentPlanet()) {
+            hitEnemies.push_back(enemy);
+            continue;
+        }
+        if (!player.GetCurrentPlanet()->ArePositionsOnSameSurfaceFace(player.GetPos(), enemy->GetPos())) {
             continue;
         }
 
@@ -55,6 +64,22 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, cons
     }
 
     return hitEnemies;
+}
+
+std::vector<Enemy*> PlayerAttackHitDetector::FindAirborneEnemiesOnCurrentPlanet(const Player& player) const
+{
+    std::vector<Enemy*> enemies;
+    const Planet* planet = player.GetCurrentPlanet();
+    if (!planet) {
+        return enemies;
+    }
+    for (Enemy* enemy : planet->GetEnemies()) {
+        if (enemy && enemy->GetIsActive() && enemy->IsAlive() && !enemy->GetIsDead() && !enemy->IsOnGround() &&
+            enemy->GetCurrentPlanet() == planet) {
+            enemies.push_back(enemy);
+        }
+    }
+    return enemies;
 }
 
 bool PlayerAttackHitDetector::IsGroundedEnemyWithinAirAttackHeight(const Player& player, const Enemy& enemy) const

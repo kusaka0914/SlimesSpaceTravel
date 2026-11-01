@@ -319,6 +319,31 @@ void ParticlePresentationUsesOnlyProvidedSystem(Game& game)
     presentation.UpdateWalking(player, particles, true);
     presentation.UpdateSpecialCharging(player, particles, true, 0);
     ExpectEqual(7U, particles.GetParticles().size(), "reset clears both histories");
+
+    particles.Clear();
+    presentation.Reset();
+    player.SetCurrentPlanet(nullptr);
+    player.SetUpVec({0, 1, 0});
+    player.Land({0, 0, 0});
+    player.SetJumpHeight(1.84f);
+    player.SetAirSlamFullDamageHeight(5.0f);
+    player.SetOnGround(false);
+    player.SetPos({0, player.GetJumpHeight(), 0});
+    presentation.UpdateAirSlamReadiness(player, particles, true, 0);
+    ExpectEqual(0U, particles.GetParticles().size(), "an ordinary jump does not emit a slam aura");
+    player.SetPos({0, 3, 0});
+    presentation.UpdateAirSlamReadiness(player, particles, true, 0);
+    ExpectEqual(1U, particles.GetParticles().size(), "height gained beyond a jump emits a charge aura");
+    player.SetPos({0, 5, 0});
+    presentation.UpdateAirSlamReadiness(player, particles, true, 0);
+    ExpectEqual(2U, particles.GetParticles().size(), "reaching full power emits an immediate burst");
+    presentation.UpdateAirSlamReadiness(player, particles, true, 0);
+    ExpectEqual(2U, particles.GetParticles().size(), "full power does not repeat its burst every frame");
+    presentation.UpdateAirSlamReadiness(player, particles, false, 1);
+    ExpectEqual(2U, particles.GetParticles().size(), "disabled readiness does not emit");
+    player.SetOnGround(true);
+    presentation.UpdateAirSlamReadiness(player, particles, true, 1);
+    ExpectEqual(2U, particles.GetParticles().size(), "grounded players do not emit a height aura");
 }
 
 void ExpectBillboardBasis(const glm::mat4& matrix)

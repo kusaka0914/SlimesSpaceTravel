@@ -135,8 +135,8 @@ void PauseOperationGuideRenderer::Draw()
     row({"buttonB_copy", "", "移動"});
     row({"buttonB_copy_copy", "", "カメラ回転"});
     row({"buttonA", "", "ジャンプ"});
-    row({"buttonA", "空中で押す", "空中回避"});
-    row({"buttonB", "", "回避"});
+    row({"buttonA", "空中で押す", "空中ダッシュ"});
+    row({"buttonB", "", "ダッシュ"});
 
     heading("攻撃・回復");
     row({"buttonY", "", assist ? "攻撃" : "弱攻撃"});
