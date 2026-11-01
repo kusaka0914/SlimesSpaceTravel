@@ -4,6 +4,7 @@
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/enemy/EnemyStateMachine.h"
 #include "actor/enemy/EnemyStatus.h"
 #include "system/AudioSystem.h"
@@ -519,12 +520,26 @@ void EnemyMovement::ResolveGravitySlamImpact(Enemy& enemy, EnemyStatus& status)
 
     ParticleSystem* particleSystem = enemy.GetGame()->GetParticleSystem();
     if (particleSystem) {
+        // 描画モデルの横幅を使い、エディターで変更したスケールも演出に反映する。
+        constexpr float normalEnemyHorizontalHalfExtent = 0.4f;
+        constexpr float normalEnemyRadius = 0.75f;
+        float bodySizeMultiplier = std::max(0.01f, enemy.GetRadius()) / normalEnemyRadius;
+        EnemyCollisionGeometry::ModelBounds bounds;
+        if (EnemyCollisionGeometry::TryCreateModelBounds(enemy, bounds)) {
+            bodySizeMultiplier = std::max(bounds.halfExtents.x, bounds.halfExtents.z) / normalEnemyHorizontalHalfExtent;
+        }
+
         ParticleSpawnContext context;
         context.position = enemy.GetPos();
         context.normal = enemy.GetUpVec();
         context.direction = enemy.GetUpVec();
-        context.scale = glm::mix(1.0f, 1.8f, heightRatio);
+        context.scale = bodySizeMultiplier * glm::mix(1.0f, 1.8f, heightRatio);
         particleSystem->Emit("landing_dust", context);
+
+        // 衝撃波にも同じ体格倍率を使い、高さによる威力の違いを重ねる。
+        context.position += context.normal * 0.04f;
+        context.scale = bodySizeMultiplier * glm::mix(1.0f, 1.3f, heightRatio);
+        particleSystem->Emit("enemy_slam_shockwave", context);
     }
 
     enemy.SetIsStrongAttacked(true);

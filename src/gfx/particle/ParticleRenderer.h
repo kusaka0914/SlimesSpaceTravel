@@ -13,7 +13,7 @@
 
 class ParticleShader;
 
-// ParticleSystemの粒子をビルボードで描画し、シェーダー・バッファ・テクスチャを所有する。
+// ParticleSystemの粒子を指定された向きで描画し、シェーダー・バッファ・テクスチャを所有する。
 // 生成・描画・破棄は有効なGLコンテキスト上で行う。入力の粒子は描画中だけ借用する。
 class ParticleRenderer {
 public:
@@ -30,6 +30,7 @@ private:
         glm::vec4 color{1.0f};
         float rotationRadians = 0.0f;
         float stretch = 1.0f;
+        glm::vec3 surfaceNormal{0.0f};
     };
 
     struct RenderItem {

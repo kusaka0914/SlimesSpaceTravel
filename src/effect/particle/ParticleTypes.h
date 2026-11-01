@@ -14,6 +14,9 @@ enum class ParticleRenderMode {
 
     // 画面上の速度方向へ向け、速度とvelocityStretchに応じて伸ばす。
     VelocityAligned,
+
+    // 放出時のnormalに垂直な平面へ固定する。衝撃波など地面に沿う表現に使う。
+    SurfaceAligned,
 };
 
 // Fixed・ConeはParticleSpawnContext::direction、Hemisphereはnormalを基準に放出する。

@@ -30,6 +30,7 @@ constexpr const char* blendModeLabels[] = {
 constexpr const char* renderModeLabels[] = {
     "ビルボード",
     "速度方向に整列",
+    "地面の向きに整列",
 };
 
 constexpr const char* directionModeLabels[] = {
@@ -69,11 +70,14 @@ ParticleBlendMode ToBlendMode(int index)
 
 int ToIndex(ParticleRenderMode mode)
 {
-    return mode == ParticleRenderMode::VelocityAligned ? 1 : 0;
+    return mode == ParticleRenderMode::SurfaceAligned ? 2 : (mode == ParticleRenderMode::VelocityAligned ? 1 : 0);
 }
 
 ParticleRenderMode ToRenderMode(int index)
 {
+    if (index == 2) {
+        return ParticleRenderMode::SurfaceAligned;
+    }
     return index == 1 ? ParticleRenderMode::VelocityAligned : ParticleRenderMode::Billboard;
 }
 

@@ -368,3 +368,45 @@ particleEffects:
         positionOffset: [0, 0, 0]
         colorStart: [0.96, 0.94, 0.88, 0.74]
         colorEnd: [0.72, 0.7, 0.66, 0]
+
+  air_slam_shockwave:
+    name: 叩きつけ・着地衝撃波
+    emitters:
+      - texture: shockwave_ring.png
+        blendMode: additive
+        renderMode: surfaceAligned
+        directionMode: fixed
+        count: 1
+        lifetime: 0.5
+        speed: 0
+        size:
+          start: 0.8
+          endMultiplier: 11.5
+        rotationDegrees: 0
+        angularVelocityDegrees: 0
+        gravity: 0
+        drag: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 0.9, 0.65, 0.85]
+        colorEnd: [1, 0.65, 0.25, 0]
+
+  enemy_slam_shockwave:
+    name: 敵の叩きつけ・着地衝撃波
+    emitters:
+      - texture: shockwave_ring.png
+        blendMode: additive
+        renderMode: surfaceAligned
+        directionMode: fixed
+        count: 1
+        lifetime: 0.32
+        speed: 0
+        size:
+          start: 0.6
+          endMultiplier: 5
+        rotationDegrees: 0
+        angularVelocityDegrees: 0
+        gravity: 0
+        drag: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 0.9, 0.65, 0.5]
+        colorEnd: [1, 0.65, 0.25, 0]

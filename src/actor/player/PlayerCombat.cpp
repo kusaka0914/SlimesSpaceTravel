@@ -9,6 +9,7 @@
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerStatus.h"
 #include "system/AudioSystem.h"
+#include "system/ParticleSystem.h"
 
 #include <algorithm>
 #include <cmath>
@@ -149,6 +150,16 @@ bool PlayerCombat::UpdateAirSlamContact(Player& player, const PlayerMovement& mo
 
 bool PlayerCombat::ResolveAirSlamImpact(Player& player, PlayerMovement& movement, float deltaTime)
 {
+    if (mDependencies.particles) {
+        ParticleSpawnContext context;
+        context.normal = player.GetUpVec();
+
+        // 接地面との深度競合を避けるため、足元からわずかに浮かせる。
+        context.position = player.GetPos() + context.normal * 0.04f;
+        context.direction = context.normal;
+        mDependencies.particles->Emit("air_slam_shockwave", context);
+    }
+
     ConfigureStrongAttack();
     ++mResolvedAttackSequence;
     const std::vector<Enemy*> hitEnemies = mHitDetector.FindEnemiesInRadius(player, mStrongAttackRange);
