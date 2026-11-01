@@ -33,6 +33,7 @@ public:
     const std::vector<PlatformRevealTarget>& GetHideTargets() const { return mHideTargets; }
 
     bool GetIsOn() const { return mIsGroupActivated || mCurrentPressingPlayer != nullptr; }
+    bool GetIsActivated() const { return mIsGroupActivated; }
 
     // グループに2つ以上の床があり、そのいずれかが成立済みならtrue。現在の同時押下の有無とは区別する。
     bool GetIsGroupCompleted() const;

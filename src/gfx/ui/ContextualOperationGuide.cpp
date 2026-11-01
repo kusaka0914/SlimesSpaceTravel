@@ -100,6 +100,13 @@ void ContextualOperationGuide::RequestMergeTooFar(int playerNumber)
     }
 }
 
+void ContextualOperationGuide::RequestCameraControlBlocked(int playerNumber)
+{
+    if (playerNumber >= 1 && playerNumber <= 2) {
+        Enqueue(Kind::CameraControlBlocked, playerNumber, 3.0f);
+    }
+}
+
 void ContextualOperationGuide::RequestInsufficientJewels(int playerNumber, int requiredJewels)
 {
     if (playerNumber < 1 || playerNumber > 2 || requiredJewels <= 0) {
@@ -154,6 +161,10 @@ bool ContextualOperationGuide::IsAvailable(const Request& request, const Availab
         return request.playerNumber >= 1 && request.playerNumber <= 2 &&
                availability.activePlayers[request.playerNumber - 1] &&
                availability.jewelCounts[request.playerNumber - 1] < request.requiredJewels;
+    case Kind::CameraControlBlocked:
+        return request.playerNumber >= 1 && request.playerNumber <= 2 &&
+               availability.activePlayers[request.playerNumber - 1] &&
+               availability.canExplainBlockedCamera[request.playerNumber - 1];
     case Kind::Recover:
         return request.playerNumber >= 1 && request.playerNumber <= 2 &&
                availability.canRecover[request.playerNumber - 1];

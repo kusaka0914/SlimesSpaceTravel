@@ -89,7 +89,7 @@ private:
     StageActorPlacementController& mPlacementController;
     int mSelectedPlanetIndex = -1;
     std::string mSelectedModel = "crystal.obj";
-    std::string mSelectedTexture = "textures/jewel.png";
+    std::string mSelectedTexture;
     glm::vec3 mScale{0.22f};
 };
 

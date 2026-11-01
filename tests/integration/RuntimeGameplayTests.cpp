@@ -3,6 +3,7 @@
 #include "actor/Actor.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/player/PlanetGravityCandidateSelector.h"
 #include "actor/player/PlayerCombat.h"
@@ -12,8 +13,10 @@
 #include "actor/player/PlayerStatus.h"
 #include "app/Game.h"
 #include "component/Component.h"
+#include "component/PlatformPressDetection.h"
 #include "gfx/UIRenderer.h"
 #include "gfx/render3d/CharacterShadowSurface.h"
+#include "gfx/render3d/TransparentMeshDrawOrder.h"
 #include "support/RuntimeStageSupport.h"
 #include "support/TestSupport.h"
 #include "system/ActorLoadSystem.h"
@@ -35,6 +38,7 @@
 #include "world/GameWorld.h"
 #include "world/Stage.h"
 
+#include <array>
 #include <btBulletDynamicsCommon.h>
 #include <cmath>
 #include <glm/gtc/constants.hpp>
@@ -315,6 +319,62 @@ void StairCollisionProxiesRemoveNosingHeadContacts(Game& game)
     ExpectTrue(meshes->ResolveCollisionMeshGeometry("../assets/models/platform.obj") != nullptr,
                "models without a collision proxy keep using their original mesh");
     std::cout << "[PASS] Runtime.StairCollisionProxiesRemoveNosingHeadContacts\n";
+}
+
+void SwitchPressRequiresActualGroundContact(Game& game)
+{
+    auto* world = game.GetPhysicsSystem()->GetBulletWorld();
+    ExpectTrue(world != nullptr, "switch contact test has a physics world");
+    btBoxShape shape(btVector3(2, 0.05f, 2));
+    Platform platform(&game), otherPlatform(&game);
+    Player player(&game);
+    struct ScopedSurface {
+        btDiscreteDynamicsWorld& world;
+        btCollisionObject object;
+        ScopedSurface(btDiscreteDynamicsWorld& world, btCollisionShape& shape, Actor& owner)
+            : world(world)
+        {
+            object.setCollisionShape(&shape);
+            object.setUserPointer(&owner);
+            object.setWorldTransform(btTransform::getIdentity());
+            world.addCollisionObject(&object, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+        }
+        ~ScopedSurface() { world.removeCollisionObject(&object); }
+    } surface(*world, shape, platform);
+    const glm::vec3 origin(10000.0f);
+    for (float degrees : {0.0f, 90.0f, 180.0f}) {
+        const auto rotation = glm::angleAxis(glm::radians(degrees), glm::vec3(0, 0, 1));
+        const auto up = rotation * glm::vec3(0, 1, 0);
+        btTransform transform = btTransform::getIdentity();
+        const auto center = origin - up * 0.05f;
+        transform.setOrigin(btVector3(center.x, center.y, center.z));
+        transform.setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+        surface.object.setWorldTransform(transform);
+        world->updateSingleAabb(&surface.object);
+        player.SetUpVec(up);
+        for (bool split : {false, true}) {
+            player.SetSplitForm(split);
+            player.ClearGroundContact();
+            player.SetOnGround(true);
+            player.SetPos(origin);
+            ExpectTrue(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                       "grounded contact presses the switch at every surface orientation and body size");
+            player.SetOnGround(false);
+            player.SetVelocity(-up);
+            player.SetPos(origin + up * 0.02f);
+            ExpectFalse(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                        "a descending airborne player does not press a nearby switch");
+            player.AttachToPlatform(&platform);
+            player.SetPos(origin + up * 0.2f);
+            ExpectFalse(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                        "an old supporting actor cannot press a switch from above");
+            player.AttachToPlatform(&otherPlatform);
+            player.SetPos(origin);
+            ExpectFalse(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                        "standing on another platform does not press the switch");
+        }
+    }
+    std::cout << "[PASS] Runtime.SwitchPressRequiresActualGroundContact\n";
 }
 
 void PlayerShadowsStayOnTheSupportingSurface(Game& game)
@@ -779,6 +839,25 @@ void MovementActionsResetOnlyTheirOwnState(Game& game)
     movement.StartDodgeMovement(player, input);
     ExpectNear(movement.GetDodgeDuration() * 4, movement.GetDodgeTimer(), 0.0001f, "airborne dodge duration");
 
+    PlayerMovement splitMovement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+    splitMovement.InheritDodgeAvailability(movement);
+    ExpectFalse(splitMovement.CanDodge(), "split body inherits consumed airborne dodge");
+    ExpectNear(movement.GetDodgeCooldown(), splitMovement.GetDodgeCooldown(), 0.0001f,
+               "split body inherits remaining dodge cooldown");
+    splitMovement.UpdateDodgeCooldown(10.0f);
+    ExpectFalse(splitMovement.CanDodge(), "split does not restore air dodge when cooldown expires");
+    splitMovement.RestoreAirDodge();
+    ExpectTrue(splitMovement.CanDodge(), "landing still restores the split body's dodge");
+    movement.InheritDodgeAvailability(splitMovement);
+    ExpectTrue(movement.CanDodge(), "merge inherits restored availability instead of stale body state");
+
+    splitMovement.StartDodgeMovement(player, input);
+    ExpectTrue(splitMovement.GetDodgeTimer() > 0.0f, "reused body still has an old dodge movement timer");
+    splitMovement.ResetForPlacementInheritance(movement);
+    ExpectNear(0.0f, splitMovement.GetDodgeTimer(), 0.0f,
+               "idle split body cannot retain a dodge timer that affects ellipsoid gravity");
+    ExpectTrue(splitMovement.CanDodge(), "clearing old movement preserves the source's available dodge");
+
     movement.SetJumpHeight(2);
     movement.SetJumpAscentDuration(0.4f);
     player.SetVelocity({1, -7, 2});
@@ -901,13 +980,16 @@ void WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(Game& game)
 
 void SoulOwnershipAndGuardBreakSwitchStayIndependentOfBodyIdentity(Game& game)
 {
+    Platform previousFloor(&game);
     Player mainPlayer(&game);
     Player clone(&game);
     mainPlayer.SetPlayerNum(1);
     clone.SetPlayerNum(2);
     mainPlayer.SetPos(glm::vec3(1000.0f));
+    mainPlayer.SetOnGround(true);
     mainPlayer.SetHp(6.0f);
     clone.SetIsActive(false);
+    clone.AttachToPlatform(&previousFloor);
     GameWorld world;
     world.AddPlayer(&mainPlayer);
     world.AddPlayer(&clone);
@@ -925,7 +1007,16 @@ void SoulOwnershipAndGuardBreakSwitchStayIndependentOfBodyIdentity(Game& game)
     ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == nullptr, "no split-only soul in one body");
     ExpectTrue(controller.ToggleSplit() == PlayerConfigurationController::SplitToggleResult::Accepted,
                "split begins in empty space");
+    ExpectFalse(clone.IsAttachedToPlatform(), "split discards the reused body's previous platform attachment");
+    // 分裂開始直後の本体のジャンプ・落下も、完了時の状態として扱う。
+    mainPlayer.SetOnGround(false);
+    mainPlayer.SetVelocity(glm::vec3(0.0f, 3.0f, 0.0f));
+    mainPlayer.SetShouldJudgeLanding(false);
     controller.UpdateSplitMergeTransition(0.4f);
+    ExpectFalse(clone.GetOnGround(), "split completion does not keep its initial grounded flag in midair");
+    ExpectTrue(clone.GetGroundActor() == nullptr, "airborne clone has no stale supporting actor");
+    ExpectVectorNear(mainPlayer.GetVelocity(), clone.GetVelocity(), 0.0001f,
+                     "split completion inherits the current vertical velocity instead of starting a new jump");
     ExpectTrue(controller.GetControlledPlayer() == &clone, "split completion selects clone immediately");
     ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == &clone, "soul follows selected body");
     ExpectTrue(controller.SwitchControlledPlayer(), "manual transfer succeeds");
@@ -983,6 +1074,37 @@ void GuardBreakProtectionDoesNotShortenDamageInvincibility(Game& game)
     std::cout << "[PASS] Runtime.GuardBreakProtectionDoesNotShortenDamageInvincibility\n";
 }
 
+void TransparentTrianglesUseViewDepthAcrossMeshes()
+{
+    std::array<LoadedMesh, 2> meshes;
+    auto firstTriangles = std::make_shared<std::vector<MeshTriangle>>();
+    firstTriangles->push_back({{0.0f, 0.0f, -1.0f}, {0, 1, 2}});
+    firstTriangles->push_back({{0.0f, 0.0f, -5.0f}, {3, 4, 5}});
+    auto secondTriangles = std::make_shared<std::vector<MeshTriangle>>();
+    secondTriangles->push_back({{0.0f, 0.0f, -3.0f}, {6, 7, 8}});
+    meshes[0].triangles = firstTriangles;
+    meshes[0].indexCount = 6;
+    meshes[1].triangles = secondTriangles;
+    meshes[1].indexCount = 3;
+    const auto order = CreateTransparentMeshDrawOrder(meshes, glm::mat4(1.0f));
+    ExpectTrue(order.indices == std::vector<unsigned int>{3, 4, 5, 6, 7, 8, 0, 1, 2},
+               "transparent surfaces draw far-to-near across materials");
+    ExpectEqual(std::size_t(3), order.batches.size(), "interleaved meshes preserve triangle order");
+    ExpectTrue(order.batches[0].mesh == &meshes[0] && order.batches[1].mesh == &meshes[1] &&
+                   order.batches[2].mesh == &meshes[0],
+               "each batch retains the correct material and VAO");
+    ExpectEqual(std::size_t(6), order.batches[2].firstIndex, "batch offsets refer to sorted EBO");
+    const glm::mat4 reverseView = glm::rotate(glm::mat4(1.0f), glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+    const auto reverse = CreateTransparentMeshDrawOrder(meshes, reverseView);
+    ExpectTrue(reverse.indices == std::vector<unsigned int>{0, 1, 2, 6, 7, 8, 3, 4, 5},
+               "opposite camera recomputes transparent face order");
+    ExpectEqual(0U, firstTriangles->front().indices[0], "shared source mesh indices stay unchanged");
+    meshes[0].hasBoneInfluences = true;
+    ExpectTrue(CreateTransparentMeshDrawOrder(meshes, glm::mat4(1.0f)).indices.empty(),
+               "skinned meshes do not use stale unskinned triangle centers");
+    std::cout << "[PASS] Runtime.TransparentTrianglesUseViewDepthAcrossMeshes\n";
+}
+
 } // namespace
 
 void RunRuntimeGameplayTests(Game& game)
@@ -994,6 +1116,7 @@ void RunRuntimeGameplayTests(Game& game)
     SweepsStopAtThinWallsAndResolveOverlap();
     LeaningSidesPreserveAirborneVerticalMovement(game);
     StairCollisionProxiesRemoveNosingHeadContacts(game);
+    SwitchPressRequiresActualGroundContact(game);
     PlayerShadowsStayOnTheSupportingSurface(game);
     LandingRequiresSupportingSurface(game);
     MovementActionsResetOnlyTheirOwnState(game);
@@ -1003,6 +1126,7 @@ void RunRuntimeGameplayTests(Game& game)
     CollisionFiltersSkipEmptyRegistryEntries(game);
     SoulOwnershipAndGuardBreakSwitchStayIndependentOfBodyIdentity(game);
     GuardBreakProtectionDoesNotShortenDamageInvincibility(game);
+    TransparentTrianglesUseViewDepthAcrossMeshes();
 }
 
 void RunRuntimeCombatTests(Game& game)
@@ -1108,4 +1232,64 @@ void RunRuntimeCombatTests(Game& game)
     ExpectEqual(firstMovement.GetPlayerNum(), notifiedPlayer, "hazard hit reaches injected notification");
     std::cout << "[PASS] Runtime.CombatFeedbackUsesProvidedNotification\n";
     std::cout << "[PASS] Runtime.AirCombatDodgeCancelLimitAndAssistPreparation\n";
+
+    firstPlayer.SetOnGround(true);
+    PlayerCombat sourceCombat(MakeTestCombatDependencies(game));
+    PlayerCombat destinationCombat(MakeTestCombatDependencies(game));
+    sourceCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+    destinationCombat.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+    destinationCombat.ResetForPlacementInheritance(sourceCombat, false);
+    ExpectFalse(destinationCombat.HasPendingAttackHit(), "split does not duplicate a pending hit or keep an old hit");
+    ExpectTrue(sourceCombat.HasPendingAttackHit(), "split leaves the original attack with its original body");
+    const float recovery = sourceCombat.GetAttackHitDelay() + sourceCombat.GetDefaultAttackMotionTimer() +
+                           sourceCombat.GetGroundWeakAttackCooldownSeconds();
+    ExpectNear(recovery, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "split inherits pending hit and motion recovery");
+    destinationCombat.UpdateAttackCooldown(0.1f);
+    sourceCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 0.1f);
+    sourceCombat.UpdateAttackCooldown(0.1f);
+    sourceCombat.InheritControlRestrictions(destinationCombat, false);
+    ExpectNear(recovery - 0.1f, sourceCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "switching back preserves remaining recovery without restarting or shortening it");
+    destinationCombat.InheritControlRestrictions(sourceCombat, false);
+    ExpectNear(recovery - 0.1f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "repeated switching cannot bypass recovery");
+
+    firstPlayer.SetOnGround(false);
+    PlayerCombat airborneCombat(MakeTestCombatDependencies(game));
+    for (int attack = 0; attack < 3; ++attack) {
+        airborneCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        airborneCombat.CancelCurrentAttack();
+    }
+    destinationCombat.ResetForPlacementInheritance(airborneCombat, true);
+    ExpectFalse(destinationCombat.CanStartAirAttack(), "split preserves the exhausted airborne attack allowance");
+    airborneCombat.PrepareAssistAirCombo();
+    destinationCombat.InheritControlRestrictions(airborneCombat, true);
+    ExpectTrue(destinationCombat.CanStartAirAttack(), "switching preserves a restored airborne attack allowance");
+    airborneCombat.InheritControlRestrictions(destinationCombat, true);
+    ExpectTrue(airborneCombat.CanStartAirAttack(), "switching back cannot revive an exhausted old allowance");
+
+    sourceCombat.StartTiredLock(firstStatus, firstMovement, 2.5f);
+    destinationCombat.ResetForPlacementInheritance(sourceCombat, false);
+    PlayerStatus inheritedStatus;
+    inheritedStatus.InheritPlacementState(firstStatus);
+    destinationCombat.ReduceTiredLock(inheritedStatus, secondMovement, 0.5f);
+    ExpectNear(2.0f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "fatigue recovery input also shortens inherited recovery");
+    destinationCombat.UpdateAttackMoveLock(inheritedStatus, 2.1f);
+    ExpectFalse(inheritedStatus.IsTired(), "placement keeps the timer that releases inherited fatigue");
+    destinationCombat.EndTiredLock(inheritedStatus, secondMovement);
+    ExpectNear(0.0f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "respawn or full fatigue recovery clears inherited recovery");
+    inheritedStatus.StartDamageInvincibility();
+    PlayerStatus unprotectedStatus;
+    inheritedStatus.InheritPlacementState(unprotectedStatus);
+    ExpectFalse(inheritedStatus.IsInvincible(), "reusing a body discards old damage invincibility");
+
+    PlayerCombat freshCombat(MakeTestCombatDependencies(game));
+    destinationCombat.ResetForPlacementInheritance(freshCombat, true);
+    ExpectTrue(destinationCombat.CanStartAirAttack(), "a reused body discards its previous airborne attack count");
+    ExpectNear(0.0f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "a reused body discards old recovery when the source has none");
+    std::cout << "[PASS] Runtime.ControlTransfersPreserveAttackRestrictionsWithoutDuplicatingHits\n";
 }

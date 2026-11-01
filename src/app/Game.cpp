@@ -183,6 +183,12 @@ bool Game::CreateGameSystems()
                        ? mActorLoadSystem->GetActorLocator().FindPlacedActor(*stage, sequenceName, yamlIndex)
                        : nullptr;
         },
+        .onCameraControlBlocked =
+            [this](int playerNumber) {
+                if (mUIRenderer) {
+                    mUIRenderer->NotifyCameraControlBlocked(playerNumber);
+                }
+            },
     });
     mMeshLoadSystem = std::make_unique<MeshLoadSystem>();
     mUGCPreviewController->SetMeshLoadSystem(*mMeshLoadSystem);

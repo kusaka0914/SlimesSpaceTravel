@@ -321,7 +321,7 @@ PlayerSoulPresentation PlayerConfigurationController::CreateSoulPresentation() c
     return presentation;
 }
 
-void PlayerConfigurationController::BeginSoulTransfer(int previousPlayerIndex, int currentPlayerIndex)
+void PlayerConfigurationController::BeginSoloControlTransfer(int previousPlayerIndex, int currentPlayerIndex)
 {
     const auto& players = mWorld.GetPlayers();
     if (mRuntimeState.mIsSecondPlayerJoined || !IsPlayerSplit() || previousPlayerIndex < 0 || currentPlayerIndex < 0 ||
@@ -331,10 +331,12 @@ void PlayerConfigurationController::BeginSoulTransfer(int previousPlayerIndex, i
     }
 
     const Player* source = players[static_cast<std::size_t>(previousPlayerIndex)];
-    const Player* destination = players[static_cast<std::size_t>(currentPlayerIndex)];
-    if (!source || !destination || !source->GetIsActive() || !destination->GetIsActive()) {
+    Player* destination = players[static_cast<std::size_t>(currentPlayerIndex)];
+    if (!source || !destination || !destination->GetIsActive()) {
         return;
     }
+
+    destination->InheritCombatRestrictions(*source);
 
     auto& soul = mRuntimeState.mSoulTransfer;
     soul.transferSeconds = 0.0f;
@@ -391,7 +393,7 @@ void PlayerConfigurationController::UpdateSplitMergeTransition(float deltaTime)
 
     if (mRuntimeState.mSplitMergeTransition.kind == SplitMergeTransitionKind::Splitting) {
         UpdateSoloSplitTransition(progress);
-        if (progress >= 1.0f) {
+        if (IsSplitMergeTransitionActive() && progress >= 1.0f) {
             CompleteSoloSplitTransition();
         }
         return;
@@ -476,6 +478,7 @@ PlayerConfigurationController::SplitToggleResult PlayerConfigurationController::
     splitPlayer.SetScale(finalSplitScale * splitPlayerInitialScaleMultiplier);
     splitPlayer.SetVelocity(glm::vec3(0.0f));
     splitPlayer.SetShouldJudgeLanding(false);
+    splitPlayer.SetControlLocked(true);
 
     mRuntimeState.mControlState.BeginPlayerSplit();
     SynchronizeSoloSplitResources(mainPlayer);
@@ -550,6 +553,24 @@ bool PlayerConfigurationController::IsSplitDirectionClear(Player& mainPlayer, co
            correctionDistance <= splitPositionMaximumCorrectionWorldUnits;
 }
 
+std::optional<glm::vec3> PlayerConfigurationController::FindMergedPlayerPosition(Player& player) const
+{
+    // 分裂中の縮小した判定では、合体後の体が周囲に収まるか分からない。
+    const bool wasSplit = player.IsSplitForm();
+    const glm::vec3 previousScale = player.GetScale();
+    player.SetSplitForm(false);
+    const ActorMovementCollisionResult collision =
+        mPhysicsSystem.ResolveMovementCollision(&player, glm::vec3(0.0f), player.GetPos());
+    player.SetSplitForm(wasSplit);
+    player.SetScale(previousScale);
+    const float correction = glm::length(collision.resolvedPosition - player.GetPos());
+    if (collision.hasUnresolvedStageOverlap || !std::isfinite(correction) ||
+        correction > splitPositionMaximumCorrectionWorldUnits) {
+        return std::nullopt;
+    }
+    return collision.resolvedPosition;
+}
+
 bool PlayerConfigurationController::BeginSoloMergeTransition()
 {
     if (!AreSplitPlayersCloseEnoughToMerge()) {
@@ -563,10 +584,14 @@ bool PlayerConfigurationController::BeginSoloMergeTransition()
 
     Player& mainPlayer = *players[0];
     Player& splitPlayer = *players[1];
+    if (!FindMergedPlayerPosition(mainPlayer)) {
+        return false;
+    }
     mRuntimeState.mIsMergeGuideRequested = false;
     mainPlayer.SetVelocity(glm::vec3(0.0f));
     splitPlayer.SetVelocity(glm::vec3(0.0f));
     splitPlayer.SetShouldJudgeLanding(false);
+    splitPlayer.SetControlLocked(true);
     mRuntimeState.mSplitMergeTransition = {
         .kind = SplitMergeTransitionKind::Merging,
         .elapsedSeconds = 0.0f,
@@ -625,12 +650,29 @@ void PlayerConfigurationController::UpdateSoloSplitTransition(float progress)
 
     Player& mainPlayer = *players[0];
     Player& splitPlayer = *players[1];
+    const glm::vec3 splitDirection = mRuntimeState.mSplitMergeTransition.splitDirection;
+    bool wasBlocked = false;
+    if (!IsSplitDirectionClear(mainPlayer, splitDirection, wasBlocked)) {
+        // 演出中の移動や障害物の変化で分裂先が塞がれたら、元の体へ戻してロックも解除する。
+        mRuntimeState.mSplitMergeTransition = {};
+        MergePlayerInto(0);
+        return;
+    }
     const float easedProgress = CalculateSmoothstep(progress);
     const glm::vec3 upDirection = CalculateUpDirection(mainPlayer);
-    const glm::vec3 splitDirection = mRuntimeState.mSplitMergeTransition.splitDirection;
     const float arcHeight = std::sin(glm::pi<float>() * progress) * splitPlayerArcHeightWorldUnits;
-    splitPlayer.SetPos(CalculateSplitSurfacePosition(mainPlayer, splitDirection, easedProgress) +
-                       upDirection * arcHeight);
+    const glm::vec3 desiredPosition =
+        CalculateSplitSurfacePosition(mainPlayer, splitDirection, easedProgress) + upDirection * arcHeight;
+    const ActorMovementCollisionResult collision =
+        mPhysicsSystem.ResolveMovementCollision(&splitPlayer, glm::vec3(0.0f), desiredPosition);
+    if (mPhysicsSystem.DoesActorSweepHitBlockingStage(splitPlayer, splitPlayer.GetPos(), desiredPosition) ||
+        collision.hasUnresolvedStageOverlap ||
+        glm::length(collision.resolvedPosition - desiredPosition) > splitPositionMaximumCorrectionWorldUnits) {
+        mRuntimeState.mSplitMergeTransition = {};
+        MergePlayerInto(0);
+        return;
+    }
+    splitPlayer.SetPos(collision.resolvedPosition);
 
     const glm::vec3 finalSplitScale = splitPlayer.GetBaseScale() * Player::SplitBodyScaleMultiplier;
     splitPlayer.SetScale(
@@ -673,7 +715,7 @@ void PlayerConfigurationController::CompleteSoloSplitTransition()
         return;
     }
 
-    players[1]->SetShouldJudgeLanding(true);
+    players[1]->FinishSplitPlacementFrom(*players[0]);
     mRuntimeState.mSplitMergeTransition = {};
     // 分裂演出中に変わった構図も含め、切り替える直前のカメラ方向を引き継ぐ。
     mCameraSystem.InheritSplitPlayerCameraDirection(0, 1);
@@ -683,6 +725,26 @@ void PlayerConfigurationController::CompleteSoloSplitTransition()
 
 void PlayerConfigurationController::CompleteSoloMergeTransition()
 {
+    const auto& players = mWorld.GetPlayers();
+    if (players.size() < 2 || !players[0] || !players[1]) {
+        mRuntimeState.mSplitMergeTransition = {};
+        return;
+    }
+    const auto mergedPosition = FindMergedPlayerPosition(*players[0]);
+    if (!mergedPosition) {
+        // 移動床などが演出中に入り込んだ場合、埋まった大きさのまま合体せず分裂状態へ戻す。
+        players[0]->SetSplitForm(true);
+        players[1]->SetSplitForm(true);
+        const auto collision = mPhysicsSystem.ResolveMovementCollision(
+            players[1], glm::vec3(0.0f), mRuntimeState.mSplitMergeTransition.splitPlayerStartPosition);
+        players[1]->SetPos(collision.resolvedPosition);
+        players[1]->ClearGroundContact();
+        players[1]->SetShouldJudgeLanding(true);
+        players[1]->SetControlLocked(false);
+        mRuntimeState.mSplitMergeTransition = {};
+        return;
+    }
+    players[0]->SetPos(*mergedPosition);
     mRuntimeState.mSplitMergeTransition = {};
     if (MergePlayerInto(0, ControlledPlayerCameraTransition::Smooth)) {
         mSceneSystem.OnPlayerSplitMergeSucceeded();
@@ -698,6 +760,12 @@ bool PlayerConfigurationController::MergePlayerInto(int targetPlayerIndex,
                                                     ControlledPlayerCameraTransition cameraTransition)
 {
     mRuntimeState.mIsMergeGuideRequested = false;
+    const auto& players = mWorld.GetPlayers();
+    const Player* controlledPlayer = GetControlledPlayer();
+    if (!mRuntimeState.mIsSecondPlayerJoined && controlledPlayer && players.size() >= 2 && targetPlayerIndex >= 0 &&
+        targetPlayerIndex < 2 && players[static_cast<std::size_t>(targetPlayerIndex)]) {
+        players[static_cast<std::size_t>(targetPlayerIndex)]->InheritCombatRestrictions(*controlledPlayer);
+    }
     if (!PlayerSplitService::MergeIntoMainPlayer(mWorld.GetPlayers(), targetPlayerIndex)) {
         return false;
     }
@@ -724,7 +792,7 @@ void PlayerConfigurationController::SelectControlledPlayer(int playerIndex,
     const std::optional<ControlledPlayerChange> selectionChange =
         mRuntimeState.mControlState.SelectControlledPlayer(playerIndex);
     if (selectionChange) {
-        BeginSoulTransfer(selectionChange->previousPlayerIndex, selectionChange->currentPlayerIndex);
+        BeginSoloControlTransfer(selectionChange->previousPlayerIndex, selectionChange->currentPlayerIndex);
         if (cameraTransition == ControlledPlayerCameraTransition::Smooth) {
             mCameraSystem.TransitionToControlledPlayer(selectionChange->previousPlayerIndex,
                                                        selectionChange->currentPlayerIndex);
@@ -829,6 +897,7 @@ void PlayerConfigurationController::UpdatePendingControlSwitch(float deltaTime)
         mRuntimeState.mControlState.UpdateScheduledControlSwitch(deltaTime, mRuntimeState.mIsSecondPlayerJoined,
                                                                  activePlayerIndex);
     if (selectionChange) {
+        BeginSoloControlTransfer(selectionChange->previousPlayerIndex, selectionChange->currentPlayerIndex);
         mCameraSystem.SnapToControlledPlayer(selectionChange->previousPlayerIndex, selectionChange->currentPlayerIndex);
     }
 }

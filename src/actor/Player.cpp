@@ -442,6 +442,11 @@ void Player::ResolvePreUpdateCollisions()
 
 void Player::UpdateWhileControlLocked(float deltaTime)
 {
+    mStatus.UpdateTimers(deltaTime);
+    mCombat.UpdateAttackCooldown(deltaTime);
+    mCombat.UpdateAttackMoveLock(mStatus, deltaTime);
+    mCombat.UpdateAttackDodgeLock(deltaTime);
+    mMovement.UpdateDodgeCooldown(deltaTime);
     mInput.SuppressCombatInputUntilReleased();
     mVelocity = glm::vec3(0.0f);
     ParticleSystem& particles = *mGame->GetParticleSystem();
@@ -570,6 +575,60 @@ void Player::SetSplitForm(bool isSplitForm)
     mIsSplitForm = isSplitForm;
     const float bodyScaleMultiplier = mIsSplitForm ? SplitBodyScaleMultiplier : 1.0f;
     SetScale(GetBaseScale() * bodyScaleMultiplier);
+}
+
+void Player::InheritSplitActionState(const Player& source)
+{
+    if (&source == this) {
+        return;
+    }
+    mMovement.ResetForPlacementInheritance(source.mMovement);
+    mCombat.ResetForPlacementInheritance(source.mCombat, !source.GetOnGround());
+    mStatus.InheritPlacementState(source.mStatus);
+    mJewelGauge = source.mJewelGauge;
+    mStateMachine.ResetForPlacementInheritance(source.mStateMachine);
+    mPlanetGravityController = source.mPlanetGravityController;
+    mGrounding.ResetRayCastTimer();
+    mShouldJudgeLanding = source.GetOnGround() || source.mShouldJudgeLanding;
+    mInput.SuppressCombatInputUntilReleased();
+}
+
+void Player::InheritCombatRestrictions(const Player& source)
+{
+    if (&source == this) {
+        return;
+    }
+    const bool sharesAirborneBudget = !GetOnGround() && !source.GetOnGround();
+    mCombat.InheritControlRestrictions(source.mCombat, sharesAirborneBudget);
+    const float dodgeCooldown = std::max(mMovement.GetDodgeCooldown(), source.mMovement.GetDodgeCooldown());
+    if (sharesAirborneBudget) {
+        mMovement.InheritDodgeAvailability(source.mMovement);
+    }
+    if (!sharesAirborneBudget) {
+        mMovement.SetDodgeCooldown(dodgeCooldown);
+    }
+    if (source.mStatus.IsTired()) {
+        mStatus.StartTired();
+    }
+}
+
+void Player::FinishSplitPlacementFrom(const Player& source)
+{
+    ClearGroundContact();
+    SetCurrentPlanet(source.GetCurrentPlanet());
+    SetCurrentPlanetNum(source.GetCurrentPlanetNum());
+    SetVelocity(source.GetVelocity());
+    InheritSplitActionState(source);
+    RefreshFallbackUpVec();
+
+    // 演出開始時の接地フラグを信用せず、現在の床でだけジャンプ・回避を回復させる。
+    if (source.GetOnGround()) {
+        TryLandOnSupportingSurface();
+        if (!GetOnGround()) {
+            mPlanetGravityController.OnJumpStarted(*this, mMovement, false);
+        }
+    }
+    SetControlLocked(false);
 }
 
 float Player::CalculateOutgoingAttackDamage(float baseDamage) const

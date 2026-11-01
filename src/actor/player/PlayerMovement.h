@@ -117,6 +117,17 @@ public:
 
     void StartKnockBack(Player& player, const glm::vec3& damageSourcePosition);
     void StartDodgeLock(float seconds) { mDodgeCooldownRemaining = seconds; }
+
+    // 分裂・合体で体を引き継ぐ際、回避の使用済み状態と残り待ち時間をコピーする。回避動作は開始しない。
+    void InheritDodgeAvailability(const PlayerMovement& source)
+    {
+        mHasUsedDodge = source.mHasUsedDodge;
+        mDodgeCooldownRemaining = source.mDodgeCooldownRemaining;
+    }
+
+    // 再配置する体の古い回避動作・方向保持を解除し、元の体の回避制限とジャンプの滞空状態を引き継ぐ。
+    void ResetForPlacementInheritance(const PlayerMovement& source);
+
     void RestoreAirDodge()
     {
         mHasUsedDodge = false;

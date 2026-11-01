@@ -16,11 +16,7 @@
 
 namespace {
 const std::string holdSwitchOffTexturePath = "textures/platform_switch_hold_off_red_platform_uv.png";
-const std::string holdSwitchOnTexturePath = "textures/platform_switch_hold_on_blue_platform_uv.png";
-const std::string latchedSwitchOffTexturePath = "textures/platform_switch_latched_off_red_platform_uv.png";
-const std::string latchedSwitchOnTexturePath = "textures/platform_switch_latched_on_blue_platform_uv.png";
 const std::string twoPlayerSwitchOffTexturePath = "textures/platform_switch_two_player_off_red_platform_uv.png";
-const std::string twoPlayerSwitchOnTexturePath = "textures/platform_switch_two_player_on_blue_platform_uv.png";
 } // namespace
 
 Platform::Platform(Game* game)
@@ -32,7 +28,8 @@ Platform::Platform(Game* game)
 
 void Platform::UpdateActor(float deltaTime)
 {
-    (void)deltaTime;
+    mSwitchCompletionFlashRemainingSeconds =
+        IsSwitchCompleted() ? std::max(0.0f, mSwitchCompletionFlashRemainingSeconds - std::max(0.0f, deltaTime)) : 0.0f;
 
     // Actor本体はComponentより先に更新されるため、動く前の変換をここで保存する。
     mFrameStartPos = GetPos();
@@ -344,19 +341,46 @@ glm::vec2 Platform::GetRenderTextureTiling() const
 const std::string& Platform::GetRenderTextureOverridePath() const
 {
     if (mLatchedGroupSwitchComponent) {
-        return mLatchedGroupSwitchComponent->GetIsOn() ? twoPlayerSwitchOnTexturePath : twoPlayerSwitchOffTexturePath;
+        return twoPlayerSwitchOffTexturePath;
     }
 
     if (!mPressureSwitchComponent) {
         return Actor::GetRenderTextureOverridePath();
     }
 
-    const bool shouldRemainOnAfterPressed = mPressureSwitchComponent->ShouldRemainOnAfterPressed();
-    if (shouldRemainOnAfterPressed) {
-        return mPressureSwitchComponent->GetIsPressed() ? latchedSwitchOnTexturePath : latchedSwitchOffTexturePath;
-    }
+    // 黒いシルエットの素材を共用し、背景色だけをシェーダーで状態に合わせて変える。
+    return holdSwitchOffTexturePath;
+}
 
-    return mPressureSwitchComponent->GetIsPressed() ? holdSwitchOnTexturePath : holdSwitchOffTexturePath;
+bool Platform::IsSwitchCompleted() const
+{
+    if (mLatchedGroupSwitchComponent) {
+        return mLatchedGroupSwitchComponent->GetIsActivated();
+    }
+    return mPressureSwitchComponent && mPressureSwitchComponent->ShouldRemainOnAfterPressed() &&
+           mPressureSwitchComponent->GetIsPressed();
+}
+
+bool Platform::IsSwitchOn() const
+{
+    if (mLatchedGroupSwitchComponent) {
+        return mLatchedGroupSwitchComponent->GetIsOn();
+    }
+    return mPressureSwitchComponent && mPressureSwitchComponent->GetIsPressed();
+}
+
+void Platform::StartSwitchCompletionFlash()
+{
+    mSwitchCompletionFlashRemainingSeconds = switchCompletionFlashDurationSeconds;
+}
+
+float Platform::GetSwitchCompletionFlash() const
+{
+    if (!IsSwitchCompleted()) {
+        return 0.0f;
+    }
+    const float remaining = mSwitchCompletionFlashRemainingSeconds / switchCompletionFlashDurationSeconds;
+    return remaining * remaining;
 }
 
 bool Platform::GetCollisionEnabled() const

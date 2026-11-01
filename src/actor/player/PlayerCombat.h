@@ -5,6 +5,7 @@
 #include "actor/player/PlayerCombatDependencies.h"
 #include "actor/player/PlayerTypes.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -110,6 +111,15 @@ public:
     void StartAirWeakAttackCooldown();
 
     void UpdateAttackCooldown(float deltaTime);
+
+    // 分裂・操作切替で攻撃の待ち時間を短縮しない。双方が空中なら弱攻撃の使用数も引き継ぐ。
+    // 予約中の命中判定やモーション、攻撃番号は複製しない。
+    void InheritControlRestrictions(const PlayerCombat& source, bool sharesAirborneAttackBudget);
+    bool IsControlTransferRecoveryActive() const { return mControlTransferRecoveryRemaining > 0.0f; }
+
+    // 再利用する体の古い攻撃予約・モーションを解除し、配置元の使用制限だけを引き継ぐ。
+    void ResetForPlacementInheritance(const PlayerCombat& source, bool isAirborne);
+
     void UpdateAttackMoveLock(PlayerStatus& status, float deltaTime);
     void UpdateAttackDodgeLock(float deltaTime);
     void UpdateComboKeepTimer(float deltaTime);
@@ -200,7 +210,10 @@ public:
     int GetAttackComboIndex() const { return mAttackComboIndex; }
     float GetAttack() const { return mAttack; }
     float GetAttackSpeed() const { return mAttackSpeed; }
-    float GetAttackCooldownRemaining() const { return mAttackCooldownRemaining; }
+    float GetAttackCooldownRemaining() const
+    {
+        return std::max(mAttackCooldownRemaining, mControlTransferRecoveryRemaining);
+    }
     float GetGroundWeakAttackCooldownSeconds() const { return mGroundWeakAttackCooldownSeconds; }
     float GetAirWeakAttackCooldownSeconds() const { return mAirWeakAttackCooldownSeconds; }
     float GetLastAttackCooldown() const { return mLastAttackCooldown; }
@@ -295,6 +308,7 @@ private:
     float mAttack = 10.0f;
     float mAttackSpeed = 5.0f;
     float mAttackCooldownRemaining = 0.0f;
+    float mControlTransferRecoveryRemaining = 0.0f;
     float mGroundWeakAttackCooldownSeconds = 0.0f;
     float mAirWeakAttackCooldownSeconds = 0.19f;
     float mLastAttackCooldown = 1.0f;

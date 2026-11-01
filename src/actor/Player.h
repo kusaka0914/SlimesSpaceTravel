@@ -291,6 +291,7 @@ public:
     // 入力とカメラ操作
     // ロック中は速度を0にし、通常の接地・行動状態更新を省く。位置の重なり補正は行う。
     void SetControlLocked(bool locked) { mControlLocked = locked; }
+    bool IsControlLocked() const { return mControlLocked; }
     void SuppressJumpUntilReleased() { mInput.SuppressJumpUntilReleased(); }
     void SetCameraYaw(float cameraYaw) { mInput.SetCameraYaw(cameraYaw); }
     // releaseOnNeutralを指定した保持は、カメラ補間後も入力を離すか方向変更するまで継続する。
@@ -385,6 +386,19 @@ public:
     static constexpr float SplitBodyScaleMultiplier = 0.8f;
     void MoveTowardForMergeRecall(const glm::vec3& targetPosition, float deltaTime);
     void SetSplitForm(bool isSplitForm);
+
+    // 分裂・合体の配置元から使用制限・ジャンプと重力の状態を引き継ぎ、再利用する体の古い行動・入力予約を解除する。
+    void InheritSplitActionState(const Player& source);
+
+    // 分裂演出後の位置を保って元の体の最新状態へ同期し、接地を再判定して通常操作を再開する。
+    void FinishSplitPlacementFrom(const Player& source);
+
+    // 操作対象が変わっても攻撃・回避の待ち時間と疲労を維持する。両個体が空中なら使用枠の回復も引き継ぐ。
+    void InheritCombatRestrictions(const Player& source);
+
+    // 共有する個数と回復の残り時間をまとめて同期する。
+    void InheritJewelGauge(const Player& source) { mJewelGauge = source.mJewelGauge; }
+
     bool IsSplitForm() const { return mIsSplitForm; }
     float GetCollisionScaleMultiplier() const override { return mIsSplitForm ? SplitBodyScaleMultiplier : 1.0f; }
 

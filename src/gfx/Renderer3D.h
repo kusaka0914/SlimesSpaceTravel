@@ -176,7 +176,6 @@ private:
     void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos,
                      int stageNumber) const;
     glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;
-    void DrawActorSelectionUnderlay(Actor* actor, bool useOrient) const;
     void DrawActorOutlineUnderlay(Actor* actor, bool useOrient, const glm::vec4& color, float scaleMultiplier) const;
     void DrawActorSelectionOverlay(Actor* actor, bool useOrient) const;
     void DrawUGCMovingPlatformPaths(const SceneRenderState& scene) const;
@@ -209,6 +208,7 @@ private:
 
     GLuint mAttackRangeVAO;
     GLuint mAttackRangeVBO;
+    GLuint mTransparentIndexBuffer = 0;
     mutable std::unordered_set<std::string> mFailedTextureOverrides;
     mutable std::array<glm::vec4, 6> mViewFrustumPlanes{};
     mutable bool mHasValidViewFrustum = false;

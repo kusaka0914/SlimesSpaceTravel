@@ -106,6 +106,14 @@ public:
     float GetRenderOpacity() const override;
     glm::vec2 GetRenderTextureTiling() const override;
     const std::string& GetRenderTextureOverridePath() const override;
+
+    // 降りても成立状態を保持するスイッチだけtrue。2人用はグループ成立後に全床でtrueになる。
+    bool IsSwitchCompleted() const;
+    bool IsSwitchOn() const;
+
+    // 達成した瞬間に呼び、背景部分の短い発光を開始する。
+    void StartSwitchCompletionFlash();
+    float GetSwitchCompletionFlash() const;
     bool GetCollisionEnabled() const;
     bool UsesKinematicPhysics() const;
 
@@ -129,6 +137,9 @@ private:
     PlatformEnemyClearUnlockComponent* mEnemyClearUnlockComponent = nullptr;
     PlatformLatchedGroupSwitchComponent* mLatchedGroupSwitchComponent = nullptr;
     FocusComponent* mFocusComponent = nullptr;
+
+    static constexpr float switchCompletionFlashDurationSeconds = 0.35f;
+    float mSwitchCompletionFlashRemainingSeconds = 0.0f;
 
     CameraZoneSettings mCameraSettings;
     std::string mPlatformId;

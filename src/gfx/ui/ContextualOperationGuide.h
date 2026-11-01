@@ -8,7 +8,7 @@
 class ContextualOperationGuide {
 public:
     // 列挙順を割り込みの優先順位として扱う。
-    enum class Kind { SplitBlocked, MergeTooFar, InsufficientJewels, Recover, Split };
+    enum class Kind { SplitBlocked, MergeTooFar, InsufficientJewels, CameraControlBlocked, Recover, Split };
 
     struct Prompt {
         Kind kind;
@@ -24,6 +24,7 @@ public:
         bool canExplainMergeTooFar = false;
         std::array<bool, 2> activePlayers{};
         std::array<int, 2> jewelCounts{};
+        std::array<bool, 2> canExplainBlockedCamera{};
     };
 
     // 表示不可の間は現在・待機中の案内を破棄する。クールタイムは進める。
@@ -38,6 +39,7 @@ public:
     // 配置判定で失敗した場合だけ通知する。表示中・待機中の再要求は時間を更新しない。
     void RequestSplitBlocked(int playerNumber);
     void RequestMergeTooFar(int playerNumber);
+    void RequestCameraControlBlocked(int playerNumber);
     void RequestInsufficientJewels(int playerNumber, int requiredJewels);
 
     // 回復を理解済みとして通常の回復案内を抑制し、表示・待機中の回復案内を閉じる。0は全Player。

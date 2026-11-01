@@ -5,6 +5,7 @@
 #include <vector>
 
 class DebugLabelRenderer;
+class Actor;
 class NPCProximityMessageRenderer;
 class Planet;
 class Player;
@@ -24,11 +25,20 @@ public:
     void DrawSceneObjects(const glm::mat4& viewMat, const Player* viewportPlayer, const SceneRenderState& scene) const;
 
 private:
+    struct TransparentActorDraw {
+        Actor* actor = nullptr;
+        float opacityMultiplier = 1.0f;
+        float viewDepth = 0.0f;
+    };
+
     void DrawPlanets(const std::vector<Planet*>& planets) const;
     void DrawCharacterShadows(const std::vector<Planet*>& planets, bool shouldDrawPlayers,
                               std::span<Player* const> players) const;
-    void DrawActorOnPlanets(const std::vector<Planet*>& planets, const glm::mat4& viewMat, const Player* viewportPlayer,
-                            const SceneRenderState& scene) const;
+    void DrawActorOnPlanets(const std::vector<Planet*>& planets, const glm::mat4& viewMat,
+                            const SceneRenderState& scene, std::vector<TransparentActorDraw>& transparentActors) const;
+    void DrawTransparentActors(std::vector<TransparentActorDraw>& actors) const;
+    void DrawEnemyEffects(const std::vector<Planet*>& planets, const glm::mat4& viewMat, const Player* viewportPlayer,
+                          const SceneRenderState& scene) const;
 
 private:
     const Renderer3D* mRenderer;

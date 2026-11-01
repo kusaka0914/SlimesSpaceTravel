@@ -46,6 +46,11 @@ uniform bool applyOutputGamma;
 uniform vec3 emissiveColor;
 uniform float emissiveIntensity;
 
+// スイッチの赤い背景だけを作動中は青、達成済みは緑へ変え、達成時に短時間発光させる。
+uniform bool activeSwitch;
+uniform bool completedSwitch;
+uniform float switchCompletionFlash;
+
 // 非操作側の分裂Playerだけに適用する硬化表現。通常のActorでは0にする。
 uniform float hardeningAmount;
 
@@ -178,10 +183,16 @@ vec3 ApplyColorAdjustments(vec3 finalColor)
 void main()
 {
     vec4 baseColor = CalculateBaseColor();
+    // 黒いスライムと金属枠は素材のまま残し、赤が優勢な背景部分だけを置き換える。
+    float switchBackgroundMask = activeSwitch
+        ? smoothstep(0.12, 0.32, baseColor.r - max(baseColor.g, baseColor.b)) : 0.0;
+    vec3 switchBackgroundColor = completedSwitch ? baseColor.grb : baseColor.bgr;
+    baseColor.rgb = mix(baseColor.rgb, switchBackgroundColor, switchBackgroundMask);
+    vec3 switchGlow = vec3(0.3, 1.0, 0.45) * switchBackgroundMask * switchCompletionFlash * 1.5;
 
-    // 非ライティング描画は、照明・発光・後段の色補正を通さずベース色を返す。
+    // 非ライティング描画では、通常の照明・発光・色補正を通さず、操作状態の発光だけを加える。
     if (isUnlit) {
-        outputColor = baseColor;
+        outputColor = vec4(baseColor.rgb + switchGlow, baseColor.a);
         return;
     }
 
@@ -197,6 +208,7 @@ void main()
     }
     vec3 finalColor = visibleBaseColor * lighting;
     finalColor += baseColor.rgb * emissiveColor * emissiveIntensity;
+    finalColor += switchGlow;
 
     finalColor = ApplyColorAdjustments(finalColor);
 

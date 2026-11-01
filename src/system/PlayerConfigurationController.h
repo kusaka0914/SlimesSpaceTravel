@@ -5,6 +5,7 @@
 #include "system/PlayerSplitGuardState.h"
 
 #include <glm/glm.hpp>
+#include <optional>
 
 class CameraSystem;
 class GameProgressController;
@@ -135,12 +136,13 @@ private:
     SplitToggleResult CheckSplitMergeInput() const;
     bool CanChangeSoloConfiguration() const;
     void UpdateGuardBreakControlSwitch();
-    void BeginSoulTransfer(int previousPlayerIndex, int currentPlayerIndex);
+    void BeginSoloControlTransfer(int previousPlayerIndex, int currentPlayerIndex);
     bool SplitPlayer();
     SplitToggleResult BeginSoloSplitTransition();
     bool TryResolveSplitDirection(Player& mainPlayer, glm::vec3& splitDirection, bool& wasBlockedByObstacle) const;
     bool IsSplitDirectionClear(Player& mainPlayer, const glm::vec3& splitDirection, bool& wasBlockedByObstacle) const;
     bool BeginSoloMergeTransition();
+    std::optional<glm::vec3> FindMergedPlayerPosition(Player& player) const;
     void UpdatePendingSoloMergeRequest();
     void UpdateMergeRecall(float deltaTime);
     Player* FindMergeGuideTargetPlayer() const;

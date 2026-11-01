@@ -1033,7 +1033,8 @@ NPCs:
             ruby: false
     proximityMessage:
       mode: afterTalk
-      variants: []
+      variants:
+        []
       range: 3
       height: 1.8
       scale: 1
@@ -1051,10 +1052,10 @@ NPCs:
     talkTexts:
       - ""
     pos:
-      - 4.5
-      - -1.29
-      - 0.14
-    facingYaw: 2.4558797
+      - -3.21
+      - -2.32
+      - 3.64
+    facingYaw: -0.7317285
     rotation:
       - 0
       - 0.7317284
@@ -1062,18 +1063,18 @@ NPCs:
     scale:
       - 0.25
       - 0.25
-      - 0.25
+      - 0.25000003
     upVec:
-      - 1
-      - -1.1920928e-07
+      - -1
+      - -1.19209275e-07
       - 0
     modelPath: spaceSlime.obj
     radius: 0.75
     rotationQuat:
-      - -0.2377142
-      - 0.66595197
-      - 0.66595185
-      - 0.23771423
+      - 0.66030693
+      - -0.252972
+      - 0.252972
+      - 0.66030693
     proximityMessage:
       mode: always
       variants:
@@ -1315,6 +1316,47 @@ NPCs:
             reading: も
           - text: てるよ！
             ruby: false
+  - theta: -0.63021153
+    phi: 0.5423254
+    height: -0.08914423
+    type: spaceSlime
+    name: JumpTutorialNPC
+    talkTexts:
+      - ""
+    pos:
+      - -4.82
+      - 4.87
+      - -1.36
+    facingYaw: -0.7317285
+    rotation:
+      - 0
+      - 0.7317284
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25000003
+    upVec:
+      - -1
+      - -1.19209275e-07
+      - 0
+    modelPath: spaceSlime.obj
+    radius: 0.75
+    rotationQuat:
+      - 0.66030693
+      - -0.252972
+      - 0.252972
+      - 0.66030693
+    proximityMessage:
+      mode: always
+      variants:
+        - talkIndex: 0
+          text: これがスイッチ！乗ると何かが起きるよ！
+      range: 3
+      height: 1.8
+      scale: 1
+    currentPlanetNum: 0
+    forceTalkOnArrival: false
 platforms:
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1445,9 +1487,11 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_1
-        remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        remainsOnAfterPressed: true
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1455,9 +1499,9 @@ platforms:
     height: 2.8906236
     facingYaw: -0.7851747
     scale:
-      - 1
-      - 1.0585048
-      - 1.0000001
+      - 1.4
+      - 1.06
+      - 1.4
     modelPath: platform.obj
     upVec:
       - -1
@@ -1465,8 +1509,8 @@ platforms:
       - 0
     pos:
       - -2.15
-      - -1.28
-      - 2.86
+      - -1.56
+      - 3.73
     rotation:
       - 0
       - 0.7851746
@@ -1486,9 +1530,9 @@ platforms:
     height: 0.93243814
     facingYaw: 0.78517455
     scale:
-      - 1
-      - 1.4341923
-      - 1.0000001
+      - 1.4
+      - 1.43
+      - 1.4
     modelPath: platform.obj
     upVec:
       - -0.99723196
@@ -1517,9 +1561,9 @@ platforms:
     height: 1.665479
     facingYaw: 0.78517467
     scale:
-      - 1
-      - 1.6630828
-      - 1.0000001
+      - 1.4
+      - 1.66
+      - 1.4
     modelPath: platform.obj
     upVec:
       - -0.99437326
@@ -1573,82 +1617,6 @@ platforms:
       - -0.2917504
       - 0.6441132
     platformId: platform_6
-  - currentPlanetNum: 0
-    theta: 0.038756523
-    phi: 0.37385318
-    height: 5.2564435
-    facingYaw: -0.8554586
-    scale:
-      - 0.5569991
-      - 0.12775151
-      - 0.5513343
-    modelPath: platform.obj
-    upVec:
-      - 1
-      - -3.5762787e-07
-      - -5.9604645e-08
-    pos:
-      - 7.64
-      - 2.6
-      - -2.4
-    rotation:
-      - -1.02144575e-07
-      - 0.8554588
-      - -4.3960176e-07
-    textureTiling:
-      - 1
-      - 1
-    platformId: platform_7
-    textureOverride: textures/Crystal_MAT_BaseColor.png
-    rotationQuat:
-      - -0.6434034
-      - -0.29331198
-      - -0.29331192
-      - 0.64340365
-    components:
-      latchedGroupSwitch:
-        groupId: stage1_planet1
-        targets:
-          - sequence: boats
-            index: 0
-        hideTargets: []
-  - currentPlanetNum: 0
-    theta: -0.28730252
-    phi: 0.12781243
-    height: 5.0965357
-    facingYaw: -0.8462935
-    scale:
-      - 0.5569991
-      - 0.12775151
-      - 0.5513343
-    modelPath: platform.obj
-    upVec:
-      - 1
-      - -2.3841858e-07
-      - -8.940697e-08
-    pos:
-      - 7.66
-      - 1.31
-      - -3.82
-    rotation:
-      - -1.3957585e-07
-      - 0.8462937
-      - -4.5507963e-07
-    textureTiling:
-      - 1
-      - 1
-    platformId: platform_8
-    textureOverride: textures/Crystal_MAT_BaseColor.png
-    rotationQuat:
-      - -0.64474076
-      - -0.29036045
-      - -0.29036042
-      - 0.644741
-    components:
-      latchedGroupSwitch:
-        groupId: stage1_planet1
-        targets: []
-        hideTargets: []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -1852,8 +1820,10 @@ platforms:
         targets:
           - platform_11
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -2017,7 +1987,8 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.40818188
     phi: 0.1889368
@@ -2053,8 +2024,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2121,49 +2094,6 @@ platforms:
       jumpToggle:
         initiallyVisible: true
     debugDisabled: true
-  - currentPlanetNum: 0
-    theta: -0.28730252
-    phi: 0.12781243
-    height: 5.0965357
-    facingYaw: -0.8494247
-    scale:
-      - 0.5569991
-      - 0.12775151
-      - 0.5513343
-    modelPath: platform.obj
-    upVec:
-      - 1
-      - -3.5762787e-07
-      - -2.9802322e-08
-    pos:
-      - 6.68
-      - 2.59
-      - 1.79
-    rotation:
-      - -2.1478398e-08
-      - 0.84942496
-      - -3.3679538e-07
-    textureTiling:
-      - 1
-      - 1
-    platformId: platform_21
-    textureOverride: textures/Crystal_MAT_BaseColor.png
-    rotationQuat:
-      - -0.6442854
-      - -0.29136956
-      - -0.29136947
-      - 0.6442856
-    components:
-      pressureSwitch:
-        remainsOnAfterPressed: true
-        inactiveOpacity: 0.2
-        targets:
-          - platform_22
-          - platform_23
-          - platform_24
-          - platform_25
-        enemyTargets: []
-        hideTargets: []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2420,8 +2350,10 @@ platforms:
         targets:
           - platform_30
           - platform_31
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -4564,7 +4496,6 @@ jewelItems:
     height: 4.1116934
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
@@ -4586,7 +4517,6 @@ jewelItems:
     height: 2.5316653
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
@@ -4608,7 +4538,6 @@ jewelItems:
     height: 5.913765
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
@@ -4630,7 +4559,6 @@ jewelItems:
     height: 5.0724444
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22

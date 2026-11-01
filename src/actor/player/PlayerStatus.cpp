@@ -75,6 +75,14 @@ void PlayerStatus::ClearInvincible()
     mShouldBlinkWhileInvincible = false;
 }
 
+void PlayerStatus::InheritPlacementState(const PlayerStatus& source)
+{
+    mDamageTimer = source.mDamageTimer;
+    mInvincibleTimer = source.mInvincibleTimer;
+    mShouldBlinkWhileInvincible = source.mShouldBlinkWhileInvincible;
+    mIsTired = source.mIsTired;
+}
+
 void PlayerStatus::StartTired()
 {
     mIsTired = true;

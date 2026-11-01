@@ -375,6 +375,31 @@ PlayerMovement::PlayerMovement(PhysicsSystem& physicsSystem, MathUtils& mathUtil
 {
 }
 
+void PlayerMovement::ResetForPlacementInheritance(const PlayerMovement& source)
+{
+    if (&source == this) {
+        return;
+    }
+    InheritDodgeAvailability(source);
+    mDodgeTimer = 0.0f;
+    mDodgeDir = glm::vec3(0.0f);
+    mDodgeTrajectory = DodgeTrajectory::Straight;
+    mCanStartJumpApexHover = source.mCanStartJumpApexHover;
+    mJumpApexHoverRemainingSeconds = source.mJumpApexHoverRemainingSeconds;
+    CancelAirborneActionHover();
+    ClearStrongAttackDirectionOverride();
+    mHasEllipseAirborneStartSurfaceNormal = source.mHasEllipseAirborneStartSurfaceNormal;
+    mEllipseAirborneStartSurfaceNormal = source.mEllipseAirborneStartSurfaceNormal;
+    mAirSlamPhaseRemainingSeconds = 0.0f;
+    mAirSlamMovementPhase = AirSlamMovementPhase::Falling;
+    mHasStartedAirSlamEnemyFallWatch = false;
+    UnlockMovementDirectionForCameraAutoAlign();
+    mReleaseCameraDirectionOnNeutral = false;
+    mHasCameraAutoAlignCancellationRequest = false;
+    mNormalCameraPosition.reset();
+    ResetFrameMovement();
+}
+
 bool PlayerMovement::CanDodge() const
 {
     const bool isCooldownFinished = mDodgeCooldownRemaining <= 0.0f;

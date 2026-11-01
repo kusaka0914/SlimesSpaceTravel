@@ -1,13 +1,14 @@
 #include "component/PlatformPressDetection.h"
 
-#include "app/Game.h"
 #include "actor/Actor.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
 #include <btBulletDynamicsCommon.h>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <iterator>
 
@@ -27,42 +28,42 @@ bool DoesSupportRayHitPlatformTop(const Player& player, const Platform& platform
         return false;
     }
 
-    constexpr float rayStartOffset = 0.15f;
-    constexpr float rayLength = 0.45f;
+    // 着地探索用の長いレイではなく、足元の接触誤差だけを許容する。
+    const float collisionScale = player.GetCollisionScaleMultiplier();
+    const float rayStartOffset = 0.05f * collisionScale;
+    const float maximumFootGap = 0.04f * collisionScale;
     constexpr float walkableSurfaceMinimumUpDot = 0.65f;
 
     const glm::vec3 normalizedUp = glm::normalize(playerUp);
-    const glm::vec3 rayFrom = player.GetPos() + rayOffset + normalizedUp * rayStartOffset;
-    const glm::vec3 rayTo = rayFrom - normalizedUp * rayLength;
+    const glm::vec3 footPosition = player.GetPos() + rayOffset;
+    const glm::vec3 rayFrom = footPosition + normalizedUp * rayStartOffset;
+    const glm::vec3 rayTo = footPosition - normalizedUp * maximumFootGap;
     const btVector3 bulletRayFrom(rayFrom.x, rayFrom.y, rayFrom.z);
     const btVector3 bulletRayTo(rayTo.x, rayTo.y, rayTo.z);
-    btCollisionWorld::AllHitsRayResultCallback callback(bulletRayFrom, bulletRayTo);
+    btCollisionWorld::ClosestRayResultCallback callback(bulletRayFrom, bulletRayTo);
     callback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
     callback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
     bulletWorld->rayTest(bulletRayFrom, bulletRayTo, callback);
-
-    for (int hitIndex = 0; hitIndex < callback.m_collisionObjects.size(); ++hitIndex) {
-        const btCollisionObject* collisionObject = callback.m_collisionObjects[hitIndex];
-        const Actor* hitActor =
-            collisionObject ? static_cast<const Actor*>(collisionObject->getUserPointer()) : nullptr;
-        if (hitActor != &platform) {
-            continue;
-        }
-
-        const btVector3& bulletHitNormal = callback.m_hitNormalWorld[hitIndex];
-        const glm::vec3 hitNormal(bulletHitNormal.x(), bulletHitNormal.y(), bulletHitNormal.z());
-        if (glm::dot(hitNormal, normalizedUp) >= walkableSurfaceMinimumUpDot) {
-            return true;
-        }
+    if (!callback.hasHit()) {
+        return false;
     }
 
-    return false;
+    const btCollisionObject* collisionObject = callback.m_collisionObject;
+    const Actor* hitActor = collisionObject ? static_cast<const Actor*>(collisionObject->getUserPointer()) : nullptr;
+    // 別の床を挟んで、その下のスイッチまで押したことにしない。
+    if (hitActor != &platform) {
+        return false;
+    }
+    const btVector3& bulletHitNormal = callback.m_hitNormalWorld;
+    const glm::vec3 hitNormal(bulletHitNormal.x(), bulletHitNormal.y(), bulletHitNormal.z());
+    return glm::dot(hitNormal, normalizedUp) >= walkableSurfaceMinimumUpDot;
 }
 
 bool IsPlayerSupportedByPlatform(const Player& player, const Platform& platform)
 {
-    if (player.GetGroundActor() == &platform) {
-        return true;
+    // 隣の床に接地したまま、足元の周辺レイだけがスイッチへ届いても押下にはしない。
+    if (player.GetGroundActor() && player.GetGroundActor() != &platform) {
+        return false;
     }
 
     PhysicsSystem* physicsSystem = platform.GetGame() ? platform.GetGame()->GetPhysicsSystem() : nullptr;
@@ -119,23 +120,15 @@ namespace PlatformPressDetection {
 
 bool IsPlayerPressingPlatform(const Player& player, const Platform& platform)
 {
-    if (!player.GetIsActive() || !IsPlayerSupportedByPlatform(player, platform)) {
+    if (!player.GetIsActive() || !player.IsAlive() || player.IsControlLocked() || !player.GetOnGround() ||
+        !platform.GetIsActive() || !platform.GetCollisionEnabled()) {
         return false;
     }
-
-    if (player.GetOnGround()) {
-        return true;
+    const float upLength = glm::length(player.GetUpVec());
+    if (!std::isfinite(upLength) || upLength <= 0.000001f) {
+        return false;
     }
-
-    const glm::vec3 playerUp = player.GetUpVec();
-    if (glm::length(playerUp) <= 0.000001f) {
-        return true;
-    }
-
-    // 接地フラグが途切れても下降中は押下とし、ジャンプ上昇中は解除する。
-    const float upwardSpeed = glm::dot(player.GetVelocity(), glm::normalize(playerUp));
-    constexpr float maximumPressingUpwardSpeed = 0.05f;
-    return upwardSpeed <= maximumPressingUpwardSpeed;
+    return IsPlayerSupportedByPlatform(player, platform);
 }
 
 Player* FindPlayerPressingPlatform(const Platform* platform)

@@ -44,6 +44,9 @@ public:
     void StartDodgeInvincibility(float seconds);
     void ClearInvincible();
 
+    // 再配置元の被弾猶予と疲労を引き継ぐ。HPと設定値は変更しない。
+    void InheritPlacementState(const PlayerStatus& source);
+
     void StartTired();
     void EndTired();
 

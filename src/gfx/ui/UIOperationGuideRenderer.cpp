@@ -40,6 +40,9 @@ ContextualOperationGuide::Availability UIRenderer::GetOperationGuideAvailability
         if (player && player->GetPlayerNum() >= 1 && player->GetPlayerNum() <= 2) {
             availability.activePlayers[player->GetPlayerNum() - 1] = player->GetIsActive() && player->IsAlive();
             availability.jewelCounts[player->GetPlayerNum() - 1] = player->GetJewelCount();
+            const CameraSystem* camera = mGame->GetCameraSystem();
+            availability.canExplainBlockedCamera[player->GetPlayerNum() - 1] =
+                camera && camera->HasActiveCameraZone(player->GetPlayerNum() - 1);
             availability.canRecover[player->GetPlayerNum() - 1] = player->GetIsActive() && player->IsAlive() &&
                                                                   player->GetHp() < player->GetMaxHp() &&
                                                                   player->GetJewelCount() >= 1;
@@ -136,6 +139,17 @@ void UIRenderer::NotifyInsufficientJewels(int playerNumber, int requiredJewels)
     const auto availability = GetOperationGuideAvailability();
     if (availability.activePlayers[playerNumber - 1] && availability.jewelCounts[playerNumber - 1] < requiredJewels) {
         mContextualOperationGuide.RequestInsufficientJewels(playerNumber, requiredJewels);
+    }
+}
+
+void UIRenderer::NotifyCameraControlBlocked(int playerNumber)
+{
+    if (!CanShowContextualOperationGuide(true) || playerNumber < 1 || playerNumber > 2) {
+        return;
+    }
+    const auto availability = GetOperationGuideAvailability();
+    if (availability.activePlayers[playerNumber - 1] && availability.canExplainBlockedCamera[playerNumber - 1]) {
+        mContextualOperationGuide.RequestCameraControlBlocked(playerNumber);
     }
 }
 
@@ -244,6 +258,13 @@ void UIRenderer::DrawContextualOperationGuide()
         }
         textId = "buttonTextB_copy2_copy2_copy2";
         description = "ジュエルが足りないよ！";
+        break;
+    case ContextualOperationGuide::Kind::CameraControlBlocked:
+        if (!availability.canExplainBlockedCamera[player->GetPlayerNum() - 1]) {
+            return;
+        }
+        textId = "buttonTextB_copy2_copy2_copy";
+        description = "ここではカメラを回転できません";
         break;
     case ContextualOperationGuide::Kind::Recover:
         if (!availability.canRecover[player->GetPlayerNum() - 1]) {

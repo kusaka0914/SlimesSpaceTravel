@@ -31,6 +31,7 @@ CameraSystem::CameraSystem(CameraSystemDependencies dependencies)
       mScene(dependencies.scene),
       mReadControlState(std::move(dependencies.readControlState)),
       mFindPlacedActor(std::move(dependencies.findPlacedActor)),
+      mOnCameraControlBlocked(std::move(dependencies.onCameraControlBlocked)),
       mBossDefeatSequence(dependencies.audio),
       mCollisionResolver(std::move(dependencies.physicsProvider)),
       mFocusCamera(mCollisionResolver),
@@ -44,6 +45,8 @@ CameraSystem::CameraSystem(CameraSystemDependencies dependencies)
 
 void CameraSystem::ProcessInput()
 {
+    const auto previousBlockedRotationInput = mWasBlockedRotationInput;
+    mWasBlockedRotationInput.fill(false);
     const CameraControlState controls = mReadControlState();
     if (mCinematicCamera.IsActive()) {
         return;
@@ -112,6 +115,39 @@ void CameraSystem::ProcessInput()
         mKeyboardPitchInput -= 1.0f;
     }
 
+    const auto notifyBlockedControl = [&](int playerIndex) {
+        const auto& players = mWorld.GetPlayers();
+        if (mOnCameraControlBlocked && playerIndex >= 0 && playerIndex < static_cast<int>(players.size()) &&
+            players[static_cast<std::size_t>(playerIndex)] &&
+            players[static_cast<std::size_t>(playerIndex)]->GetIsActive() &&
+            players[static_cast<std::size_t>(playerIndex)]->IsAlive()) {
+            mOnCameraControlBlocked(players[static_cast<std::size_t>(playerIndex)]->GetPlayerNum());
+        }
+    };
+    const auto checkBlockedRotation = [&](int playerIndex, float yawInput, float pitchInput) {
+        if (playerIndex < 0 || playerIndex >= static_cast<int>(mWasBlockedRotationInput.size())) {
+            return;
+        }
+        const bool isBlocked =
+            (yawInput != 0.0f || pitchInput != 0.0f) && !mCameraZones.AllowsManualRotation(playerIndex);
+        mWasBlockedRotationInput[static_cast<std::size_t>(playerIndex)] = isBlocked;
+        if (sceneSystem.IsPlaying() && isBlocked &&
+            !previousBlockedRotationInput[static_cast<std::size_t>(playerIndex)]) {
+            notifyBlockedControl(playerIndex);
+        }
+    };
+    if (controls.isPlayer2Joined) {
+        checkBlockedRotation(
+            0, hasPrimaryController ? mCameraStickX : (!hasSecondController ? mKeyboardYawInput : 0.0f),
+            hasPrimaryController ? mCameraStickY : (!hasSecondController ? mKeyboardPitchInput : 0.0f));
+        checkBlockedRotation(
+            1, hasSecondController ? mSecondControllerStickX : (hasPrimaryController ? mKeyboardYawInput : 0.0f),
+            hasSecondController ? mSecondControllerStickY : (hasPrimaryController ? mKeyboardPitchInput : 0.0f));
+    } else {
+        checkBlockedRotation(GetPrimaryPlayerIndex(), hasPrimaryController ? mCameraStickX : mKeyboardYawInput,
+                             hasPrimaryController ? mCameraStickY : mKeyboardPitchInput);
+    }
+
     const bool keyboardAlignCameraPressed = inputSystem.IsKeyPressed(GLFW_KEY_M);
     const bool controllerAlignCameraPressed =
         inputSystem.IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
@@ -132,6 +168,8 @@ void CameraSystem::ProcessInput()
             if (!mCameraZones.HasActiveZone(playerIndex)) {
                 mCameraZones.RequestReset(playerIndex);
                 mPlayerCamera.AlignBehindPlayer(players[static_cast<std::size_t>(playerIndex)], playerIndex);
+            } else {
+                notifyBlockedControl(playerIndex);
             }
         }
     }
@@ -144,6 +182,8 @@ void CameraSystem::ProcessInput()
             if (!mCameraZones.HasActiveZone(1)) {
                 mCameraZones.RequestReset(1);
                 mPlayerCamera.AlignBehindPlayer(players[1], 1);
+            } else {
+                notifyBlockedControl(1);
             }
         }
     }

@@ -30,6 +30,9 @@ public:
     Enemy* GetAttackDirectionTarget() const { return mAttackDirectionTarget; }
     void ClearAttackDirectionTarget() { mAttackDirectionTarget = nullptr; }
 
+    // 再配置する体の行動・攻撃対象を解除し、ジャンプ猶予は配置元の残り時間だけ引き継ぐ。
+    void ResetForPlacementInheritance(const PlayerStateMachine& source);
+
 private:
     void UpdateAlive(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
                      PlayerBoatRide& boatRide, PlayerCombat& combat, PlayerJewelGauge& jewelGauge, PlayerStatus& status,
@@ -49,8 +52,8 @@ private:
                                      PlayerJewelGauge& jewelGauge, float deltaTime);
     void UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
                                    float deltaTime);
-    void UpdateTimer(PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding, PlayerCombat& combat,
-                     PlayerJewelGauge& jewelGauge, PlayerStatus& status, float deltaTime);
+    void UpdateTimer(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
+                     PlayerCombat& combat, PlayerJewelGauge& jewelGauge, PlayerStatus& status, float deltaTime);
     void UpdateCoyoteTime(const Player& player, float deltaTime);
 
     bool TryStartAssistStrongAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,

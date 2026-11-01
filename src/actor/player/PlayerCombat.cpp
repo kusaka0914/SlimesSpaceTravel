@@ -393,6 +393,7 @@ void PlayerCombat::ReduceTiredLock(PlayerStatus& status, PlayerMovement& movemen
     mAttackMoveLockRemaining -= reduceTime;
     movement.SetDodgeCooldown(movement.GetDodgeCooldown() - reduceTime);
     mAttackCooldownRemaining -= reduceTime;
+    mControlTransferRecoveryRemaining = std::max(0.0f, mControlTransferRecoveryRemaining - reduceTime);
 
     if (mAttackMoveLockRemaining <= 0.0f) {
         status.EndTired();
@@ -405,6 +406,7 @@ void PlayerCombat::EndTiredLock(PlayerStatus& status, PlayerMovement& movement)
     mAttackMoveLockRemaining = 0.0f;
     movement.SetDodgeCooldown(0.0f);
     mAttackCooldownRemaining = 0.0f;
+    mControlTransferRecoveryRemaining = 0.0f;
 }
 
 void PlayerCombat::CancelSpecialAttack()
@@ -551,8 +553,47 @@ void PlayerCombat::StartAirWeakAttackCooldown()
     mAttackCooldownRemaining = std::max(mAttackCooldownRemaining, mAirWeakAttackCooldownSeconds);
 }
 
+void PlayerCombat::InheritControlRestrictions(const PlayerCombat& source, bool sharesAirborneAttackBudget)
+{
+    const float weakAttackCooldown =
+        source.mIsAirAttacking ? source.mAirWeakAttackCooldownSeconds : source.mGroundWeakAttackCooldownSeconds;
+    float remainingAttack =
+        source.mAttackMotionTimer >= 0.0f ? source.mAttackMotionTimer + std::max(0.0f, weakAttackCooldown) : 0.0f;
+    if (source.mHasPendingAttackHit) {
+        // 命中後に始まるモーションと待ち時間も含め、別の体で次の攻撃だけを先に始めないようにする。
+        remainingAttack = std::max(remainingAttack, std::max(0.0f, source.mAttackHitDelayRemaining) +
+                                                        std::max(0.0f, source.mDefaultAttackMotionTimer) +
+                                                        std::max(0.0f, weakAttackCooldown));
+    }
+    mControlTransferRecoveryRemaining =
+        std::max({mControlTransferRecoveryRemaining, source.GetAttackCooldownRemaining(), remainingAttack,
+                  source.mStrongAttackTimer, source.mContinuousAttackingTimer});
+    mAttackMoveLockRemaining = std::max(mAttackMoveLockRemaining, source.mAttackMoveLockRemaining);
+    mAttackDodgeLockRemaining = std::max(mAttackDodgeLockRemaining, source.mAttackDodgeLockRemaining);
+    if (sharesAirborneAttackBudget) {
+        // 命中で回復した使用枠も操作元を正とし、切替先の古い使用数で上書きしない。
+        mAirAttackCount = source.mAirAttackCount;
+    }
+}
+
+void PlayerCombat::ResetForPlacementInheritance(const PlayerCombat& source, bool isAirborne)
+{
+    if (&source == this) {
+        return;
+    }
+    CancelCurrentAttack();
+    CancelSpecialAttack();
+    OnLanded();
+    ResetGroundAttackCombo();
+    mStrongAttackTimer = -1.0f;
+    mAttackCooldownRemaining = 0.0f;
+    mControlTransferRecoveryRemaining = 0.0f;
+    InheritControlRestrictions(source, isAirborne);
+}
+
 void PlayerCombat::UpdateAttackCooldown(float deltaTime)
 {
+    mControlTransferRecoveryRemaining = std::max(0.0f, mControlTransferRecoveryRemaining - std::max(0.0f, deltaTime));
     if (mAttackCooldownRemaining >= 0.0f) {
         mAttackCooldownRemaining -= deltaTime;
     }

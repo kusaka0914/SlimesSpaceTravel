@@ -15,7 +15,6 @@ bool PlayerSplitService::ActivateSplit(const std::vector<Player*>& players)
     mainPlayer.SetSplitForm(true);
     splitPlayer.SetSplitForm(true);
     CopyPlacementAndMovement(mainPlayer, splitPlayer, true);
-    splitPlayer.SetShouldJudgeLanding(!mainPlayer.GetOnGround());
     splitPlayer.SetControlLocked(false);
     splitPlayer.SetIsActive(true);
     return true;
@@ -31,7 +30,6 @@ bool PlayerSplitService::MergeIntoMainPlayer(const std::vector<Player*>& players
     Player& splitPlayer = *players[1];
     if (sourcePlayerIndex == 1) {
         CopyPlacementAndMovement(splitPlayer, mainPlayer, true);
-        mainPlayer.SetShouldJudgeLanding(true);
     }
 
     mainPlayer.SetSplitForm(false);
@@ -60,7 +58,6 @@ void PlayerSplitService::SynchronizeSecondPlayerAfterStageReload(const std::vect
 
     CopyPlacementAndMovement(*players[0], *players[1], false);
     players[1]->SetVelocity(glm::vec3(0.0f));
-    players[1]->SetShouldJudgeLanding(!players[0]->GetOnGround());
 }
 
 void PlayerSplitService::SynchronizeSharedResources(const std::vector<Player*>& players, const Player& sourcePlayer)
@@ -80,15 +77,14 @@ void PlayerSplitService::SynchronizeSharedResources(const std::vector<Player*>& 
         if (player->GetHp() != sourcePlayer.GetHp()) {
             player->SetHp(sourcePlayer.GetHp());
         }
-        if (player->GetJewelCount() != sourcePlayer.GetJewelCount()) {
-            player->SetJewelCount(sourcePlayer.GetJewelCount());
-        }
+        player->InheritJewelGauge(sourcePlayer);
     }
 }
 
 void PlayerSplitService::CopyPlacementAndMovement(const Player& sourcePlayer, Player& destinationPlayer,
                                                   bool shouldCopyVelocity)
 {
+    destinationPlayer.ClearGroundContact();
     destinationPlayer.SetCurrentPlanet(sourcePlayer.GetCurrentPlanet());
     destinationPlayer.SetCurrentPlanetNum(sourcePlayer.GetCurrentPlanetNum());
     destinationPlayer.SetSphericalPlacement(sourcePlayer.GetTheta(), sourcePlayer.GetPhi(), sourcePlayer.GetHeight());
@@ -101,5 +97,6 @@ void PlayerSplitService::CopyPlacementAndMovement(const Player& sourcePlayer, Pl
         destinationPlayer.SetVelocity(sourcePlayer.GetVelocity());
     }
     destinationPlayer.SetOnGround(sourcePlayer.GetOnGround());
+    destinationPlayer.InheritSplitActionState(sourcePlayer);
     destinationPlayer.RefreshFallbackUpVec();
 }

@@ -91,6 +91,7 @@ public:
 
     // 操作が必要個数の不足で失敗した場合に通知する。個数が満たされた案内は表示しない。
     void NotifyInsufficientJewels(int playerNumber, int requiredJewels);
+    void NotifyCameraControlBlocked(int playerNumber);
 
     // 指定ピクセル寸法に背景を描く。非正の寸法はウィンドウのフレームバッファ寸法を使う。
     void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);

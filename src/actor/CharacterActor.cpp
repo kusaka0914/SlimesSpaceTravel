@@ -225,6 +225,14 @@ void CharacterActor::NotLand()
     mOnGround = false;
 }
 
+void CharacterActor::ClearGroundContact()
+{
+    mGroundActor = nullptr;
+    mAttachedPlatform = nullptr;
+    mOnGround = false;
+    mShouldJudgeLanding = true;
+}
+
 bool CharacterActor::IsWalkableGroundNormal(const glm::vec3& hitNormal, const glm::vec3& upDirection)
 {
     const float hitNormalLength = glm::length(hitNormal);

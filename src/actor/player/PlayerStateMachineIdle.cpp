@@ -319,6 +319,9 @@ void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, 
 bool PlayerStateMachine::TryStartSpecialAttack(Player& player, PlayerInput& input, PlayerCombat& combat,
                                                PlayerJewelGauge& jewelGauge)
 {
+    if (combat.IsControlTransferRecoveryActive()) {
+        return false;
+    }
     if (!input.HasChargeAttackRequest()) {
         return false;
     }
@@ -351,6 +354,9 @@ bool PlayerStateMachine::TryReduceTired(PlayerInput& input, PlayerMovement& move
 bool PlayerStateMachine::TryStartContinuousAttack(Player& player, PlayerInput& input, PlayerCombat& combat,
                                                   PlayerJewelGauge& jewelGauge)
 {
+    if (combat.IsControlTransferRecoveryActive()) {
+        return false;
+    }
     if (!input.HasContinuousAttackRequest()) {
         return false;
     }

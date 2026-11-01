@@ -31,6 +31,7 @@
 #include "gfx/render3d/PlayerEffectRenderer.h"
 #include "gfx/render3d/RenderViewportController.h"
 #include "gfx/render3d/SceneObjectRenderer.h"
+#include "gfx/render3d/TransparentMeshDrawOrder.h"
 #include "system/PhysicsSystem.h"
 #include "system/mesh/LoadedMesh.h"
 #include "system/mesh/LoadedModel.h"
@@ -53,9 +54,10 @@
 
 namespace {
 constexpr float editorSelectionRed = 1.0f;
-constexpr float editorSelectionGreen = 0.45f;
+constexpr float editorSelectionGreen = 0.85f;
 constexpr float editorSelectionBlue = 0.0f;
-constexpr float editorSelectionAlpha = 1.0f;
+constexpr float editorSelectionFillAlpha = 0.12f;
+constexpr float editorSelectionOutlineAlpha = 0.95f;
 
 // 指定色はsRGB。HDR合成後のガンマ補正で白っぽくならないよう、描画前にリニア化する。
 const glm::vec4 mainPlayerSplitOutlineColor(glm::pow(glm::vec3(40.0f, 115.0f, 214.0f) / 255.0f, glm::vec3(2.2f)), 1.0f);
@@ -251,6 +253,10 @@ void Renderer3D::Shutdown()
     if (mAttackRangeVBO != 0) {
         glDeleteBuffers(1, &mAttackRangeVBO);
         mAttackRangeVBO = 0;
+    }
+    if (mTransparentIndexBuffer != 0) {
+        glDeleteBuffers(1, &mTransparentIndexBuffer);
+        mTransparentIndexBuffer = 0;
     }
 }
 
@@ -673,6 +679,7 @@ void Renderer3D::InitializeAttackRangeBuffer()
 {
     glGenVertexArrays(1, &mAttackRangeVAO);
     glGenBuffers(1, &mAttackRangeVBO);
+    glGenBuffers(1, &mTransparentIndexBuffer);
 
     glBindVertexArray(mAttackRangeVAO);
     glBindBuffer(GL_ARRAY_BUFFER, mAttackRangeVBO);
@@ -733,6 +740,9 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
     glUniform1i(mShader3D->GetLocApplyOutputGamma(), 0);
     glUniform3f(mShader3D->GetLocEmissiveColor(), 1.0f, 1.0f, 1.0f);
     glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
+    glUniform1i(mShader3D->GetLocActiveSwitch(), 0);
+    glUniform1i(mShader3D->GetLocCompletedSwitch(), 0);
+    glUniform1f(mShader3D->GetLocSwitchCompletionFlash(), 0.0f);
     glUniform1f(mShader3D->GetLocHardeningAmount(), 0.0f);
     glUniform1i(mShader3D->GetLocUseInstancing(), 0);
     const bool shadowsAvailable = mDirectionalShadowMap && mDirectionalShadowMap->IsAvailable();
@@ -884,13 +894,10 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient, const PlayerSoulPresent
     }
 
     const bool isSelected = actor->GetIsEditorSelected();
-    const bool isPlanet = dynamic_cast<const Planet*>(actor) != nullptr;
     const Platform* platform = dynamic_cast<const Platform*>(actor);
     const bool isGeneratedUGCPlatform = mEmphasizeUGCLayers && platform && platform->GetIsUGCGenerated();
     const bool isOnCurrentUGCLayer = isGeneratedUGCPlatform && platform->GetUGCGridLayer() == mUGCEditLayer;
-    if (isSelected && !isPlanet) {
-        DrawActorSelectionUnderlay(actor, useOrient);
-    } else if (isOnCurrentUGCLayer) {
+    if (!isSelected && isOnCurrentUGCLayer) {
         DrawActorOutlineUnderlay(actor, useOrient, glm::vec4(1.0f, 0.78f, 0.16f, 1.0f), 1.045f);
     }
 
@@ -899,6 +906,9 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient, const PlayerSoulPresent
         const int layerDistance = std::abs(platform->GetUGCGridLayer() - mUGCEditLayer);
         layerBrightness = layerDistance == 1 ? 0.45f : 0.22f;
     }
+    glUniform1i(mShader3D->GetLocActiveSwitch(), platform && platform->IsSwitchOn() ? 1 : 0);
+    glUniform1i(mShader3D->GetLocCompletedSwitch(), platform && platform->IsSwitchCompleted() ? 1 : 0);
+    glUniform1f(mShader3D->GetLocSwitchCompletionFlash(), platform ? platform->GetSwitchCompletionFlash() : 0.0f);
     const bool hasSoulAppearance = player && player->IsSplitForm() && soul.controlledPlayer;
     const bool containsSoul = hasSoulAppearance && player == soul.controlledPlayer;
     const bool isHardened = hasSoulAppearance && !containsSoul;
@@ -936,6 +946,9 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient, const PlayerSoulPresent
         glUniform3f(mShader3D->GetLocColorMultiplier(), 1.0f, 1.0f, 1.0f);
         glUniform1f(mShader3D->GetLocColorSaturation(), 1.0f);
         glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
+        glUniform1i(mShader3D->GetLocActiveSwitch(), 0);
+        glUniform1i(mShader3D->GetLocCompletedSwitch(), 0);
+        glUniform1f(mShader3D->GetLocSwitchCompletionFlash(), 0.0f);
         glUniform1f(mShader3D->GetLocHardeningAmount(), 0.0f);
         glUniform1f(mShader3D->GetLocMaterialMinimumReflectance(), 0.0f);
         glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
@@ -975,9 +988,13 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient, const PlayerSoulPresent
         glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
     }
 
-    for (const LoadedMesh& actorMesh : *actorMeshes) {
+    const auto drawMesh = [&](const LoadedMesh& actorMesh, std::size_t indexCount, std::size_t firstIndex,
+                              bool usesSortedIndices) {
         SetSkinningEnabled(hasUploadedSkinningMatrices && actorMesh.hasBoneInfluences);
         glBindVertexArray(actorMesh.VAO);
+        if (usesSortedIndices) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mTransparentIndexBuffer);
+        }
 
         const GLuint textureID = textureOverride != 0 ? textureOverride : actorMesh.textureID;
         if (textureID != 0 && !shouldRenderSolidWhite) {
@@ -995,7 +1012,35 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient, const PlayerSoulPresent
             glUniform4f(objectColorLocation, actorMesh.diffuseColor[0], actorMesh.diffuseColor[1],
                         actorMesh.diffuseColor[2], renderOpacity);
         }
-        glDrawElements(GL_TRIANGLES, actorMesh.indexCount, GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indexCount), GL_UNSIGNED_INT,
+                       reinterpret_cast<const void*>(firstIndex * sizeof(unsigned int)));
+        if (usesSortedIndices) {
+            // EBOの関連付けはVAOの状態なので、共有メッシュを次に描く前に必ず戻す。
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, actorMesh.EBO);
+        }
+    };
+
+    TransparentMeshDrawOrder transparentOrder;
+    if (transparent && mTransparentIndexBuffer != 0) {
+        glm::mat4 view(1.0f);
+        glGetUniformfv(mShader3D->GetShaderProgram(), mShader3D->GetLocView(), glm::value_ptr(view));
+        transparentOrder = CreateTransparentMeshDrawOrder(*actorMeshes, view * model);
+    }
+    if (!transparentOrder.indices.empty()) {
+        const LoadedMesh& firstMesh = actorMeshes->front();
+        glBindVertexArray(firstMesh.VAO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mTransparentIndexBuffer);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                     static_cast<GLsizeiptr>(transparentOrder.indices.size() * sizeof(unsigned int)),
+                     transparentOrder.indices.data(), GL_STREAM_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, firstMesh.EBO);
+        for (const TransparentMeshBatch& batch : transparentOrder.batches) {
+            drawMesh(*batch.mesh, batch.indexCount, batch.firstIndex, true);
+        }
+    } else {
+        for (const LoadedMesh& actorMesh : *actorMeshes) {
+            drawMesh(actorMesh, actorMesh.indexCount, 0, false);
+        }
     }
 
     if (transparent) {
@@ -1008,13 +1053,16 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient, const PlayerSoulPresent
     glUniform2f(mShader3D->GetLocTextureTiling(), 1.0f, 1.0f);
     glActiveTexture(GL_TEXTURE0);
 
-    if (isSelected && isPlanet) {
+    if (isSelected) {
         DrawActorSelectionOverlay(actor, useOrient);
     }
     glUniform3f(mShader3D->GetLocColorMultiplier(), 1.0f, 1.0f, 1.0f);
     glUniform1f(mShader3D->GetLocColorSaturation(), 1.0f);
     glUniform3f(mShader3D->GetLocEmissiveColor(), 1.0f, 1.0f, 1.0f);
     glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
+    glUniform1i(mShader3D->GetLocActiveSwitch(), 0);
+    glUniform1i(mShader3D->GetLocCompletedSwitch(), 0);
+    glUniform1f(mShader3D->GetLocSwitchCompletionFlash(), 0.0f);
     glUniform1f(mShader3D->GetLocHardeningAmount(), 0.0f);
     glUniform1f(mShader3D->GetLocMaterialMinimumReflectance(), 0.0f);
     glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
@@ -1140,13 +1188,6 @@ glm::mat4 Renderer3D::CreateActorModelMatrix(Actor* actor, bool useOrient, float
     return glm::translate(glm::mat4(1.0f), position) * glm::scale(glm::mat4(1.0f), scale);
 }
 
-void Renderer3D::DrawActorSelectionUnderlay(Actor* actor, bool useOrient) const
-{
-    DrawActorOutlineUnderlay(
-        actor, useOrient,
-        glm::vec4(editorSelectionRed, editorSelectionGreen, editorSelectionBlue, editorSelectionAlpha), 1.0f);
-}
-
 void Renderer3D::DrawActorOutlineUnderlay(Actor* actor, bool useOrient, const glm::vec4& color,
                                           float scaleMultiplier) const
 {
@@ -1188,40 +1229,98 @@ void Renderer3D::DrawActorSelectionOverlay(Actor* actor, bool useOrient) const
     if (!actor || !actor->GetIsActive() || !mShader3D) {
         return;
     }
-
-    const std::vector<LoadedMesh>* actorMeshes = actor->GetMeshes();
-    if (!actorMeshes || actorMeshes->empty()) {
+    const auto* meshes = actor->GetMeshes();
+    if (!meshes || meshes->empty()) {
         return;
     }
 
-    const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
-    glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
+    struct StencilFaceState {
+        GLint function, reference, valueMask, writeMask, fail, depthFail, depthPass;
+        explicit StencilFaceState(bool back)
+        {
+            glGetIntegerv(back ? GL_STENCIL_BACK_FUNC : GL_STENCIL_FUNC, &function);
+            glGetIntegerv(back ? GL_STENCIL_BACK_REF : GL_STENCIL_REF, &reference);
+            glGetIntegerv(back ? GL_STENCIL_BACK_VALUE_MASK : GL_STENCIL_VALUE_MASK, &valueMask);
+            glGetIntegerv(back ? GL_STENCIL_BACK_WRITEMASK : GL_STENCIL_WRITEMASK, &writeMask);
+            glGetIntegerv(back ? GL_STENCIL_BACK_FAIL : GL_STENCIL_FAIL, &fail);
+            glGetIntegerv(back ? GL_STENCIL_BACK_PASS_DEPTH_FAIL : GL_STENCIL_PASS_DEPTH_FAIL, &depthFail);
+            glGetIntegerv(back ? GL_STENCIL_BACK_PASS_DEPTH_PASS : GL_STENCIL_PASS_DEPTH_PASS, &depthPass);
+        }
+        void Restore(GLenum face) const
+        {
+            glStencilFuncSeparate(face, function, reference, static_cast<GLuint>(valueMask));
+            glStencilMaskSeparate(face, static_cast<GLuint>(writeMask));
+            glStencilOpSeparate(face, fail, depthFail, depthPass);
+        }
+    };
+    const StencilFaceState frontStencil(false), backStencil(true);
+    const GLboolean previousStencilTest = glIsEnabled(GL_STENCIL_TEST);
+    const GLboolean previousBlend = glIsEnabled(GL_BLEND);
+    const GLboolean previousCullFace = glIsEnabled(GL_CULL_FACE);
+    GLboolean previousDepthWrite = GL_TRUE;
+    GLint previousDepthFunc, previousClearStencil, previousUnlit;
+    GLint blendSourceRGB, blendDestinationRGB, blendSourceAlpha, blendDestinationAlpha;
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &previousDepthWrite);
+    glGetIntegerv(GL_DEPTH_FUNC, &previousDepthFunc);
+    glGetIntegerv(GL_STENCIL_CLEAR_VALUE, &previousClearStencil);
+    glGetIntegerv(GL_BLEND_SRC_RGB, &blendSourceRGB);
+    glGetIntegerv(GL_BLEND_DST_RGB, &blendDestinationRGB);
+    glGetIntegerv(GL_BLEND_SRC_ALPHA, &blendSourceAlpha);
+    glGetIntegerv(GL_BLEND_DST_ALPHA, &blendDestinationAlpha);
+    glGetUniformiv(mShader3D->GetShaderProgram(), mShader3D->GetLocIsUnlit(), &previousUnlit);
 
-    const GLint objectColorLocation = mShader3D->GetLocObjectColor();
-    const GLint useTextureLocation = mShader3D->GetLocUseTexture();
-
-    glUniform1i(useTextureLocation, 0);
+    glUniform1i(mShader3D->GetLocIsUnlit(), 1);
+    glUniform1i(mShader3D->GetLocUseTexture(), 0);
     glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
-    glUniform4f(objectColorLocation, editorSelectionRed, editorSelectionGreen, editorSelectionBlue,
-                editorSelectionAlpha);
+    glUniform1i(mShader3D->GetLocActiveSwitch(), 0);
+    glUniform1i(mShader3D->GetLocCompletedSwitch(), 0);
+    const bool hasSkinning = UploadActorSkinningMatrices(actor);
+    const auto draw = [&](float scale, float alpha) {
+        const auto model = CreateActorModelMatrix(actor, useOrient, scale);
+        glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
+        glUniform4f(mShader3D->GetLocObjectColor(), editorSelectionRed, editorSelectionGreen, editorSelectionBlue,
+                    alpha);
+        for (const auto& mesh : *meshes) {
+            SetSkinningEnabled(hasSkinning && mesh.hasBoneInfluences);
+            glBindVertexArray(mesh.VAO);
+            glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
+        }
+    };
 
     StartTransparentDraw();
     glDepthFunc(GL_LEQUAL);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+    glDisable(GL_CULL_FACE);
+    glEnable(GL_STENCIL_TEST);
+    // 選択表示はステンシルの最下位ビットだけを使い、面が重なっても黄色を重ね塗りしない。
+    glStencilMask(0x01);
+    glClearStencil(0);
+    glClear(GL_STENCIL_BUFFER_BIT);
+    glStencilFunc(GL_NOTEQUAL, 1, 0x01);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    draw(1.0f, editorSelectionFillAlpha);
 
-    const bool hasUploadedSkinningMatrices = UploadActorSkinningMatrices(actor);
-    for (const LoadedMesh& actorMesh : *actorMeshes) {
-        SetSkinningEnabled(hasUploadedSkinningMatrices && actorMesh.hasBoneInfluences);
-        glBindVertexArray(actorMesh.VAO);
-        glDrawElements(GL_TRIANGLES, actorMesh.indexCount, GL_UNSIGNED_INT, nullptr);
-    }
+    // 内部の描画済み領域を除き、少し拡大したモデルの外周だけを描く。
+    glStencilMask(0x00);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    draw(1.015f, editorSelectionOutlineAlpha);
 
     SetSkinningEnabled(false);
-    glDepthFunc(GL_LESS);
-    glCullFace(GL_BACK);
-    glDisable(GL_CULL_FACE);
-    EndTransparentDraw();
+    glUniform1i(mShader3D->GetLocIsUnlit(), previousUnlit);
+    glDepthMask(previousDepthWrite);
+    glDepthFunc(previousDepthFunc);
+    glClearStencil(previousClearStencil);
+    frontStencil.Restore(GL_FRONT);
+    backStencil.Restore(GL_BACK);
+    if (!previousStencilTest) {
+        glDisable(GL_STENCIL_TEST);
+    }
+    if (previousCullFace) {
+        glEnable(GL_CULL_FACE);
+    }
+    glBlendFuncSeparate(blendSourceRGB, blendDestinationRGB, blendSourceAlpha, blendDestinationAlpha);
+    if (!previousBlend) {
+        glDisable(GL_BLEND);
+    }
 }
 
 bool Renderer3D::UploadActorSkinningMatrices(const Actor* actor) const

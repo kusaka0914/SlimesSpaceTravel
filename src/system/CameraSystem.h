@@ -13,6 +13,7 @@
 
 #include <glm/glm.hpp>
 
+#include <array>
 #include <functional>
 #include <optional>
 #include <string>
@@ -54,6 +55,8 @@ struct CameraSystemDependencies {
     std::function<PhysicsSystem*()> physicsProvider{};
     std::function<CameraControlState()> readControlState{};
     std::function<Actor*(const std::string&, int)> findPlacedActor{};
+    // ゾーンで操作を拒否したときに1始まりのPlayer番号を通知する。未設定なら通知を省略する。
+    std::function<void(int)> onCameraControlBlocked{};
 };
 
 // プレイヤー追従・会話・演出のカメラを調停し、描画用のビューを生成する。
@@ -127,6 +130,7 @@ public:
     // Editor専用。-1でプレビューを解除し、現在位置からゾーンを再評価する。
     void SetCameraZonePreview(int yamlIndex);
     int GetCameraZonePreview() const { return mCameraZonePreviewIndex; }
+    bool HasActiveCameraZone(int playerIndex) const { return mCameraZones.HasActiveZone(playerIndex); }
 
     void SetIsTargetFocus(bool isTargetFocus) { mIsTargetFocus = isTargetFocus; }
 
@@ -187,6 +191,8 @@ private:
     SceneSystem& mScene;
     std::function<CameraControlState()> mReadControlState;
     std::function<Actor*(const std::string&, int)> mFindPlacedActor;
+    std::function<void(int)> mOnCameraControlBlocked;
+    std::array<bool, 2> mWasBlockedRotationInput{};
     BossDefeatSequence mBossDefeatSequence;
 
     bool mIsTargetFocus = false;

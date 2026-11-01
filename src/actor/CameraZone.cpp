@@ -14,7 +14,7 @@ CameraZone::CameraZone(Game* game)
 
 float CameraZone::GetRenderOpacity() const
 {
-    return mGame && mGame->GetIsDebugEditorShowing() ? (GetIsEditorSelected() ? 0.28f : 0.08f) : 0.0f;
+    return mGame && mGame->GetIsDebugEditorShowing() ? 0.08f : 0.0f;
 }
 
 bool CameraZone::Contains(const glm::vec3& point, float worldMargin) const

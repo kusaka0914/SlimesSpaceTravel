@@ -15,6 +15,15 @@
 #include <algorithm>
 #include <glm/glm.hpp>
 
+void PlayerStateMachine::ResetForPlacementInheritance(const PlayerStateMachine& source)
+{
+    mActionState = PlayerActionState::Idle;
+    mAttackDirectionTarget = nullptr;
+    mShouldSkipAirDodgePostHover = false;
+    mAllowsAirMovementAfterDodge = false;
+    mCoyoteTimeRemaining = source.mCoyoteTimeRemaining;
+}
+
 void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMovement& movement,
                                 PlayerGrounding& grounding, PlayerBoatRide& boatRide, PlayerCombat& combat,
                                 PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
@@ -66,7 +75,7 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
         movement.CancelAirborneActionHover();
         ChangeState(PlayerActionState::Idle);
         // 長押しが成立したフレームの経過時間を、溜め・連続攻撃にも重ねて加算しない。
-        UpdateTimer(input, movement, grounding, combat, jewelGauge, status, deltaTime);
+        UpdateTimer(player, input, movement, grounding, combat, jewelGauge, status, deltaTime);
         input.EndFrame();
         return;
     }
@@ -92,19 +101,22 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
         break;
     }
 
-    UpdateTimer(input, movement, grounding, combat, jewelGauge, status, deltaTime);
+    UpdateTimer(player, input, movement, grounding, combat, jewelGauge, status, deltaTime);
 
     // 各状態の押下開始判定が終わるまで、前フレームの入力を保持する。
     input.EndFrame();
 }
 
-void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
-                                     PlayerCombat& combat, PlayerJewelGauge& jewelGauge, PlayerStatus& status,
-                                     float deltaTime)
+void PlayerStateMachine::UpdateTimer(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                     PlayerGrounding& grounding, PlayerCombat& combat, PlayerJewelGauge& jewelGauge,
+                                     PlayerStatus& status, float deltaTime)
 {
     movement.UpdateDodgeCooldown(deltaTime);
 
-    if (jewelGauge.GetRecoverTimer() >= 0.0f) {
+    // 1人分の共有タイマーを2体の更新で二重に進めない。
+    const bool ownsJewelRecovery = !player.GetGame()->GetIsPlayerSplit() || player.GetGame()->GetIsPlayer2Joined() ||
+                                   player.GetGame()->GetControlledPlayer() == &player;
+    if (ownsJewelRecovery && jewelGauge.GetRecoverTimer() >= 0.0f) {
         jewelGauge.UpdateRecoverTimer(deltaTime);
     }
 

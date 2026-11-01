@@ -12,64 +12,20 @@ OperationGuideDisplayState AtLocation(int stageNumber, int planetNumber)
     return displayState;
 }
 
-void StageOnePlanetZeroShowsOnlyBasicOperationGuides()
+void NormalPlayShowsOnlyMenuOperationGuide()
 {
-    const OperationGuideDisplayState displayState = AtLocation(1, 0);
-
-    ExpectTrue(ShouldShowOperationGuideElement("buttonA", displayState), "jump guide on stage 1 planet 0");
-    ExpectTrue(ShouldShowOperationGuideElement("buttonB_copy_copy2_copy", displayState),
-               "split guide on stage 1 planet 0");
-    ExpectFalse(ShouldShowOperationGuideElement("buttonB", displayState), "dodge guide on stage 1 planet 0");
-    ExpectFalse(ShouldShowOperationGuideElement("buttonY", displayState), "attack guide on stage 1 planet 0");
-    ExpectFalse(ShouldShowOperationGuideElement("weakAttackHoldGuide", displayState),
-                "long Y is hidden before combat tutorial");
-    ExpectFalse(ShouldShowOperationGuideElement("strongAttackHoldGuide", displayState),
-                "long X is hidden before combat tutorial");
-}
-
-void StageOnePlanetThreeAddsDodgeGuide()
-{
-    const OperationGuideDisplayState displayState = AtLocation(1, 3);
-
-    ExpectTrue(ShouldShowOperationGuideElement("buttonB", displayState), "dodge guide on stage 1 planet 3");
-    ExpectFalse(ShouldShowOperationGuideElement("buttonX", displayState), "strong attack guide on stage 1 planet 3");
-    ExpectFalse(ShouldShowOperationGuideElement("buttonB_copy_copy2_copy2", displayState),
-                "special guide on stage 1 planet 3");
-}
-
-void StageOnePlanetOneAddsCombatGuides()
-{
-    const OperationGuideDisplayState displayState = AtLocation(1, 1);
-
-    ExpectTrue(ShouldShowOperationGuideElement("buttonY", displayState), "weak attack guide on stage 1 planet 1");
-    ExpectTrue(ShouldShowOperationGuideElement("weakAttackHoldGuide", displayState),
-               "long Y is shown with combat guide");
-    ExpectTrue(ShouldShowOperationGuideElement("strongAttackHoldGuide", displayState),
-               "long X is shown with combat guide");
-    ExpectTrue(ShouldShowOperationGuideElement("buttonX", displayState), "strong attack guide on stage 1 planet 1");
-    ExpectTrue(ShouldShowOperationGuideElement("buttonB_copy_copy2_copy2", displayState),
-               "special guide on stage 1 planet 1");
-}
-
-void OnlyStageOneShowsPermanentOperationGuides()
-{
-    const OperationGuideDisplayState otherTutorialPlanet = AtLocation(1, 2);
-    ExpectTrue(ShouldShowOperationGuideElement("buttonY", otherTutorialPlanet),
-               "combat guide on another stage 1 planet");
-
-    for (int stage : {0, 2, 3}) {
-        for (bool twoPlayers : {false, true}) {
-            auto state = AtLocation(stage, 0);
-            state.isTwoPlayerMode = twoPlayers;
-            for (const char* id : {"buttonA", "buttonB", "buttonX", "buttonY", "weakAttackHoldGuide",
-                                   "strongAttackHoldGuide", "buttonB_copy_copy2", "buttonB_copy_copy2_copy"}) {
-                ExpectFalse(ShouldShowOperationGuideElement(id, state),
-                            "permanent controls are hidden outside stage 1, including the base");
+    for (int stage : {0, 1, 2, 3}) {
+        for (int planet : {0, 1, 2, 3}) {
+            for (bool twoPlayers : {false, true}) {
+                auto state = AtLocation(stage, planet);
+                state.isTwoPlayerMode = twoPlayers;
+                for (const char* id : {"buttonA", "buttonB", "buttonX", "buttonY", "weakAttackHoldGuide",
+                                       "strongAttackHoldGuide", "buttonB_copy_copy2", "buttonB_copy_copy2_copy"}) {
+                    ExpectFalse(ShouldShowOperationGuideElement(id, state), "normal play hides permanent controls");
+                }
+                ExpectTrue(ShouldShowOperationGuideElement("buttonA_copy", state), "menu icon remains visible");
+                ExpectTrue(ShouldShowOperationGuideElement("buttonTextB_copy", state), "menu label remains visible");
             }
-            ExpectTrue(ShouldShowOperationGuideElement("buttonA_copy", state),
-                       "menu icon remains visible outside stage 1");
-            ExpectTrue(ShouldShowOperationGuideElement("buttonTextB_copy", state),
-                       "menu label remains visible outside stage 1");
         }
     }
 }
@@ -86,6 +42,7 @@ void UGCPlaytestsShowAllUnlockedActions()
 void TwoPlayerModeHidesSoloConfigurationGuides()
 {
     OperationGuideDisplayState displayState = AtLocation(1, 1);
+    displayState.isUGCPlaytestActive = true;
     displayState.isTwoPlayerMode = true;
 
     ExpectFalse(ShouldShowOperationGuideElement("buttonB_copy_copy2", displayState),
@@ -282,6 +239,33 @@ void InsufficientJewelsTracksRequiredCountWithoutRefreshing()
     ExpectFalse(guide.GetPrompt().has_value(), "repeat does not extend the three second lifetime");
 }
 
+void BlockedCameraFeedbackExpiresAndFollowsPlayerZone()
+{
+    using Kind = ContextualOperationGuide::Kind;
+    ContextualOperationGuide guide;
+    ContextualOperationGuide::Availability available;
+    available.activePlayers = {true, true};
+    available.canExplainBlockedCamera[1] = true;
+    guide.RequestCameraControlBlocked(1);
+    guide.Update(0.0f, true, available);
+    ExpectFalse(guide.GetPrompt().has_value(), "another player's zone cannot enable a camera hint");
+    guide.RequestCameraControlBlocked(2);
+    guide.Update(0.0f, true, available);
+    ExpectTrue(guide.GetPrompt() && guide.GetPrompt()->kind == Kind::CameraControlBlocked &&
+                   guide.GetPrompt()->playerNumber == 2,
+               "blocked camera input identifies the player");
+    guide.Update(2.8f, true, available);
+    guide.RequestCameraControlBlocked(2);
+    guide.Update(0.21f, true, available);
+    ExpectFalse(guide.GetPrompt().has_value(), "repeated camera input does not extend the hint");
+    guide.RequestCameraControlBlocked(2);
+    guide.Update(0.0f, true, available);
+    ExpectTrue(guide.GetPrompt().has_value(), "a later blocked camera attempt can show the hint again");
+    available.canExplainBlockedCamera[1] = false;
+    guide.Update(0.0f, true, available);
+    ExpectFalse(guide.GetPrompt().has_value(), "leaving the camera zone clears the hint");
+}
+
 void MergeDistanceFeedbackStopsWhenAvailableAndCanRepeat()
 {
     using Kind = ContextualOperationGuide::Kind;
@@ -307,6 +291,7 @@ void MergeDistanceFeedbackStopsWhenAvailableAndCanRepeat()
 
 void RegisterOperationGuideVisibilityTests(TestRegistry& tests)
 {
+    tests.emplace_back("ContextualOperationGuide.BlockedCamera", BlockedCameraFeedbackExpiresAndFollowsPlayerZone);
     tests.emplace_back("ContextualOperationGuide.InsufficientJewels",
                        InsufficientJewelsTracksRequiredCountWithoutRefreshing);
     tests.emplace_back("ContextualOperationGuide.MergeDistance", MergeDistanceFeedbackStopsWhenAvailableAndCanRepeat);
@@ -319,12 +304,7 @@ void RegisterOperationGuideVisibilityTests(TestRegistry& tests)
     tests.emplace_back("ContextualOperationGuide.RecoveryUsagePerStage",
                        RecoveryUsageSuppressesOnlyNormalHintsAndResetsPerStage);
     tests.emplace_back("ContextualOperationGuide.DiscardsInvalidHints", UnavailableAndStaleHintsAreDiscarded);
-    tests.emplace_back("OperationGuideVisibility.StageOnePlanetZeroShowsBasicGuides",
-                       StageOnePlanetZeroShowsOnlyBasicOperationGuides);
-    tests.emplace_back("OperationGuideVisibility.StageOnePlanetThreeAddsDodge", StageOnePlanetThreeAddsDodgeGuide);
-    tests.emplace_back("OperationGuideVisibility.StageOnePlanetOneAddsCombat", StageOnePlanetOneAddsCombatGuides);
-    tests.emplace_back("OperationGuideVisibility.OnlyStageOneShowsPermanentGuides",
-                       OnlyStageOneShowsPermanentOperationGuides);
+    tests.emplace_back("OperationGuideVisibility.NormalPlayShowsOnlyMenu", NormalPlayShowsOnlyMenuOperationGuide);
     tests.emplace_back("OperationGuideVisibility.UGCShowsAll", UGCPlaytestsShowAllUnlockedActions);
     tests.emplace_back("OperationGuideVisibility.TwoPlayerModeHidesSoloConfigurationGuides",
                        TwoPlayerModeHidesSoloConfigurationGuides);
