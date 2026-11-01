@@ -1,8 +1,7 @@
 #include "actor/enemy/EnemyStateMachine.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Enemy.h"
+#include "actor/MathUtils.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
@@ -12,10 +11,11 @@
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStatus.h"
 #include "actor/enemy/behavior/EnemyBehaviorController.h"
+#include "app/Game.h"
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
 #include "system/ParticleSystem.h"
-#include "actor/MathUtils.h"
+#include "world/Stage.h"
 
 #include <algorithm>
 #include <cmath>
@@ -282,6 +282,18 @@ void DefeatRemainingNormalEnemies(const Enemy& defeatedBoss)
         enemy->DefeatImmediately();
     }
 }
+void BeginBossDefeatPresentation(Enemy& enemy)
+{
+    StageBossDefeatActors(enemy);
+    // 共通カメラは両プレイヤーが地面に立っている構図のため、スローが終わってから位置を揃える。
+    enemy.GetGame()->ForcePlayersGroundedForCinematic();
+    enemy.GetGame()->GetAudioSystem()->StopBGM();
+    Star* star = enemy.GetCurrentPlanet() ? enemy.GetCurrentPlanet()->GetStar() : nullptr;
+    if (CameraSystem* camera = enemy.GetGame()->GetCameraSystem()) {
+        camera->StartBossDefeatSequence(&enemy, star);
+    }
+}
+
 } // namespace
 
 EnemyStateMachine::EnemyStateMachine()
@@ -353,6 +365,14 @@ void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMove
 
 void EnemyStateMachine::UpdateDying(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime)
 {
+    if (mIsBossDefeatPresentationPending) {
+        if (enemy.GetGame()->IsEnemyDefeatSlowMotionActive()) {
+            return;
+        }
+        mIsBossDefeatPresentationPending = false;
+        BeginBossDefeatPresentation(enemy);
+    }
+
     if (!status.GetIsBoss()) {
         movement.MoveDuringDying(enemy, deltaTime);
     }
@@ -630,6 +650,10 @@ void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, floa
 
 void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
 {
+    if (mLifeState != LifeState::Alive) {
+        return;
+    }
+
     mLifeState = LifeState::Dying;
     enemy.SetShouldDropJewelOnDeath(!enemy.IsBossEncounter());
     constexpr float normalEnemyDyingDuration = 1.0f;
@@ -644,28 +668,23 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
     if (enemy.IsBossEncounter()) {
         enemy.SetVelocity(glm::vec3(0.0f));
         DefeatRemainingNormalEnemies(enemy);
-        StageBossDefeatActors(enemy);
-
-        // ボス撃破演出の共通カメラは、両プレイヤーが地面に立っている前提で構図を作る。
-        enemy.GetGame()->ForcePlayersGroundedForCinematic();
-
-        enemy.GetGame()->GetAudioSystem()->StopBGM();
-
-        Star* star = enemy.GetCurrentPlanet() ? enemy.GetCurrentPlanet()->GetStar() : nullptr;
-        CameraSystem* cameraSystem = enemy.GetGame()->GetCameraSystem();
-        if (cameraSystem) {
-            cameraSystem->StartBossDefeatSequence(&enemy, star);
+        enemy.GetGame()->OnEnemyDefeated(enemy);
+        mIsBossDefeatPresentationPending = enemy.GetGame()->IsEnemyDefeatSlowMotionActive();
+        if (!mIsBossDefeatPresentationPending) {
+            BeginBossDefeatPresentation(enemy);
         }
     } else {
         constexpr float dyingKnockBackTimer = 0.5f;
         StartKnockedBack(enemy, status, dyingKnockBackTimer);
         InitializeDyingMovement(enemy, status);
         enemy.GetGame()->GetAudioSystem()->PlaySE("defeat_se");
+        enemy.GetGame()->OnEnemyDefeated(enemy);
     }
 }
 
 void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
 {
+    mIsBossDefeatPresentationPending = false;
     EmitEnemyDefeatEffect(enemy, status);
 
     if (enemy.ShouldDropJewelOnDeath()) {

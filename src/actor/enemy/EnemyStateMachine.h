@@ -71,7 +71,8 @@ public:
     // KnockedBackへ移り、秒数と押し戻し方向を設定して頂点待機タイマーを解除する。速度は設定しない。
     void StartKnockedBack(Enemy& enemy, EnemyStatus& status, float knockBackTimer);
 
-    // HPを0にして死亡演出を開始する。ボス戦では他の通常敵の撃破、演出用の再配置、BGM停止も行う。
+    // Aliveの敵をHP0・死亡状態へ移す。惑星の最後の敵ではスローを依頼する。
+    // ボス戦では他の通常敵を撃破し、スロー終了後に再配置・BGM停止・撃破演出を始める。
     void StartDying(Enemy& enemy, EnemyStatus& status);
 
     // ガードを最大値へ戻し、通常着地判定を再開して頂点待機を解除する。行動状態は変更しない。
@@ -103,6 +104,7 @@ public:
 private:
     bool ShouldTriggerProbability(float probabilityPercent);
 
+    bool mIsBossDefeatPresentationPending = false;
     LifeState mLifeState;
     ActionState mActionState;
     float mPreAttackApproachProbabilityPercent = 0.0f;

@@ -59,6 +59,10 @@
 
 namespace {
 
+constexpr float enemyDefeatSlowMotionDurationSeconds = 2.0f;
+constexpr float enemyDefeatSlowMotionSpeed = 0.2f;
+constexpr float enemyDefeatSlowMotionReleaseSeconds = 0.35f;
+
 std::string BuildStageIntroCinematicId(int stageNum)
 {
     if (stageNum <= 0) {
@@ -269,6 +273,7 @@ void Game::CreateStages(int stageCount)
 
 bool Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
 {
+    mEnemyDefeatSlowMotionRemainingSeconds = 0.0f;
     if (mUIRenderer) {
         mUIRenderer->ResetOperationGuides();
     }
@@ -674,6 +679,10 @@ void Game::UpdateGame()
 
     ProcessPendingUGCClearCompletion();
 
+    if (mSceneSystem->IsTitle() || mSceneSystem->IsOpening() || mSceneSystem->IsGameOver() || mIsFreeCameraMode) {
+        mEnemyDefeatSlowMotionRemainingSeconds = 0.0f;
+    }
+
     if (mHitStopTimer >= 0.0f) {
         mHitStopTimer -= deltaTime;
         if (mCameraSystem) {
@@ -694,7 +703,18 @@ void Game::UpdateGame()
         return;
     }
 
-    UpdateWorldAndCamera(deltaTime);
+    float worldDeltaTime = deltaTime;
+    if (IsEnemyDefeatSlowMotionActive()) {
+        // 演出の長さは実時間で数え、ワールドへ渡す時間だけを遅らせる。ポーズ・ヒットストップ中は進めない。
+        const float releaseProgress =
+            1.0f - std::clamp(mEnemyDefeatSlowMotionRemainingSeconds / enemyDefeatSlowMotionReleaseSeconds, 0.0f, 1.0f);
+        const float smoothRelease = releaseProgress * releaseProgress * (3.0f - 2.0f * releaseProgress);
+        worldDeltaTime *= enemyDefeatSlowMotionSpeed + (1.0f - enemyDefeatSlowMotionSpeed) * smoothRelease;
+        mEnemyDefeatSlowMotionRemainingSeconds =
+            std::max(0.0f, mEnemyDefeatSlowMotionRemainingSeconds - elapsedSeconds);
+    }
+    mLastDeltaTime = worldDeltaTime;
+    UpdateWorldAndCamera(worldDeltaTime);
     if (mUIRenderer) {
         mUIRenderer->UpdateConsumptionFeedback(elapsedSeconds);
     }
@@ -1443,6 +1463,26 @@ void Game::MarkNPCEndingTriggerCompleted(const NPC* npc, std::size_t talkPageInd
     }
 }
 
+void Game::OnEnemyDefeated(const Enemy& enemy)
+{
+    const Planet* planet = enemy.GetCurrentPlanet();
+    if (!planet || !mSceneSystem || !mSceneSystem->IsPlaying() || mIsFreeCameraMode || !enemy.GetIsActive() ||
+        enemy.GetHp() > 0.0f) {
+        return;
+    }
+    const auto& enemies = planet->GetEnemies();
+    if (std::find(enemies.begin(), enemies.end(), &enemy) == enemies.end()) {
+        return;
+    }
+    const bool hasLivingEnemy = std::any_of(enemies.begin(), enemies.end(), [&enemy](const Enemy* other) {
+        // 死亡モーション中の敵は数えず、同じ範囲攻撃で複数体を倒した場合も最後の1体で発火させる。
+        return other && other != &enemy && other->GetIsActive() && !other->GetIsDead() && other->GetHp() > 0.0f;
+    });
+    if (!hasLivingEnemy) {
+        mEnemyDefeatSlowMotionRemainingSeconds = enemyDefeatSlowMotionDurationSeconds;
+    }
+}
+
 void Game::OnEnemyLaunched()
 {
     mAudioSystem->PlaySE("break_se");
@@ -1486,6 +1526,7 @@ void Game::ReturnToTitleFromPauseMenu()
 
 void Game::RestartGame()
 {
+    mEnemyDefeatSlowMotionRemainingSeconds = 0.0f;
     if (mPlayerConfigurationController) {
         mPlayerConfigurationController->MergeSoloSplitBeforeRestart();
     }

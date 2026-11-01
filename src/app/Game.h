@@ -244,6 +244,10 @@ public:
     bool CanSwitchControlledPlayer() const;
     void RequestSoloSplitControlSwitchAfterBoarding();
 
+    // HPが0になった敵を通知する。所属惑星に生存中の敵が残っていなければ、実時間約2秒のスローを開始する。
+    void OnEnemyDefeated(const Enemy& enemy);
+    bool IsEnemyDefeatSlowMotionActive() const { return mEnemyDefeatSlowMotionRemainingSeconds > 0.0f; }
+
     void SetHitStopTimer(float hitStopTimer) { mHitStopTimer = hitStopTimer; }
 
     // 接地判定レイの長さをワールド単位で設定し、最小0.01に制限する。
@@ -441,6 +445,7 @@ private:
     std::unique_ptr<EnemyJewelDropSystem> mEnemyJewelDropSystem;
 
     float mHitStopTimer = -1.0f;
+    float mEnemyDefeatSlowMotionRemainingSeconds = 0.0f;
     float mGroundNormalRayLength = 5.0f;
     float mOverheadGravityRayLength = 15.0f;
 
