@@ -338,6 +338,7 @@ void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge
 
         if (isChargedAttackCounter) {
             ApplyDamageWithHitEffect(mParticles, *enemy, chargedAttackDamage * counterDamageMultiplier, player, 1.7f);
+            enemy->ReactToSuccessfulCounter(player);
             jewelGauge.RestoreFull();
             mAudio.PlaySE("just_attack_se");
         } else {

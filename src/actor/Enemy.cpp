@@ -330,6 +330,24 @@ void Enemy::ReactToComboFinisher(const Player& player, float pushSpeed, float du
     mStateMachine->StartGroundFinisherKnockBack(*this, mStatus, player, pushSpeed, durationSeconds);
 }
 
+void Enemy::ReactToSuccessfulCounter(const Player& player)
+{
+    if (!IsAlive()) {
+        return;
+    }
+
+    constexpr float counterPushDurationSeconds = 0.3f;
+    const float pushSpeed = std::max(0.0f, GetKnockBackSpeed());
+    mStatus.SetCanCountered(false);
+    StartBossHitReaction();
+
+    if (!IsOnGround()) {
+        mMovement->StartComboFinisherPush(*this, GetPos() - player.GetPos(), pushSpeed, counterPushDurationSeconds);
+        return;
+    }
+    mStateMachine->StartGroundFinisherKnockBack(*this, mStatus, player, pushSpeed, counterPushDurationSeconds);
+}
+
 void Enemy::DefeatImmediately()
 {
     if (GetIsDead()) {

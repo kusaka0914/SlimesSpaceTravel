@@ -139,12 +139,12 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
         drawActors(planet->GetHazardActors());
         if (scene.isDebugEditorShowing) {
             drawActors(planet->GetTutorialTriggers());
+            drawActors(planet->GetBoatArrivalPoints());
         }
         drawActor(planet->GetKey());
         drawActor(planet->GetStar());
 
         if (scene.isDebugMode) {
-            drawActors(planet->GetBoatArrivalPoints());
             drawActors(planet->GetFallRespawnPoints());
         }
     }

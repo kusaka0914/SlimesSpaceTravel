@@ -55,6 +55,8 @@ public:
 
     // 通常敵へ強攻撃の中断・接線方向の押し戻しを適用する。発動済みの攻撃と打ち上げ状態は維持する。
     void ReactToComboFinisher(const Player& player, float pushSpeed, float durationSeconds);
+    // 成功させたPlayerから離れる方向へ押し戻す。打ち上げ中は空中状態を維持する。
+    void ReactToSuccessfulCounter(const Player& player);
     EnemyGuardDamageResult ApplyGuardDamage(float guardDamage, float deltaTime);
 
     // 生存中の敵に対し、現在のガード区画を破壊できるダメージを適用する。死亡中は空の結果を返す。

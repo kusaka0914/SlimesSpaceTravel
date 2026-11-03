@@ -82,7 +82,7 @@ void PlayerDamageHandler::Apply(Player& player, PlayerInput& input, PlayerMoveme
         player.GetGame()->OnPlayerCounter(movement.GetPlayerNum());
 
         enemy->ApplyGuardDamage(enemy->GetGuardValuePerSegment(), deltaTime);
-        enemy->FlipCanCountered();
+        enemy->ReactToSuccessfulCounter(player);
 
         player.GetGame()->GetAudioSystem()->PlaySE("just_dodge_se");
         jewelGauge.Add(1);
