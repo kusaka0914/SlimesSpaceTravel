@@ -18,6 +18,39 @@ namespace {
 constexpr const char* storybookDialogueYaml =
     "opening: [{id: openingText, type: text, text: [original], futureField: retain}]\n";
 
+void RepeatedUITextureSpacingPreservesDefaultsAndRoundTrips()
+{
+    TemporaryTestDirectory fixture;
+    WriteTestFile(fixture.File(),
+                  "default:\n"
+                  "  - {id: hpTexture, type: texture, scaleRatio: [0.03, 0.03], futureField: retained}\n"
+                  "  - {id: jewelTexture, type: texture, scaleRatio: [0.04, 0.04]}\n"
+                  "  - {id: splitGuardTexture, type: texture, scaleRatio: [0.03, 0.03]}\n"
+                  "title: [{id: bgTexture, type: texture, scaleRatio: [1, 1]}]\n");
+    UILoadSystem ui;
+    ExpectTrue(ui.ReloadUIInfo(fixture.File().string()), "load legacy UI without spacing fields");
+    ExpectNear(1.0f / 28.0f, *ui.GetTextureInfo("default", "hpTexture")->repeatSpacingRatio, 0.000001f,
+               "legacy HP spacing");
+    ExpectNear(0.05f, *ui.GetTextureInfo("default", "jewelTexture")->repeatSpacingRatio, 0.000001f,
+               "legacy jewel spacing");
+    ExpectNear(0.025f, *ui.GetTextureInfo("default", "splitGuardTexture")->repeatSpacingRatio, 0.000001f,
+               "legacy guard spacing");
+    ui.GetEditableTextureInfos().at("default.hpTexture").repeatSpacingRatio = 0.042f;
+    ui.GetEditableTextureInfos().at("default.jewelTexture").repeatSpacingRatio = 0.0f;
+    ui.GetEditableTextureInfos().at("default.splitGuardTexture").repeatSpacingRatio = 0.033f;
+    ExpectTrue(ui.SaveUIInfo(fixture.File().string()), "save edited spacing");
+    ExpectTrue(ui.ReloadUIInfo(fixture.File().string()), "reload saved spacing");
+    ExpectNear(0.042f, *ui.GetTextureInfo("default", "hpTexture")->repeatSpacingRatio, 0.000001f, "saved HP spacing");
+    ExpectNear(0.0f, *ui.GetTextureInfo("default", "jewelTexture")->repeatSpacingRatio, 0.000001f,
+               "zero spacing is preserved");
+    ExpectNear(0.033f, *ui.GetTextureInfo("default", "splitGuardTexture")->repeatSpacingRatio, 0.000001f,
+               "saved guard spacing");
+    const auto saved = YAML::LoadFile(fixture.File().string());
+    ExpectEqual(std::string("retained"), saved["default"][0]["futureField"].as<std::string>(),
+                "unrelated fields preserved");
+    ExpectFalse(saved["title"][0]["repeatSpacingRatio"].IsDefined(), "single images do not gain repetition settings");
+}
+
 void StorybookImageSaveFailureKeepsDialogue()
 {
     TemporaryTestDirectory fixture;
@@ -336,6 +369,8 @@ void ConfigurationShortWriteKeepsPreviousBytes(const SaveConfiguration& save)
 
 void RegisterConfigurationPersistenceTests(TestRegistry& tests)
 {
+    tests.emplace_back("Configuration.RepeatedUITextureSpacing",
+                       RepeatedUITextureSpacingPreservesDefaultsAndRoundTrips);
     tests.emplace_back("Configuration.StorybookImageFailureKeepsDialogue", StorybookImageSaveFailureKeepsDialogue);
     tests.emplace_back("Configuration.StorybookDialogueFailureKeepsImages", StorybookDialogueFailureKeepsImages);
     tests.emplace_back("Configuration.StorybookCompoundRoundTrip",

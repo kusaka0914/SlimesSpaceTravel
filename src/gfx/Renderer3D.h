@@ -80,7 +80,7 @@ public:
     // 操作中のPlayerを優先して注目位置を決め、通常ゲーム画面用の影を更新する。
     void RenderGameplayShadowMap() const;
 
-    // ワールド座標の注目位置を中心に、現在ステージの影を更新する。
+    // ワールド座標の注目位置を中心に、現在ステージの影を更新する。Playerは簡易影のみとし、対象に含めない。
     void RenderShadowMap(const glm::vec3& focusPosition) const;
 
     // 現在ステージの装飾を準備して描画する。UGCモードでは描画しない。
@@ -125,14 +125,17 @@ public:
     void EndTransparentDraw() const;
 
     // nullptr・非アクティブ・ほぼ透明なActorを除外してDrawActorへ渡す。useOrientはActorの姿勢を適用するか。
-    void TryDrawActor(Actor* actor, bool useOrient = true) const;
+    void TryDrawActor(Actor* actor, bool useOrient = true, const PlayerSoulPresentation& soul = {}) const;
 
     // Actorのメッシュと材質を描画する。非アクティブ状態は除外せず、プレビューにも使用する。
-    void DrawActor(Actor* actor, bool useOrient = true) const;
+    // soulは1人プレイの分裂Playerにだけ適用し、輪郭の個体識別とは独立して扱う。
+    void DrawActor(Actor* actor, bool useOrient = true, const PlayerSoulPresentation& soul = {}) const;
     void DrawUGCPlacementPreviewActor(Actor* actor) const;
 
     // アクティブ状態を変えずに指定の不透明度倍率で描画する。opacityは0〜1へ制限する。
     void DrawInactiveActorPreview(Actor* actor, float opacity) const;
+    // 光源に依存しない足元の簡易影。Playerは体幅・奥行きに合わせた均一な黒で、実際の支持面へ投影する。
+    // Playerの影はジャンプ高度で大きさを変えない。
     void DrawBlobShadow(const CharacterActor* actor) const;
 
     // 直近のDrawSceneの視錐台に外接球が入るかを返す。視錐台未設定・nullptrの場合は除外せずtrue。
@@ -173,7 +176,6 @@ private:
     void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos,
                      int stageNumber) const;
     glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;
-    void DrawActorSelectionUnderlay(Actor* actor, bool useOrient) const;
     void DrawActorOutlineUnderlay(Actor* actor, bool useOrient, const glm::vec4& color, float scaleMultiplier) const;
     void DrawActorSelectionOverlay(Actor* actor, bool useOrient) const;
     void DrawUGCMovingPlatformPaths(const SceneRenderState& scene) const;
@@ -206,6 +208,7 @@ private:
 
     GLuint mAttackRangeVAO;
     GLuint mAttackRangeVBO;
+    GLuint mTransparentIndexBuffer = 0;
     mutable std::unordered_set<std::string> mFailedTextureOverrides;
     mutable std::array<glm::vec4, 6> mViewFrustumPlanes{};
     mutable bool mHasValidViewFrustum = false;

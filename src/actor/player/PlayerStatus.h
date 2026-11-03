@@ -2,7 +2,7 @@
 
 class Game;
 
-// HP・被ダメージ間隔・無敵・疲労を保持する。被弾の可否判定と行動遷移は呼び出し側が担当する。
+// HP・被ダメージ間隔・無敵・ダッシュ後のカウンター猶予・疲労を保持する。被弾の可否判定と行動遷移は呼び出し側が担当する。
 class PlayerStatus {
 public:
     bool IsAlive() const { return mHp > 0.0f; }
@@ -44,6 +44,14 @@ public:
     void StartDodgeInvincibility(float seconds);
     void ClearInvincible();
 
+    // ダッシュ終了後のカウンター猶予を開始する。無敵時間は延長しない。
+    void StartDodgeCounterGrace();
+    bool IsDodgeCounterGraceActive() const { return mDodgeCounterGraceRemainingSeconds > 0.0f; }
+    void UpdateDodgeCounterGrace(float deltaTime);
+
+    // 再配置元の被弾・カウンター猶予と疲労を引き継ぐ。HPと設定値は変更しない。
+    void InheritPlacementState(const PlayerStatus& source);
+
     void StartTired();
     void EndTired();
 
@@ -61,6 +69,7 @@ private:
     float mDefaultDamageTimer = 1.0f;
     float mInvincibleTimer = -1.0f;
     float mDefaultInvincibleTimer = 2.0f;
+    float mDodgeCounterGraceRemainingSeconds = 0.0f;
     bool mShouldBlinkWhileInvincible = false;
     bool mIsTired = false;
 };

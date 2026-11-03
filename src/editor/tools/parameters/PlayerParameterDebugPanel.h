@@ -18,6 +18,8 @@ private:
     void DrawBasicSettings(Player* player);
     void DrawMovementSettings(Player* player);
     void DrawAttackSettings(Player* player);
+    void DrawComboSettings(Player* player);
+    void DrawHitStopSettings(Player* player);
     void DrawTimerSettings(Player* player);
     bool SaveParameters();
 

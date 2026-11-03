@@ -46,6 +46,11 @@ public:
 
     bool GetIsMoving() const { return mIsMoving; }
     bool HasAppeared() const { return mIsActive; }
+
+    // 初期出現を設定し、移動前なら現在の表示・利用可否にも反映する。出現SEは再生しない。
+    void SetStartsAppeared(bool startsAppeared);
+    bool GetStartsAppeared() const { return mStartsAppeared; }
+
     bool ShouldRenderUnavailablePreview() const;
 
     // 惑星間移動の進捗（0〜1）。拠点の発射演出とは別の値。
@@ -76,6 +81,7 @@ private:
 private:
     Planet* mDestPlanet;
 
+    bool mStartsAppeared = false;
     bool mIsMoving;
     bool mIsLaunchingFromBase = false;
     bool mIsActivePrev;

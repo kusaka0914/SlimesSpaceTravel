@@ -1,15 +1,15 @@
 #include "component/PlatformPressureSwitchComponent.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "app/Game.h"
 #include "component/FocusComponent.h"
 #include "component/PlatformPressDetection.h"
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
+#include "world/Stage.h"
 
 #include <algorithm>
 #include <glm/common.hpp>
@@ -59,6 +59,9 @@ void PlatformPressureSwitchComponent::Update(float deltaTime)
     const bool isPressed = mHasLatchedOn || hasCurrentContact || mContactGraceRemainingSeconds > 0.0f;
     const bool didBecomePressed = isPressed && !mIsPressed;
     mIsPressed = isPressed;
+    if (didBecomePressed && mShouldRemainOnAfterPressed) {
+        mPlatform->StartSwitchCompletionFlash();
+    }
     if (didBecomePressed && !mHasStartedActivationFocus) {
         StartFirstActivationFocus();
     }

@@ -2,7 +2,9 @@
 
 #include "system/mesh/LoadedModel.h"
 
+#include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -58,7 +60,7 @@ void PlayerAnimationController::SetLoadedModel(const LoadedModel* loadedModel)
     ResetToAnimation(mBaseAnimationId);
 }
 
-bool PlayerAnimationController::RequestAnimation(std::string_view animationId, bool shouldRestart)
+bool PlayerAnimationController::RequestAnimation(std::string_view animationId, bool shouldRestart, float playbackRate)
 {
     const std::string normalizedId = NormalizePlayerAnimationId(animationId);
     const ResolvedAnimation* animation = FindResolvedAnimation(normalizedId);
@@ -77,6 +79,7 @@ bool PlayerAnimationController::RequestAnimation(std::string_view animationId, b
 
     PlayResolvedAnimation(normalizedId, *animation, shouldRestart);
     mIsOneShotPlaying = true;
+    mPlaybackRate = std::isfinite(playbackRate) ? std::clamp(playbackRate, 0.25f, 2.0f) : 1.0f;
     return true;
 }
 
@@ -92,7 +95,7 @@ void PlayerAnimationController::Update(float deltaTimeSeconds)
         return;
     }
 
-    mAnimationPlayer.Update(deltaTimeSeconds);
+    mAnimationPlayer.Update(deltaTimeSeconds * mPlaybackRate);
 
     if (!mIsOneShotPlaying || !mAnimationPlayer.IsFinished()) {
         return;
@@ -107,6 +110,7 @@ void PlayerAnimationController::ResetToAnimation(std::string_view animationId)
     mBaseAnimationId = NormalizePlayerAnimationId(animationId);
     mCurrentAnimationId.clear();
     mIsOneShotPlaying = false;
+    mPlaybackRate = 1.0f;
 
     if (!mAnimationPlayer.HasSkinningData()) {
         return;
@@ -182,6 +186,7 @@ void PlayerAnimationController::PlayResolvedAnimation(const std::string& animati
     }
 
     const bool shouldLoop = animation.playbackMode == PlayerAnimationPlaybackMode::BaseLoop;
+    mPlaybackRate = 1.0f;
     mAnimationPlayer.Play(animation.clip, shouldLoop, shouldRestart);
     mCurrentAnimationId = animationId;
 }

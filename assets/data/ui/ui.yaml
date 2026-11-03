@@ -255,18 +255,21 @@ ugcClearResult:
 default:
   - id: hpTexture
     type: texture
-    posRatio: [0.015635636, 0.01875]
-    scaleRatio: [0.029999992, 0.03]
+    posRatio: [0.4245502, 0.9350294]
+    scaleRatio: [0.024999997, 0.024999999]
+    repeatSpacingRatio: 0.0257
     rotationDegrees: 0
   - id: jewelTexture
     type: texture
-    posRatio: [0.0115788905, 0.079299994]
-    scaleRatio: [0.04, 0.04]
+    posRatio: [0.59975684, 0.92581195]
+    scaleRatio: [0.035, 0.034999996]
+    repeatSpacingRatio: 0.032
     rotationDegrees: 0
   - id: splitGuardTexture
     type: texture
-    posRatio: [0.014649404, 0.16078468]
-    scaleRatio: [0.029999992, 0.03]
+    posRatio: [0.32278895, 0.93132746]
+    scaleRatio: [0.030000001, 0.030000003]
+    repeatSpacingRatio: 0.025
     rotationDegrees: 0
   - id: talkableTextForGameController
     type: text
@@ -324,7 +327,7 @@ state:
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
     text:
-      - Y連打で疲労回復！
+      - 連打で疲労回復！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
@@ -334,7 +337,7 @@ state:
     posRatio: [0.5, 0.558]
     scaleRatio: [0.00031249996, 1.0]
     text:
-      - J連打で疲労回復！
+      - 連打で疲労回復！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true

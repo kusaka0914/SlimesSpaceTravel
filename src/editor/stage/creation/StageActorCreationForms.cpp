@@ -358,7 +358,7 @@ void StageJewelItemCreationForm::Draw()
     if (EditorAssetDragDrop::AcceptPath(EditorAssetType::Texture, droppedTexturePath)) {
         mSelectedTexture = droppedTexturePath;
     }
-    ImGui::TextWrapped("テクスチャ: %s", mSelectedTexture.c_str());
+    ImGui::TextWrapped("テクスチャ: %s", mSelectedTexture.empty() ? "モデルの標準素材" : mSelectedTexture.c_str());
     ImGui::DragFloat3("初期スケール##jewelItem", &mScale.x, 0.01f, 0.01f, 30.0f, "%.2f");
 
     const bool canAdd = mSelectedPlanetIndex >= 0 && !mSelectedModel.empty();

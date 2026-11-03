@@ -1,8 +1,7 @@
 #include "actor/enemy/EnemyStateMachine.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Enemy.h"
+#include "actor/MathUtils.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
@@ -12,10 +11,11 @@
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStatus.h"
 #include "actor/enemy/behavior/EnemyBehaviorController.h"
+#include "app/Game.h"
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
 #include "system/ParticleSystem.h"
-#include "actor/MathUtils.h"
+#include "world/Stage.h"
 
 #include <algorithm>
 #include <cmath>
@@ -282,6 +282,18 @@ void DefeatRemainingNormalEnemies(const Enemy& defeatedBoss)
         enemy->DefeatImmediately();
     }
 }
+void BeginBossDefeatPresentation(Enemy& enemy)
+{
+    StageBossDefeatActors(enemy);
+    // 共通カメラは両プレイヤーが地面に立っている構図のため、スローが終わってから位置を揃える。
+    enemy.GetGame()->ForcePlayersGroundedForCinematic();
+    enemy.GetGame()->GetAudioSystem()->StopBGM();
+    Star* star = enemy.GetCurrentPlanet() ? enemy.GetCurrentPlanet()->GetStar() : nullptr;
+    if (CameraSystem* camera = enemy.GetGame()->GetCameraSystem()) {
+        camera->StartBossDefeatSequence(&enemy, star);
+    }
+}
+
 } // namespace
 
 EnemyStateMachine::EnemyStateMachine()
@@ -353,6 +365,14 @@ void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMove
 
 void EnemyStateMachine::UpdateDying(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime)
 {
+    if (mIsBossDefeatPresentationPending) {
+        if (enemy.GetGame()->IsEnemyDefeatSlowMotionActive()) {
+            return;
+        }
+        mIsBossDefeatPresentationPending = false;
+        BeginBossDefeatPresentation(enemy);
+    }
+
     if (!status.GetIsBoss()) {
         movement.MoveDuringDying(enemy, deltaTime);
     }
@@ -453,6 +473,10 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
         return;
     }
 
+    if (!status.AdvanceAttackStartup(deltaTime)) {
+        return;
+    }
+
     status.DecreaseCanCounteredTimer(deltaTime);
     if (status.GetCanCounteredTimer() <= 0.0f) {
         status.SetCanCountered(false);
@@ -474,7 +498,7 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
 void EnemyStateMachine::UpdateKnockedBack(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime)
 {
     if (status.GetKnockBackTimer() > 0.0f) {
-        movement.MoveDuringKnockBack(enemy, status, deltaTime);
+        movement.MoveDuringKnockBack(enemy, status, deltaTime, mGroundFinisherPushSpeed);
         status.DecreaseKnockBackTimer(deltaTime);
     }
 
@@ -529,6 +553,7 @@ void EnemyStateMachine::UpdatePostRetreatRecovery(Enemy& enemy, EnemyStatus& sta
 
     // この復帰経路は通常の準備時間を使わず、選択した攻撃の1秒間の範囲予告だけを行う。
     constexpr float attackPreviewDurationSeconds = 1.0f;
+    mHasReceivedChargedAttackCounter = false;
     status.SetStandByAttackTimer(attackPreviewDurationSeconds);
     status.SetIsJustBeforeAttack(false);
     mHasEvaluatedPreAttackApproach = true;
@@ -553,6 +578,7 @@ void EnemyStateMachine::StartTracking(Enemy& enemy)
 void EnemyStateMachine::StartPreparingAttack(Enemy& enemy, EnemyStatus& status)
 {
     (void)enemy;
+    mHasReceivedChargedAttackCounter = false;
     mActionState = ActionState::PreparingAttack;
     mHasEvaluatedPreAttackApproach = false;
     mShouldPreservePreparationTimer = false;
@@ -563,11 +589,16 @@ void EnemyStateMachine::StartAttacking(Enemy& enemy, EnemyStatus& status)
 {
     mActionState = ActionState::Attacking;
     mActiveAttackFrame = ResolveEnemyAttackFrame(enemy);
+    status.StartAttackStartup();
+    enemy.StartAttackAnimation();
     mShouldPreservePreparationTimer = false;
     status.ResetAttackMotionTimer();
     status.ClearIsHit();
     status.SetIsJustBeforeAttack(false);
-    status.SetCanCounteredTimer(0.1f);
+
+    // ダッシュの動作時間と分離し、地上・空中とも同じ時間だけカウンターを受け付ける。
+    constexpr float counterWindowSeconds = 2.0f;
+    status.SetCanCounteredTimer(counterWindowSeconds);
     status.SetCanCountered(true);
     status.ClearHitPlayers();
 }
@@ -611,6 +642,7 @@ bool EnemyStateMachine::ShouldTriggerProbability(float probabilityPercent)
 
 void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, float knockBackTimer)
 {
+    mGroundFinisherPushSpeed = -1.0f;
     mActionState = ActionState::KnockedBack;
     status.SetKnockBackTimer(knockBackTimer);
 
@@ -628,8 +660,40 @@ void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, floa
     status.ClearLaunchedTimer();
 }
 
+void EnemyStateMachine::StartGroundFinisherKnockBack(Enemy& enemy, EnemyStatus& status, const Player& player,
+                                                     float pushSpeed, float durationSeconds)
+{
+    StartKnockedBack(enemy, status, std::max(0.0f, durationSeconds));
+    // 中断した予兆・カウンター受付を残さず、次の攻撃には準備時間を取り直す。
+    status.ResetStandByAttackTimer();
+    status.SetIsJustBeforeAttack(false);
+    status.SetCanCountered(false);
+    mHasEvaluatedPreAttackApproach = false;
+    mShouldPreservePreparationTimer = false;
+    mGroundFinisherPushSpeed = std::max(0.0f, pushSpeed);
+    enemy.SetVelocity(glm::vec3(0.0f));
+    const glm::vec3 up = enemy.GetUpVec();
+    const float upLength = glm::length(up);
+    if (upLength <= 0.000001f) {
+        return;
+    }
+    const glm::vec3 normal = up / upLength;
+    glm::vec3 direction = enemy.GetPos() - player.GetPos();
+    direction -= normal * glm::dot(direction, normal);
+    if (glm::length(direction) <= 0.000001f) {
+        direction = player.GetFacingForwardVec() - normal * glm::dot(player.GetFacingForwardVec(), normal);
+    }
+    if (glm::length(direction) > 0.000001f) {
+        status.SetKnockBackFrom(glm::normalize(direction));
+    }
+}
+
 void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
 {
+    if (mLifeState != LifeState::Alive) {
+        return;
+    }
+
     mLifeState = LifeState::Dying;
     enemy.SetShouldDropJewelOnDeath(!enemy.IsBossEncounter());
     constexpr float normalEnemyDyingDuration = 1.0f;
@@ -644,28 +708,23 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
     if (enemy.IsBossEncounter()) {
         enemy.SetVelocity(glm::vec3(0.0f));
         DefeatRemainingNormalEnemies(enemy);
-        StageBossDefeatActors(enemy);
-
-        // ボス撃破演出の共通カメラは、両プレイヤーが地面に立っている前提で構図を作る。
-        enemy.GetGame()->ForcePlayersGroundedForCinematic();
-
-        enemy.GetGame()->GetAudioSystem()->StopBGM();
-
-        Star* star = enemy.GetCurrentPlanet() ? enemy.GetCurrentPlanet()->GetStar() : nullptr;
-        CameraSystem* cameraSystem = enemy.GetGame()->GetCameraSystem();
-        if (cameraSystem) {
-            cameraSystem->StartBossDefeatSequence(&enemy, star);
+        enemy.GetGame()->OnEnemyDefeated(enemy);
+        mIsBossDefeatPresentationPending = enemy.GetGame()->IsEnemyDefeatSlowMotionActive();
+        if (!mIsBossDefeatPresentationPending) {
+            BeginBossDefeatPresentation(enemy);
         }
     } else {
         constexpr float dyingKnockBackTimer = 0.5f;
         StartKnockedBack(enemy, status, dyingKnockBackTimer);
         InitializeDyingMovement(enemy, status);
         enemy.GetGame()->GetAudioSystem()->PlaySE("defeat_se");
+        enemy.GetGame()->OnEnemyDefeated(enemy);
     }
 }
 
 void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
 {
+    mIsBossDefeatPresentationPending = false;
     EmitEnemyDefeatEffect(enemy, status);
 
     if (enemy.ShouldDropJewelOnDeath()) {
@@ -702,9 +761,25 @@ bool EnemyStateMachine::IsJustBeforeAttack(const EnemyStatus& status) const
     return status.GetStandByAttackTimer() <= justBeforeAttackTime;
 }
 
+bool EnemyStateMachine::TryConsumeChargedAttackCounter(const EnemyStatus& status)
+{
+    constexpr float chargedAttackCounterWindowSeconds = 0.3f;
+    const bool isPreparing = mActionState == ActionState::PreparingAttack;
+    const bool isInStartup = mActionState == ActionState::Attacking && status.GetAttackStartupRemainingSeconds() > 0.0f;
+    const float remainingSeconds = isPreparing ? status.GetStandByAttackTimer() + status.GetAttackHitDelaySeconds()
+                                               : status.GetAttackStartupRemainingSeconds();
+    if (!IsAlive() || (!isPreparing && !isInStartup) || mHasReceivedChargedAttackCounter || remainingSeconds <= 0.0f ||
+        remainingSeconds > chargedAttackCounterWindowSeconds) {
+        return false;
+    }
+    mHasReceivedChargedAttackCounter = true;
+    return true;
+}
+
 bool EnemyStateMachine::IsAttackImpactActive(const EnemyStatus& status) const
 {
-    return mActionState == ActionState::Attacking && status.GetCanCounteredTimer() > 0.0f;
+    return mActionState == ActionState::Attacking && status.GetAttackStartupRemainingSeconds() <= 0.0f &&
+           status.GetCanCounteredTimer() > 0.0f;
 }
 
 bool EnemyStateMachine::IsProgressing(const EnemyStatus& status) const

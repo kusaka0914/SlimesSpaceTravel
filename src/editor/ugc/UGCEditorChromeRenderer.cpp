@@ -400,8 +400,9 @@ bool UGCEditorChromeRenderer::DrawActionIcon(const char* id, const char* texture
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.18f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.32f));
+    // UI画像は上から下の行順で読み込むため、FBO由来のサムネイルと違ってUVを反転しない。
     const bool wasClicked = texture != 0 ? ImGui::ImageButton("##actionIcon", static_cast<ImTextureID>(texture), size,
-                                                              ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f))
+                                                              ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f))
                                          : ImGui::Button(tooltip, size);
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(2);

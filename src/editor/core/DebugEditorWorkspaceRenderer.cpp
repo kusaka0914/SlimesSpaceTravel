@@ -82,6 +82,7 @@ void DebugEditorWorkspaceRenderer::Draw(unsigned int gameViewTexture, int gameVi
         UpdateStageEditing();
     } else {
         DrawDockedToolPanel(activeSection);
+        UpdateViewportActorSelection(activeSection);
     }
 
     DrawDockedAssetBrowser(activeSection);
@@ -158,6 +159,29 @@ void DebugEditorWorkspaceRenderer::DrawTopBar()
 
     ImGui::End();
     mActiveSection = activeSection;
+}
+
+void DebugEditorWorkspaceRenderer::UpdateViewportActorSelection(DebugEditorSection section)
+{
+    if (!mContext.gameViewport.IsValid() || !ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
+        ImGui::GetIO().WantCaptureMouse || ImGui::IsAnyItemActive() || ImGui::GetDragDropPayload()) {
+        return;
+    }
+    if (section == DebugEditorSection::UserInterface && mUIPanel.HandlesViewportClick()) {
+        return;
+    }
+    if (mStageAddActorPanel.IsPlacementActive()) {
+        return;
+    }
+
+    // 表示中のゲーム画像の矩形で先に選択し、レイの命中後にタブ変更を要求する。
+    // レイを作る前にレイアウトを変えると、クリック位置と対象の対応がずれる。
+    mSelectionController.SetBoxSelectionEnabled(false);
+    mSelectionController.Update();
+    if (mSelectionController.ConsumeRequestOpenPlacement() && mSelectionController.GetSelectedActorCount() > 0) {
+        mSelectionController.ApplyEditorSelectionFlags();
+        mStageEditorPanel.RequestOpenPlacementTab();
+    }
 }
 
 void DebugEditorWorkspaceRenderer::UpdateStageEditing()

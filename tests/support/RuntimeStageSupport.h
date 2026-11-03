@@ -48,7 +48,6 @@ inline PlayerCombatDependencies MakeTestCombatDependencies(Game& game)
     return {*game.GetPhysicsSystem(),
             *game.GetAudioSystem(),
             game.GetParticleSystem(),
-            [&game]() { return game.GetPlayerControlStyle(); },
             [&game](int number) { game.OnPlayerAttackHit(number); },
             [&game](int number, int low, int high, int duration) {
                 game.VibrateControllerForPlayer(number, low, high, duration);

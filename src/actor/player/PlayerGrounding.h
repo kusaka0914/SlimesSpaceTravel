@@ -10,7 +10,7 @@ class PlayerGrounding {
 public:
     explicit PlayerGrounding(PhysicsSystem& physicsSystem);
 
-    // 空中攻撃と回避の使用状態をリセットし、Game::OnLandedを通知する。
+    // 空中攻撃とダッシュの使用状態をリセットし、Game::OnLandedを通知する。
     void OnLanded(Player& player, PlayerMovement& movement, PlayerCombat& combat);
 
     // レイの猶予時間切れ時、球・楕円体の惑星では上方向を補正して速度を0にし、猶予を再設定する。

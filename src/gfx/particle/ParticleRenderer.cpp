@@ -19,6 +19,7 @@ constexpr float velocityEpsilonSquared = 0.000001f;
 
 struct OpenGLState {
     GLboolean blendEnabled = GL_FALSE;
+    GLboolean cullFaceEnabled = GL_FALSE;
     GLboolean depthTestEnabled = GL_FALSE;
     GLboolean depthWriteEnabled = GL_TRUE;
     GLint blendSourceRgb = GL_ONE;
@@ -36,6 +37,7 @@ OpenGLState CaptureOpenGLState()
 {
     OpenGLState state;
     state.blendEnabled = glIsEnabled(GL_BLEND);
+    state.cullFaceEnabled = glIsEnabled(GL_CULL_FACE);
     state.depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
     glGetBooleanv(GL_DEPTH_WRITEMASK, &state.depthWriteEnabled);
     glGetIntegerv(GL_BLEND_SRC_RGB, &state.blendSourceRgb);
@@ -65,6 +67,12 @@ void RestoreOpenGLState(const OpenGLState& state)
         glEnable(GL_DEPTH_TEST);
     } else {
         glDisable(GL_DEPTH_TEST);
+    }
+
+    if (state.cullFaceEnabled) {
+        glEnable(GL_CULL_FACE);
+    } else {
+        glDisable(GL_CULL_FACE);
     }
 
     glDepthMask(state.depthWriteEnabled);
@@ -153,6 +161,9 @@ void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection,
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glDepthMask(GL_FALSE);
+
+    // 地面に沿う粒子も視点の側に依存せず表示する。遮蔽は深度テストに任せる。
+    glDisable(GL_CULL_FACE);
     glBindVertexArray(mVertexArray);
 
     // 深度には書き込まず、不透明物による遮蔽を保ったまま粒子同士を合成する。
@@ -222,6 +233,11 @@ void ParticleRenderer::InitializeBuffers()
                           reinterpret_cast<void*>(offsetof(InstanceData, stretch)));
     glVertexAttribDivisor(6, 1);
 
+    glEnableVertexAttribArray(7);
+    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceData),
+                          reinterpret_cast<void*>(offsetof(InstanceData, surfaceNormal)));
+    glVertexAttribDivisor(7, 1);
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
@@ -277,6 +293,9 @@ ParticleRenderer::InstanceData ParticleRenderer::CreateInstanceData(const Partic
     instance.color = glm::mix(particle.startColor, particle.endColor, normalizedAge);
     instance.rotationRadians = particle.rotationRadians;
     instance.stretch = 1.0f;
+    if (particle.renderMode == ParticleRenderMode::SurfaceAligned) {
+        instance.surfaceNormal = -particle.gravityDirection;
+    }
 
     // 速度をビュー空間へ移し、カメラ平面内の向きに合わせる。奥行き方向だけの速度では回転を変えない。
     if (particle.renderMode == ParticleRenderMode::VelocityAligned &&

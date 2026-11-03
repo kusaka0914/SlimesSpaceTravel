@@ -1967,7 +1967,7 @@ NPCs:
       mode: always
       variants:
         - talkIndex: 0
-          text: 遠い足場にはジャンプして回避！
+          text: 遠い足場にはジャンプしてダッシュ！
       rubies:
         - talkIndex: 0
           segments:

@@ -1,49 +1,20 @@
 #include "gfx/ui/OperationGuideVisibility.h"
 
 namespace {
-bool IsDodgeGuide(std::string_view elementId)
-{
-    return elementId == "buttonB" || elementId == "buttonTextB";
-}
-
-bool IsStrongAttackGuide(std::string_view elementId)
-{
-    return elementId == "buttonX" || elementId == "buttonTextX";
-}
-
 bool IsSoloPlayerConfigurationGuide(std::string_view elementId)
 {
     return elementId == "buttonB_copy_copy2" || elementId == "buttonTextB_copy2_copy2" ||
            elementId == "buttonB_copy_copy2_copy" || elementId == "buttonTextB_copy2_copy2_copy";
 }
-
-bool IsCombatGuide(std::string_view elementId)
-{
-    return IsStrongAttackGuide(elementId) || elementId == "buttonY" || elementId == "buttonTextY" ||
-           elementId == "buttonB_copy_copy2_copy2" || elementId == "buttonTextB_copy2_copy2_copy2";
-}
 } // namespace
 
 bool ShouldShowOperationGuideElement(std::string_view elementId, const OperationGuideDisplayState& displayState)
 {
-    if (displayState.isTwoPlayerMode && IsSoloPlayerConfigurationGuide(elementId)) {
-        return false;
+    if (!displayState.isUGCPlaytestActive) {
+        if (displayState.isPauseMenuOpen) {
+            return true;
+        }
+        return elementId == "buttonA_copy" || elementId == "buttonTextB_copy";
     }
-
-    const bool usesPhasedTutorialGuide = !displayState.isUGCPlaytestActive && displayState.currentStageNumber == 1;
-    const bool showsBasicGuidesOnly = usesPhasedTutorialGuide && displayState.currentPlanetNumber == 0;
-    const bool showsDodgeGuideOnly = usesPhasedTutorialGuide && displayState.currentPlanetNumber == 3;
-    const bool hasUnlockedDodge = !showsBasicGuidesOnly;
-    const bool hasUnlockedCombat = !showsBasicGuidesOnly && !showsDodgeGuideOnly;
-
-    if (IsDodgeGuide(elementId)) {
-        return hasUnlockedDodge;
-    }
-    if (!IsCombatGuide(elementId)) {
-        return true;
-    }
-    if (!hasUnlockedCombat) {
-        return false;
-    }
-    return true;
+    return !displayState.isTwoPlayerMode || !IsSoloPlayerConfigurationGuide(elementId);
 }

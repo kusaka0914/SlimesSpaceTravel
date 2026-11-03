@@ -61,6 +61,8 @@ public:
     bool AddHazardActor(int currentPlanetNum, const std::string& modelPath, const std::string& texturePath,
                         const glm::vec3& scale, float triggerRadius, float damage, float damageIntervalSeconds,
                         const StageActorPlacement* placement = nullptr);
+    bool AddOperationGuideZone(int currentPlanetNum, const StageActorPlacement* placement = nullptr);
+    bool AddCameraZone(int currentPlanetNum, const StageActorPlacement* placement = nullptr);
     bool AddStageObject(int currentPlanetNum, const std::string& modelPath, bool collisionEnabled,
                         const StageActorPlacement* placement = nullptr);
 

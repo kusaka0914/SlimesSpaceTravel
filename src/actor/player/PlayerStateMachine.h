@@ -30,6 +30,9 @@ public:
     Enemy* GetAttackDirectionTarget() const { return mAttackDirectionTarget; }
     void ClearAttackDirectionTarget() { mAttackDirectionTarget = nullptr; }
 
+    // 再配置する体の行動・攻撃対象を解除し、ジャンプ猶予は配置元の残り時間だけ引き継ぐ。
+    void ResetForPlacementInheritance(const PlayerStateMachine& source);
+
 private:
     void UpdateAlive(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
                      PlayerBoatRide& boatRide, PlayerCombat& combat, PlayerJewelGauge& jewelGauge, PlayerStatus& status,
@@ -37,7 +40,7 @@ private:
     void UpdateIdle(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                     PlayerJewelGauge& jewelGauge, PlayerStatus& status, float deltaTime);
     void UpdateDodging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
-                       PlayerCombat& combat, float deltaTime);
+                       PlayerCombat& combat, PlayerStatus& status, float deltaTime);
     void UpdateAttacking(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          PlayerStatus& status, float deltaTime);
     void UpdateStrongAttacking(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
@@ -49,18 +52,13 @@ private:
                                      PlayerJewelGauge& jewelGauge, float deltaTime);
     void UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
                                    float deltaTime);
-    void UpdateTimer(PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding, PlayerCombat& combat,
-                     PlayerJewelGauge& jewelGauge, PlayerStatus& status, float deltaTime);
+    void UpdateTimer(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
+                     PlayerCombat& combat, PlayerJewelGauge& jewelGauge, PlayerStatus& status, float deltaTime);
     void UpdateCoyoteTime(const Player& player, float deltaTime);
 
-    bool TryStartAssistStrongAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
-                                    float deltaTime);
+    bool TryStartAirSlamAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat);
     bool TryStartAssistBrokenEnemyAirCombo(Player& player, PlayerInput& input, PlayerMovement& movement,
                                            PlayerCombat& combat, PlayerStatus& status, float deltaTime);
-    bool TryStartAssistAirSlamAttack(Player& player, PlayerInput& input, PlayerMovement& movement,
-                                     PlayerCombat& combat);
-    bool TryStartAirSlamAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
-                               float deltaTime);
     bool ApplyIdleGravity(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                           float deltaTime);
     bool TryStartJumping(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
@@ -69,7 +67,7 @@ private:
                     PlayerStatus& status);
     void UpdateIdleMovement(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                             PlayerStatus& status, bool wasInputMovementApplied, float deltaTime);
-    bool TryStartSpecialAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge);
+    bool TryStartSpecialAttack(Player& player, PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge);
     bool TryReduceTired(PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status);
     bool TryStartContinuousAttack(Player& player, PlayerInput& input, PlayerCombat& combat,
                                   PlayerJewelGauge& jewelGauge);
@@ -93,11 +91,11 @@ private:
     PlayerActionState mActionState = PlayerActionState::Idle;
     Enemy* mAttackDirectionTarget = nullptr;
 
-    // 空中弱攻撃を回避でキャンセルした場合は、攻撃後の滞空硬直を
-    // 回避後に持ち越さない。通常の空中回避の短い滞空は維持する。
+    // 空中弱攻撃をダッシュでキャンセルした場合は、攻撃後の滞空硬直を
+    // ダッシュ後に持ち越さない。通常の空中ダッシュの短い滞空は維持する。
     bool mShouldSkipAirDodgePostHover = false;
 
-    // 空中弱攻撃を回避でキャンセルした後だけ、次の攻撃開始まで
+    // 空中弱攻撃をダッシュでキャンセルした後だけ、次の攻撃開始まで
     // 空中移動を戦闘側の移動ロックから独立して許可する。
     bool mAllowsAirMovementAfterDodge = false;
     float mCoyoteTimeRemaining = 0.0f;

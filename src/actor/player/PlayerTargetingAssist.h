@@ -13,15 +13,18 @@ public:
     static Enemy* FindAttackTarget(const Player& player, float attackRange, float attackAngle,
                                    bool requireLaunchedTarget);
 
+    // 攻撃範囲外でもダッシュで追いつける打ち上げ中の敵を選ぶ。攻撃可能な敵が近くにいればダッシュしない。
+    static Enemy* FindAirDodgeFollowupTarget(const Player& player, float attackRange, float attackAngle,
+                                             float dodgeDistance);
+
     // ガードを失った打ち上げ中の敵から、正面を優先して選ぶ。maxDistanceはワールド距離、角度はラジアン。
     static Enemy* FindAssistStrongTarget(const Player& player, float maxDistance, float attackAngle);
 
     // 現在の惑星全体からモデル境界まで最も近い打ち上げ中の敵を選ぶ。表裏の一致は要求しない。
     static Enemy* FindNearestLaunchedTargetOnCurrentPlanet(const Player& player);
 
-    // 復帰までの残り時間が指定秒数以内の敵を選ぶ。残り時間が負なら下降中の敵を候補にする。
-    static Enemy* FindNearestLaunchedTargetNearRecoveryOnCurrentPlanet(const Player& player,
-                                                                       float maximumLaunchedTimerSeconds);
+    // 同じ惑星表面の攻撃範囲内から、復帰前の点滅中で最も近い敵を選ぶ。
+    static Enemy* FindRecoveryWarningTarget(const Player& player, float attackRange);
 
     // 接平面上で対象へ向ける。方向を決められなければfalseを返し、向きを変えない。
     static bool FaceTarget(Player& player, PlayerMovement& movement, const Enemy& target);

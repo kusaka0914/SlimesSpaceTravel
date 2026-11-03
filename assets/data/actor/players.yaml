@@ -25,6 +25,98 @@ players:
     airWeakEnemyLiftHeight: 0.45
     airComboDodgePlayerLiftHeight: 0.8
     airComboDodgeEnemyLiftHeight: 0.8
+    hitStop:
+      guardBreakSeconds: 0.04
+      airStrongAttackSeconds: 0.2
+      airSlamSeconds: 0.2
+      counterSeconds: 0.2
+    combo:
+      airAttackHoverExtraSeconds: 0.5
+      airHitPlayerLiftHeight: 0.5
+      continuationWindowSeconds: 1
+      inputBufferSeconds: 0.4
+      assistInputBufferSeconds: 0.55
+      stages:
+        - damageMultiplier: 1
+          guardDamage: 5
+          hitDelaySeconds: 0.13
+          hitIntervalSeconds: 0.09
+          motionSeconds: 0.16
+          moveLockSeconds: 0.22
+          dodgeCancelSeconds: 0
+          cooldownSeconds: 0
+          knockBackSpeed: 3
+          knockBackSeconds: 0.3
+          hitStopSeconds: 0.01
+          effectScale: 1
+          hitCount: 1
+          animationSpeed: 1.5
+          animation: attack
+          sound: attack_se
+        - damageMultiplier: 1
+          guardDamage: 5
+          hitDelaySeconds: 0.13
+          hitIntervalSeconds: 0.09
+          motionSeconds: 0.16
+          moveLockSeconds: 0.22
+          dodgeCancelSeconds: 0
+          cooldownSeconds: 0.2
+          knockBackSpeed: 3
+          knockBackSeconds: 0.3
+          hitStopSeconds: 0.01
+          effectScale: 1
+          hitCount: 2
+          animationSpeed: 1.5
+          animation: second_attack
+          sound: attack_se
+        - damageMultiplier: 1
+          guardDamage: 5
+          hitDelaySeconds: 0.13
+          hitIntervalSeconds: 0.09
+          motionSeconds: 0.25
+          moveLockSeconds: 0.5
+          dodgeCancelSeconds: 0
+          cooldownSeconds: 0.5
+          knockBackSpeed: 3
+          knockBackSeconds: 0.3
+          hitStopSeconds: 0.01
+          effectScale: 1
+          hitCount: 1
+          animationSpeed: 1.5
+          animation: attack
+          sound: attack_se
+        - damageMultiplier: 1
+          guardDamage: 5
+          hitDelaySeconds: 0.2
+          hitIntervalSeconds: 0.09
+          motionSeconds: 0.02
+          moveLockSeconds: 0.22
+          dodgeCancelSeconds: 0
+          cooldownSeconds: 0
+          knockBackSpeed: 3
+          knockBackSeconds: 0.3
+          hitStopSeconds: 0.01
+          effectScale: 1
+          hitCount: 1
+          animationSpeed: 2
+          animation: second_attack
+          sound: attack_se
+        - damageMultiplier: 2
+          guardDamage: 10
+          hitDelaySeconds: 0.1
+          hitIntervalSeconds: 0.09
+          motionSeconds: 0.22
+          moveLockSeconds: 0.45
+          dodgeCancelSeconds: 0.12
+          cooldownSeconds: 0.65
+          knockBackSpeed: 6
+          knockBackSeconds: 0.45
+          hitStopSeconds: 0.04
+          effectScale: 1.6
+          hitCount: 1
+          animationSpeed: 1.3
+          animation: strong_attack
+          sound: attack_air_se
     normalAttackRange: 3
     normalAttackAngle: 6.283
     normalAttack: 10
@@ -48,13 +140,13 @@ players:
     airSlamMinimumDamageRatio: 0.3
     airSlamGuardDamage: 10
     chargedAttackRange: 4.6
-    chargedAttackAngle: 6.283
+    chargedAttackAngle: 1.57
     chargedAttackDamage: 50
-    chargedAttackChargeDurationSeconds: 3
+    chargedAttackChargeDurationSeconds: 4
     continuousAttackRange: 3
     continuousAttackAngle: 6.283
     continuousAttackDamage: 2.5
-    continuousAttackGuardDamage: 2.5
+    continuousAttackGuardDamage: 5
     continuousAttackIntervalSeconds: 0.25
     continuousAttackDurationSeconds: 6
     specialAttackCooldown: 30

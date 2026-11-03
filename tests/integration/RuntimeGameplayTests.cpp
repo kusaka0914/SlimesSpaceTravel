@@ -1,28 +1,56 @@
 #include "RuntimeGameplayTests.h"
 
 #include "actor/Actor.h"
+#include "actor/ActorGroundResolver.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "actor/Player.h"
+#include "actor/enemy/EnemyStatus.h"
+#include "actor/enemy/EnemyMovement.h"
 #include "actor/player/PlanetGravityCandidateSelector.h"
 #include "actor/player/PlayerCombat.h"
+#include "actor/player/PlayerAttackHitDetector.h"
 #include "actor/player/PlayerInput.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerPlanetGravityController.h"
 #include "actor/player/PlayerStatus.h"
+#include "actor/player/PlayerTargetingAssist.h"
 #include "app/Game.h"
 #include "component/Component.h"
+#include "component/PlatformPressDetection.h"
+#include "gfx/UIRenderer.h"
+#include "gfx/render3d/CharacterShadowSurface.h"
+#include "gfx/render3d/TransparentMeshDrawOrder.h"
 #include "support/RuntimeStageSupport.h"
 #include "support/TestSupport.h"
+#include "system/ActorLoadSystem.h"
+#include "system/CameraSystem.h"
+#include "system/GameProgressController.h"
+#include "system/GamepadRumbleService.h"
+#include "system/MeshLoadSystem.h"
+#include "system/PauseMenuController.h"
 #include "system/PhysicsSystem.h"
+#include "system/PlayerConfigurationController.h"
+#include "system/SceneSystem.h"
+#include "system/camera/CameraCollisionResolver.h"
+#include "system/camera/EllipseCameraTransition.h"
+#include "system/camera/zones/CameraOrbitTransition.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/physics/ActorCollisionResolver.h"
+#include "system/physics/EllipsoidCollisionShapeGeometry.h"
+#include "system/sequence/SequenceSystem.h"
 #include "world/GameWorld.h"
 #include "world/Stage.h"
 
+#include <array>
 #include <btBulletDynamicsCommon.h>
+#include <cmath>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 
 namespace {
 
@@ -156,6 +184,629 @@ void SweepsStopAtThinWallsAndResolveOverlap()
     std::cout << "[PASS] Runtime.ThinWallSweepAndOverlap\n";
 }
 
+void LeaningSidesPreserveAirborneVerticalMovement(Game& game)
+{
+    for (float tiltDegrees : {-10.0f, -3.0f, 3.0f, 10.0f}) {
+        for (bool onPlanetSide : {false, true}) {
+            CollisionWorld collision;
+            btConvexHullShape shape;
+            shape.setMargin(0.0f);
+            // players.yamlと同じ扁平な衝突形状で、側面接触時の法線を確認する。
+            EllipsoidCollisionShapeGeometry::AddSurfacePoints(shape, {0.97f, 0.26f, 0.77f});
+            Player player(&game);
+            const glm::quat surfaceRotation =
+                glm::angleAxis(onPlanetSide ? glm::radians(90.0f) : 0.0f, glm::vec3(0, 0, 1));
+            const glm::quat wallRotation =
+                surfaceRotation * glm::angleAxis(glm::radians(tiltDegrees), glm::vec3(0, 0, 1));
+            btTransform transform = btTransform::getIdentity();
+            transform.setRotation(btQuaternion(wallRotation.x, wallRotation.y, wallRotation.z, wallRotation.w));
+            collision.wall.setWorldTransform(transform);
+            collision.world.updateSingleAabb(&collision.wall);
+            player.SetUpVec(surfaceRotation * glm::vec3(0, 1, 0));
+            player.SetOrientation(surfaceRotation);
+            player.SetOnGround(false);
+            const glm::vec3 start = surfaceRotation * glm::vec3(-0.55f, 0, 0);
+            player.SetPos(start);
+            const glm::vec3 movement = surfaceRotation * glm::vec3(0.4f, 0.1f, 0);
+            const ActorCollisionResolver resolver;
+            for (int frame = 0; frame < 10; ++frame) {
+                const auto result =
+                    resolver.CheckCollision(&collision.world, &shape, &player, movement, player.GetPos() + movement,
+                                            0.0f, ActorCollisionFilter::AllActors);
+                ExpectFalse(result.hasUnresolvedStageOverlap, "ascending slide stays outside the leaning side");
+                player.SetPos(result.resolvedPosition);
+            }
+            ExpectTrue(glm::dot(player.GetPos() - start, player.GetUpVec()) > 0.9f,
+                       "holding forward against a leaning side preserves jump ascent on each planet face");
+            player.SetPos(start);
+            player.SetOnGround(false);
+            player.SetVelocity(-player.GetUpVec());
+            const auto fallingMovement = surfaceRotation * glm::vec3(0.4f, -0.1f, 0);
+            for (int frame = 0; frame < 10; ++frame) {
+                const auto result =
+                    resolver.CheckCollision(&collision.world, &shape, &player, fallingMovement,
+                                            player.GetPos() + fallingMovement, 0.0f, ActorCollisionFilter::AllActors);
+                ExpectFalse(result.hasUnresolvedStageOverlap, "falling slide stays outside the leaning side");
+                player.SetPos(result.resolvedPosition);
+            }
+            ExpectTrue(glm::dot(player.GetPos() - start, player.GetUpVec()) < -0.9f,
+                       "holding forward against a leaning side does not slow falling");
+        }
+    }
+    btBoxShape ceiling(btVector3(3, 0.05f, 3));
+    CollisionWorld collision;
+    collision.world.removeCollisionObject(&collision.wall);
+    collision.wall.setCollisionShape(&ceiling);
+    btTransform transform = btTransform::getIdentity();
+    transform.setOrigin(btVector3(0, 1, 0));
+    collision.wall.setWorldTransform(transform);
+    collision.world.addCollisionObject(&collision.wall, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+    Player player(&game);
+    player.SetPos({0, 0, 0});
+    player.SetUpVec({0, 1, 0});
+    player.SetOrientation(glm::quat(1, 0, 0, 0));
+    player.SetOnGround(false);
+    btSphereShape shape(0.5f);
+    const ActorCollisionResolver resolver;
+    const auto result = resolver.CheckCollision(&collision.world, &shape, &player, {0.3f, 1, 0}, {0.3f, 1, 0}, 0.0f,
+                                                ActorCollisionFilter::AllActors);
+    ExpectTrue(result.didHitStage && result.resolvedPosition.y < 0.46f, "real ceilings still block ascent");
+    ExpectFalse(result.hasUnresolvedStageOverlap, "ceiling collision remains separated");
+    std::cout << "[PASS] Runtime.LeaningSidesPreserveAirborneVerticalMovement\n";
+}
+
+void StairCollisionProxiesRemoveNosingHeadContacts(Game& game)
+{
+    MeshLoadSystem* meshes = game.GetMeshLoadSystem();
+    ExpectTrue(meshes != nullptr, "stair collision test has a mesh loader");
+    Player player(&game);
+    player.SetUpVec({0, 1, 0});
+    player.SetOrientation(glm::quat(1, 0, 0, 0));
+    player.SetOnGround(false);
+    btSphereShape playerShape(0.15f);
+    const ActorCollisionResolver resolver;
+    const auto ascendBesideFirstRiser = [&](const CollisionMeshGeometry& geometry) {
+        btTriangleMesh mesh;
+        constexpr float scale = 0.050857753f;
+        const auto vertex = [&](unsigned int index) {
+            return btVector3(geometry.positions[index * 3] * scale, geometry.positions[index * 3 + 1] * scale,
+                             geometry.positions[index * 3 + 2] * scale);
+        };
+        for (std::size_t index = 0; index + 2 < geometry.indices.size(); index += 3) {
+            mesh.addTriangle(vertex(geometry.indices[index]), vertex(geometry.indices[index + 1]),
+                             vertex(geometry.indices[index + 2]));
+        }
+        btBvhTriangleMeshShape shape(&mesh, true);
+        CollisionWorld collision;
+        collision.world.removeCollisionObject(&collision.wall);
+        collision.wall.setCollisionShape(&shape);
+        collision.world.addCollisionObject(&collision.wall, btBroadphaseProxy::DefaultFilter,
+                                           btBroadphaseProxy::AllFilter);
+        player.SetPos({-2.75f, 0.2f, -25.0f * scale});
+        const glm::vec3 ascent(0, 0.6f, 0);
+        return resolver.CheckCollision(&collision.world, &playerShape, &player, ascent, player.GetPos() + ascent, 0.0f,
+                                       ActorCollisionFilter::AllActors);
+    };
+
+    for (const char* model : {"stairs-stone-corner", "stairs-wide-stone-handrail"}) {
+        const std::string path = std::string("../assets/models/FantasyAssets/") + model + ".fbx";
+        CollisionMeshGeometry visual;
+        ExpectTrue(
+            MeshCollisionDataLoader{}.LoadMeshPositionsAndIndices(path.c_str(), visual.positions, visual.indices),
+            "read the original stair geometry");
+        const auto* proxy = meshes->ResolveCollisionMeshGeometry(path);
+        ExpectTrue(proxy && !proxy->indices.empty(), "resolve the separate stair collision proxy");
+        ExpectTrue(ascendBesideFirstRiser(visual).didHitStage, "the original decorative lip blocks ascent");
+        const auto corrected = ascendBesideFirstRiser(*proxy);
+        ExpectFalse(corrected.didHitStage, "the simplified riser has no overhanging ceiling");
+        ExpectNear(0.8f, corrected.resolvedPosition.y, 0.0001f, "ascent beside the riser preserves jump height");
+
+        btTriangleMesh mesh;
+        const auto vertex = [&](unsigned int index) {
+            return btVector3(proxy->positions[index * 3], proxy->positions[index * 3 + 1],
+                             proxy->positions[index * 3 + 2]);
+        };
+        for (std::size_t index = 0; index + 2 < proxy->indices.size(); index += 3) {
+            mesh.addTriangle(vertex(proxy->indices[index]), vertex(proxy->indices[index + 1]),
+                             vertex(proxy->indices[index + 2]));
+        }
+        btBvhTriangleMeshShape shape(&mesh, true);
+        CollisionWorld collision;
+        collision.world.removeCollisionObject(&collision.wall);
+        collision.wall.setCollisionShape(&shape);
+        collision.world.addCollisionObject(&collision.wall, btBroadphaseProxy::DefaultFilter,
+                                           btBroadphaseProxy::AllFilter);
+        btCollisionWorld::ClosestRayResultCallback hit(btVector3(-45, 20, -25), btVector3(-45, 0, -25));
+        collision.world.rayTest(hit.m_rayFromWorld, hit.m_rayToWorld, hit);
+        ExpectTrue(hit.hasHit(), "first tread still supports a landing ray");
+        ExpectNear(12.5f, hit.m_hitPointWorld.y(), 0.0001f, "the first tread keeps its original height");
+    }
+    ExpectTrue(meshes->ResolveCollisionMeshGeometry("../assets/models/platform.obj") != nullptr,
+               "models without a collision proxy keep using their original mesh");
+    std::cout << "[PASS] Runtime.StairCollisionProxiesRemoveNosingHeadContacts\n";
+}
+
+void EllipseGroundNormalIsStableAtTheEdge(Game& game)
+{
+    auto* world = game.GetPhysicsSystem()->GetBulletWorld();
+    Planet planet(&game);
+    planet.SetPos({10000, 10000, 10000});
+    planet.SetScale({2, 8, 8});
+    const glm::vec3 surfacePosition = planet.GetPos() + glm::vec3(1.8f, 8.0f * std::sqrt(0.19f), 0);
+    const glm::vec3 up = planet.CalculateEllipseSurfaceProjection(surfacePosition).outwardNormal;
+    const glm::vec3 forward(0, 0, 1);
+    const glm::vec3 left = glm::normalize(glm::cross(up, forward));
+    // 粗い曲面メッシュの面法線が、滑らかな楕円面と異なる状態を再現する。
+    const glm::vec3 meshNormal = glm::angleAxis(glm::radians(10.0f), forward) * up;
+    btBoxShape shape(btVector3(2, 0.05f, 2));
+    struct ScopedSurface {
+        btDiscreteDynamicsWorld& world;
+        btCollisionObject object;
+        ~ScopedSurface() { world.removeCollisionObject(&object); }
+    } surface{*world};
+    surface.object.setCollisionShape(&shape);
+    surface.object.setUserPointer(&planet);
+    btTransform transform = btTransform::getIdentity();
+    const glm::quat rotation(glm::vec3(0, 1, 0), meshNormal);
+    transform.setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+    const glm::vec3 center = surfacePosition - meshNormal * 0.05f;
+    transform.setOrigin(btVector3(center.x, center.y, center.z));
+    surface.object.setWorldTransform(transform);
+    world->addCollisionObject(&surface.object, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+    for (float footprintScale : {1.0f, 0.8f}) {
+        for (const glm::vec3& facing : {forward, left}) {
+            const auto normal = ActorGroundResolver::CalculateAverageNormal(
+                &game, surfacePosition, up, facing, glm::cross(up, facing), {}, {}, {}, footprintScale);
+            ExpectVectorNear(up, normal, 0.002f, "ellipse edge normal is independent of body size and facing");
+        }
+    }
+    Platform platform(&game);
+    surface.object.setUserPointer(&platform);
+    const auto floorNormal =
+        ActorGroundResolver::CalculateAverageNormal(&game, surfacePosition, up, forward, left, {}, {}, {}, 0.8f);
+    ExpectVectorNear(meshNormal, floorNormal, 0.002f, "platform keeps its actual mesh normal");
+    std::cout << "[PASS] Runtime.EllipseGroundNormalIsStableAtTheEdge\n";
+}
+
+void SwitchPressRequiresActualGroundContact(Game& game)
+{
+    auto* world = game.GetPhysicsSystem()->GetBulletWorld();
+    ExpectTrue(world != nullptr, "switch contact test has a physics world");
+    btBoxShape shape(btVector3(2, 0.05f, 2));
+    Platform platform(&game), otherPlatform(&game);
+    Player player(&game);
+    struct ScopedSurface {
+        btDiscreteDynamicsWorld& world;
+        btCollisionObject object;
+        ScopedSurface(btDiscreteDynamicsWorld& world, btCollisionShape& shape, Actor& owner)
+            : world(world)
+        {
+            object.setCollisionShape(&shape);
+            object.setUserPointer(&owner);
+            object.setWorldTransform(btTransform::getIdentity());
+            world.addCollisionObject(&object, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+        }
+        ~ScopedSurface() { world.removeCollisionObject(&object); }
+    } surface(*world, shape, platform);
+    const glm::vec3 origin(10000.0f);
+    for (float degrees : {0.0f, 90.0f, 180.0f}) {
+        const auto rotation = glm::angleAxis(glm::radians(degrees), glm::vec3(0, 0, 1));
+        const auto up = rotation * glm::vec3(0, 1, 0);
+        btTransform transform = btTransform::getIdentity();
+        const auto center = origin - up * 0.05f;
+        transform.setOrigin(btVector3(center.x, center.y, center.z));
+        transform.setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+        surface.object.setWorldTransform(transform);
+        world->updateSingleAabb(&surface.object);
+        player.SetUpVec(up);
+        for (bool split : {false, true}) {
+            player.SetSplitForm(split);
+            player.ClearGroundContact();
+            player.SetOnGround(true);
+            player.SetPos(origin);
+            ExpectTrue(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                       "grounded contact presses the switch at every surface orientation and body size");
+            player.SetControlLocked(true);
+            ExpectTrue(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                       "reveal cinematics do not release a switch while the player remains on it");
+            player.SetControlLocked(false);
+            player.SetOnGround(false);
+            player.SetVelocity(-up);
+            player.SetPos(origin + up * 0.02f);
+            ExpectFalse(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                        "a descending airborne player does not press a nearby switch");
+            player.AttachToPlatform(&platform);
+            player.SetPos(origin + up * 0.2f);
+            ExpectFalse(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                        "an old supporting actor cannot press a switch from above");
+            player.AttachToPlatform(&otherPlatform);
+            player.SetPos(origin);
+            ExpectFalse(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                        "standing on another platform does not press the switch");
+        }
+    }
+    std::cout << "[PASS] Runtime.SwitchPressRequiresActualGroundContact\n";
+}
+
+void PlayerShadowsStayOnTheSupportingSurface(Game& game)
+{
+    auto* world = game.GetPhysicsSystem()->GetBulletWorld();
+    ExpectTrue(world != nullptr, "player shadow test has a physics world");
+    btBoxShape groundShape(btVector3(3, 0.05f, 3));
+    btBoxShape platformShape(btVector3(1, 0.05f, 1));
+    const glm::vec3 origin(1000, 1000, 1000);
+    for (float degrees : {0.0f, 90.0f, 180.0f}) {
+        const auto rotation = glm::angleAxis(glm::radians(degrees), glm::vec3(0, 0, 1));
+        const auto up = rotation * glm::vec3(0, 1, 0);
+        const auto side = rotation * glm::vec3(1, 0, 0);
+        struct Surfaces {
+            btDiscreteDynamicsWorld& world;
+            btCollisionObject ground;
+            btCollisionObject platform;
+            Surfaces(btDiscreteDynamicsWorld& world, btCollisionShape& groundShape, btCollisionShape& platformShape,
+                     const glm::vec3& origin, const glm::quat& rotation)
+                : world(world)
+            {
+                btTransform transform;
+                transform.setIdentity();
+                transform.setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+                const auto groundPosition = origin + rotation * glm::vec3(0, -0.05f, 0);
+                transform.setOrigin(btVector3(groundPosition.x, groundPosition.y, groundPosition.z));
+                ground.setCollisionShape(&groundShape);
+                ground.setWorldTransform(transform);
+                const auto platformPosition = origin + rotation * glm::vec3(0, 1.95f, 0);
+                transform.setOrigin(btVector3(platformPosition.x, platformPosition.y, platformPosition.z));
+                platform.setCollisionShape(&platformShape);
+                platform.setWorldTransform(transform);
+                world.addCollisionObject(&ground, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+                world.addCollisionObject(&platform, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+            }
+            ~Surfaces()
+            {
+                world.removeCollisionObject(&platform);
+                world.removeCollisionObject(&ground);
+            }
+        } surfaces(*world, groundShape, platformShape, origin, rotation);
+        Player player(&game), clone(&game);
+        player.SetUpVec(up);
+        player.SetOnGround(false);
+        clone.SetPlayerNum(2);
+        clone.SetUpVec(up);
+        clone.SetOnGround(false);
+        for (float height : {3.0f, 5.0f, 7.0f}) {
+            player.SetPos(origin + up * height);
+            const auto surface = CharacterShadow::FindSurface(player, *game.GetPhysicsSystem());
+            ExpectTrue(surface.has_value(), "shadow finds a floor during ascent and descent");
+            ExpectVectorNear(origin + up * 2.0f, surface->position, 0.001f,
+                             "changing jump height does not move the shadow off the platform");
+            ExpectTrue(glm::dot(up, surface->normal) > 0.999f, "side and back surfaces use local gravity");
+        }
+        clone.SetPos(origin + side * 1.5f + up * 5.0f);
+        const auto cloneSurface = CharacterShadow::FindSurface(clone, *game.GetPhysicsSystem());
+        ExpectTrue(cloneSurface.has_value(), "clone resolves its own landing surface");
+        ExpectVectorNear(origin + side * 1.5f, cloneSurface->position, 0.001f,
+                         "clone outside the platform projects onto the lower ground independently");
+        player.SetOnGround(true);
+        player.SetPos(origin + up * 2.05f);
+        const auto grounded = CharacterShadow::FindSurface(player, *game.GetPhysicsSystem());
+        ExpectTrue(grounded.has_value(), "grounded player still resolves the actual floor");
+        ExpectVectorNear(origin + up * 2.0f, grounded->position, 0.001f,
+                         "shadow does not float at the player's grounding offset");
+        player.SetOnGround(false);
+        player.SetPos(origin + side * 10.0f + up * 3.0f);
+        ExpectFalse(CharacterShadow::FindSurface(player, *game.GetPhysicsSystem()).has_value(),
+                    "a gap without a landing surface has no floating shadow");
+        player.SetPos(origin + up * 20.0f);
+        ExpectFalse(CharacterShadow::FindSurface(player, *game.GetPhysicsSystem()).has_value(),
+                    "surfaces beyond the projection range are ignored");
+    }
+    std::cout << "[PASS] Runtime.PlayerShadowsStayOnTheSupportingSurface\n";
+}
+
+void EllipseCameraTurnsOnHemisphereCrossing()
+{
+    Planet planet(nullptr);
+    planet.SetPos({11, -7, 3});
+    CameraCollisionResolver collision(nullptr);
+    const auto hidden = [&](const glm::vec3& camera, const glm::vec3& target) {
+        for (int sample = 1; sample < 200; ++sample) {
+            const auto point = glm::mix(camera, target, sample / 200.0f);
+            const auto scaled = (point - planet.GetPos()) / glm::abs(planet.GetScale());
+            if (glm::dot(scaled, scaled) < 0.998f) {
+                return true;
+            }
+        }
+        return false;
+    };
+    // 最短軸をX・Y・Zへ入れ替え、表裏の両方向で同じ幾何条件を通過する。
+    for (int shortAxis = 0; shortAxis < 3; ++shortAxis) {
+        for (float face : {-1.0f, 1.0f}) {
+            const auto orient = [&](glm::vec3 value) {
+                std::swap(value[1], value[shortAxis]);
+                return value * face;
+            };
+            planet.SetScale(glm::abs(orient({6, 2, 6})));
+            for (float side : {-1.0f, 1.0f}) {
+                EllipseCameraTransition transition;
+                EllipseCameraTransitionInput input;
+                input.planet = &planet;
+                input.cameraPosition = planet.GetPos() + orient({0, 10, 8});
+                input.cameraBack = orient({0, 0, 1});
+                input.movementSpeed = 6.0f;
+                std::optional<EllipseCameraTransitionPose> position;
+                const auto initialHemisphere =
+                    planet.ResolveEllipseSurfaceHemisphere(planet.GetPos() + orient({0, 2.4f, 0}));
+                for (int sample = 0; sample < 200 && !position; ++sample) {
+                    const float angle = sample * 0.01f;
+                    const auto up = glm::normalize(orient({side * std::sin(angle) / 6.0f, std::cos(angle) / 2.0f, 0}));
+                    input.playerPosition = planet.GetPos() +
+                                           orient({side * 6.0f * std::sin(angle), 2.0f * std::cos(angle), 0}) +
+                                           up * 0.4f;
+                    input.up = up;
+                    input.playerUp = up;
+                    input.framingCenter = input.playerPosition;
+                    input.movementDirection =
+                        glm::normalize(orient({side * 6.0f * std::cos(angle), -2.0f * std::sin(angle), 0}));
+                    position = transition.Update(input, collision, {}, 1.0f / 60.0f);
+                    if (planet.ResolveEllipseSurfaceHemisphere(input.playerPosition) == initialHemisphere) {
+                        ExpectFalse(position.has_value(),
+                                    "visibility and approaching the edge do not trigger a turn on the same hemisphere");
+                    }
+                }
+                ExpectTrue(position.has_value(), "crossing the hemisphere boundary starts an ellipsoid transition");
+                ExpectTrue(planet.ResolveEllipseSurfaceHemisphere(input.playerPosition) != initialHemisphere,
+                           "the turn starts after crossing to the opposite hemisphere");
+                ExpectVectorNear(input.cameraPosition, position->position, 0.0001f,
+                                 "the first transition frame preserves the camera position");
+                const auto original = input.cameraPosition;
+                input.movementDirection = glm::vec3(0);
+                for (int frame = 0; frame < 120 && transition.IsActive(); ++frame) {
+                    position = transition.Update(input, collision, {}, 1.0f / 60.0f);
+                    ExpectTrue(position.has_value(), "stopping movement does not abruptly cancel an active transition");
+                    const auto surface = planet.CalculateEllipseSurfaceProjection(position->position);
+                    ExpectTrue(surface.isOutside, "the orbit remains outside the ellipsoid");
+                    ExpectTrue(surface.distance >= input.clearanceRadius - 0.001f,
+                               "the orbit preserves camera clearance");
+                }
+                ExpectFalse(transition.IsActive(), "the transition completes within its time limit");
+                const auto offset = position->position - position->center;
+                ExpectNear(input.distance, glm::length(offset), 0.0001f,
+                           "stopping during an orbit restores normal distance rather than the predicted position");
+                ExpectNear(-std::sin(input.pitch) * input.distance, glm::dot(offset, input.up), 0.0001f,
+                           "stopping during an orbit restores normal pitch");
+                ExpectTrue(glm::distance(original, position->position) > 1.0f,
+                           "visibility recovery changes the camera position");
+                ExpectFalse(hidden(position->position, input.playerPosition + input.up * 0.5f),
+                            "the destination sees the player");
+                ExpectFalse(transition.Update(input, collision, {}, 1.0f / 60.0f).has_value(),
+                            "a stationary player does not restart the transition");
+
+                transition.Reset();
+                input.movementDirection = orient({1, 0, 0});
+                input.allowsStart = false;
+                ExpectFalse(transition.Update(input, collision, {}, 1.0f / 60.0f).has_value(),
+                            "a suspended camera cannot start an orbit");
+            }
+        }
+    }
+    planet.SetScale({6, 2, 6});
+    {
+        EllipseCameraTransition transition;
+        EllipseCameraTransitionInput input;
+        input.planet = &planet;
+        input.movementDirection = {0, -1, 0};
+        input.movementSpeed = 6.0f;
+        input.playerPosition = planet.GetPos() + glm::vec3(6.4f, 0.1f, 0);
+        ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                    "initial hemisphere observation does not turn the camera");
+        for (int frame = 0; frame < 20; ++frame) {
+            input.playerPosition.y = planet.GetPos().y + (frame % 2 == 0 ? -0.005f : 0.005f);
+            ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                        "minor boundary jitter does not repeatedly switch hemispheres");
+        }
+        transition.Reset();
+        input.playerPosition = planet.GetPos() + glm::vec3(0, -2.4f, 0);
+        input.cameraPosition = planet.GetPos() + glm::vec3(0, 10, 8);
+        ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                    "occlusion alone no longer triggers a turn");
+    }
+    planet.SetScale(glm::vec3(4));
+    EllipseCameraTransition transition;
+    EllipseCameraTransitionInput input;
+    input.planet = &planet;
+    input.playerPosition = planet.GetPos() + glm::vec3(0, -4.4f, 0);
+    input.cameraPosition = planet.GetPos() + glm::vec3(0, 10, 8);
+    input.movementDirection = {1, 0, 0};
+    input.movementSpeed = 6.0f;
+    ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                "Sphere does not use ellipsoid visibility recovery");
+    planet.SetScale({6, 0, 6});
+    ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                "a degenerate flat shape does not divide by a zero radius");
+    std::cout << "[PASS] Runtime.EllipseCameraHemisphereCrossing\n";
+}
+
+void EllipseCameraDestinationUsesCurrentFraming()
+{
+    Planet planet(nullptr);
+    planet.SetPos({11, -7, 3});
+    planet.SetScale({6, 2, 6});
+    CameraCollisionResolver collision(nullptr);
+    EllipseCameraTransition transition;
+    EllipseCameraTransitionInput input;
+    input.planet = &planet;
+    input.playerPosition = planet.GetPos() + glm::vec3(0, 2.4f, 0);
+    input.framingCenter = input.playerPosition;
+    input.up = {0, -1, 0};
+    input.playerUp = input.up;
+    input.cameraBack = {0, 0, 1};
+    input.cameraPosition = planet.GetPos() + glm::vec3(0, 10, 8);
+    input.movementDirection = {1, 0, 0};
+    input.movementSpeed = 6.0f;
+    ExpectFalse(transition.Update(input, collision, {}, 1.0f / 60.0f).has_value(),
+                "the initial front hemisphere is observed without a transition");
+    input.playerPosition = planet.GetPos() + glm::vec3(0, -2.4f, 0);
+    input.framingCenter = input.playerPosition;
+    auto position = transition.Update(input, collision, {}, 1.0f / 60.0f);
+    ExpectTrue(position.has_value() && transition.IsActive(), "hemisphere crossing starts framing recovery");
+    for (int frame = 1; frame <= 120 && transition.IsActive(); ++frame) {
+        const float angle = frame * 0.003f;
+        input.playerUp = glm::normalize(glm::vec3(std::sin(angle) / 6.0f, -std::cos(angle) / 2.0f, 0));
+        input.up = glm::angleAxis(0.2f, glm::vec3(0, 0, 1)) * input.playerUp;
+        input.playerPosition =
+            planet.GetPos() + glm::vec3(6 * std::sin(angle), -2 * std::cos(angle), 0) + input.playerUp * 0.4f;
+        // 注視点補間の遅れと、回り込み中のパラメータ変更を再現する。
+        input.framingCenter = input.playerPosition + glm::vec3(-0.15f, 0, 0);
+        input.distance = 7.0f;
+        input.pitch = glm::radians(-45.046f);
+        position = transition.Update(input, collision, {}, 1.0f / 60.0f);
+        ExpectTrue(position.has_value(), "moving player keeps the recovery active until completion");
+    }
+    ExpectFalse(transition.IsActive(), "moving-player recovery completes");
+    const auto offset = position->position - position->center;
+    ExpectNear(input.distance, glm::length(offset), 0.0001f, "completion uses the current normal distance");
+    ExpectNear(-std::sin(input.pitch) * input.distance, glm::dot(offset, position->up), 0.0001f,
+               "completion uses the current normal pitch and up vector");
+    const auto expected =
+        input.playerPosition +
+        (input.cameraBack * std::cos(input.pitch) - input.playerUp * std::sin(input.pitch)) * input.distance;
+    ExpectVectorNear(input.playerPosition, position->center, 0.0001f, "completion removes the remaining target lag");
+    ExpectVectorNear(input.playerUp, position->up, 0.0001f, "completion removes the remaining up-vector lag");
+    ExpectVectorNear(expected, position->position, 0.0001f,
+                     "arrival matches the initial normal framing instead of retaining smoothing lag");
+    const auto settled = *position;
+    input.movementDirection = glm::vec3(0);
+    input.up = settled.up;
+    input.framingCenter = settled.center;
+    ExpectFalse(transition.Update(input, collision, {}, 1.0f / 60.0f).has_value(),
+                "a settled transition no longer overrides normal tracking");
+    ExpectFalse(transition.GetPose().has_value(), "the previous transition pose is released after handoff");
+    std::cout << "[PASS] Runtime.EllipseCameraCurrentNormalFraming\n";
+}
+
+void CameraOrbitChoosesTheClearSide(Game& game)
+{
+    auto* physics = game.GetPhysicsSystem();
+    auto* world = physics ? physics->GetBulletWorld() : nullptr;
+    ExpectTrue(world != nullptr, "camera route test has a physics world");
+    CameraCollisionResolver collision([&]() { return physics; });
+    const glm::vec3 origin(10000, 10000, 10000);
+    btBoxShape wallShape(btVector3(0.025f, 2, 1.5f));
+    struct ScopedWall {
+        btDiscreteDynamicsWorld& world;
+        btCollisionObject object;
+        ScopedWall(btDiscreteDynamicsWorld& world, btCollisionShape& shape)
+            : world(world)
+        {
+            object.setCollisionShape(&shape);
+            object.setWorldTransform(btTransform::getIdentity());
+            world.addCollisionObject(&object, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+        }
+        void Move(const glm::vec3& position)
+        {
+            btTransform transform = btTransform::getIdentity();
+            transform.setOrigin(btVector3(position.x, position.y, position.z));
+            object.setWorldTransform(transform);
+            world.updateSingleAabb(&object);
+        }
+        ~ScopedWall() { world.removeCollisionObject(&object); }
+    } wall(*world, wallShape);
+    wall.Move(origin);
+    const std::vector<glm::vec3> crossing{origin + glm::vec3(-1, 0, 0), origin + glm::vec3(1, 0, 0)};
+    ExpectTrue(collision.HasCameraClearance(crossing.front(), 0.1f, {}) &&
+                   collision.HasCameraClearance(crossing.back(), 0.1f, {}),
+               "thin-wall endpoints are both clear");
+    ExpectTrue(collision.MeasureCameraPathObstruction(crossing, 0.1f, {}) > 0,
+               "sphere sweeps detect a thin wall between sample points");
+    Actor ignored(nullptr);
+    wall.object.setUserPointer(&ignored);
+    ExpectNear(0.0f, collision.MeasureCameraPathObstruction(crossing, 0.1f, {&ignored}), 0,
+               "route scoring honors ignored actors");
+    wall.object.setUserPointer(nullptr);
+
+    CameraPose from{origin + glm::vec3(0, 3, 6), origin + glm::vec3(0, 3, 0), {0, 1, 0}, 60};
+    CameraPose to = from;
+    to.position = origin + glm::vec3(0, 3, -6);
+    wall.Move(origin + glm::vec3(6, 3, 0));
+    const float left = CameraOrbitTransition::SelectYaw(from, to, collision, 16.0f / 9.0f, {});
+    ExpectTrue(left < 0.0f, "blocked positive half-turn selects the negative route");
+    const auto middle = CameraOrbitTransition::Blend(from, to, 0.5f, left);
+    ExpectTrue(middle.position.x < origin.x - 5.0f, "chosen route passes the clear side");
+    // 到達構図が180度の境界を跨いでも、保存した経路の側を維持する。
+    to.position.x += 0.01f;
+    const auto nudged = CameraOrbitTransition::Blend(from, to, 0.5f, left);
+    ExpectTrue(glm::distance(middle.position, nudged.position) < 0.1f,
+               "target jitter does not reverse the selected rotation");
+    to.position.x = origin.x;
+    wall.Move(origin + glm::vec3(-6, 3, 0));
+    const float right = CameraOrbitTransition::SelectYaw(from, to, collision, 16.0f / 9.0f, {});
+    ExpectTrue(right > 0.0f, "a wall on the other side selects the positive route");
+    {
+        ScopedWall other(*world, wallShape);
+        other.Move(origin + glm::vec3(6, 3, 0));
+        const float blocked = CameraOrbitTransition::SelectYaw(from, to, collision, 16.0f / 9.0f, {});
+        ExpectTrue(std::isfinite(blocked), "two blocked routes still produce a deterministic finite path");
+        ExpectVectorNear(to.position, CameraOrbitTransition::Blend(from, to, 1.0f, blocked).position, 0,
+                         "either route preserves the exact destination");
+    }
+    wall.Move(origin + glm::vec3(0, 50, 0));
+    to.position = origin + glm::vec3(6, 3, 0);
+    ExpectNear(glm::half_pi<float>(), CameraOrbitTransition::SelectYaw(from, to, collision, 16.0f / 9.0f, {}), 0.001f,
+               "two clear routes prefer the short quarter-turn");
+    CameraCollisionResolver noPhysics(nullptr);
+    ExpectNear(glm::half_pi<float>(), CameraOrbitTransition::SelectYaw(from, to, noPhysics, 16.0f / 9.0f, {}), 0.001f,
+               "missing physics preserves the shortest path");
+    std::cout << "[PASS] Runtime.CameraOrbitSelectsClearRotationSide\n";
+}
+
+void LandingRequiresSupportingSurface(Game& game)
+{
+    auto* world = game.GetPhysicsSystem()->GetBulletWorld();
+    ExpectTrue(world != nullptr, "landing test has a physics world");
+    btBoxShape wall(btVector3(0.1f, 20, 3));
+    btBoxShape floor(btVector3(3, 0.25f, 3));
+    struct ScopedSurface {
+        btDiscreteDynamicsWorld& world;
+        btCollisionObject object;
+        ScopedSurface(btDiscreteDynamicsWorld& world, btCollisionShape& shape, const glm::vec3& position)
+            : world(world)
+        {
+            object.setCollisionShape(&shape);
+            btTransform transform = btTransform::getIdentity();
+            transform.setOrigin(btVector3(position.x, position.y, position.z));
+            object.setWorldTransform(transform);
+            world.addCollisionObject(&object, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+        }
+        ~ScopedSurface() { world.removeCollisionObject(&object); }
+    };
+    const glm::vec3 origin(10000, 10000, 10000);
+    ScopedSurface surface(*world, wall, origin);
+    Player player(&game);
+    player.SetUpVec({0, 1, 0});
+    player.SetOrientation(glm::quat(1, 0, 0, 0));
+    player.SetFacingForwardVec({1, 0, 0});
+    for (float height : {0.0f, 1.0f, 3.0f}) {
+        player.SetPos(origin + glm::vec3(-0.6f, height, 0));
+        player.SetOnGround(false);
+        player.SetVelocity({0, -1, 0});
+        ExpectFalse(player.TryLandOnSupportingSurface(), "wall beside falling player is not a supporting floor");
+        ExpectFalse(player.GetOnGround(), "wall contact does not briefly restore grounded state");
+        ExpectVectorNear({0, -1, 0}, player.GetVelocity(), 0.0001f, "unsupported wall contact keeps falling velocity");
+    }
+    surface.object.setCollisionShape(&floor);
+    btTransform transform = btTransform::getIdentity();
+    const auto floorCenter = origin - glm::vec3(0, 0.25f, 0);
+    transform.setOrigin(btVector3(floorCenter.x, floorCenter.y, floorCenter.z));
+    surface.object.setWorldTransform(transform);
+    world->updateSingleAabb(&surface.object);
+    player.SetPos(origin + glm::vec3(0, 0.04f, 0));
+    player.SetOnGround(false);
+    player.SetVelocity({0, -1, 0});
+    ExpectTrue(player.TryLandOnSupportingSurface(), "real floor beneath feet still permits landing");
+    ExpectTrue(player.GetOnGround(), "confirmed supporting surface restores grounded state");
+    std::cout << "[PASS] Runtime.LandingRequiresSupportingSurface\n";
+}
+
 void CollisionFiltersSkipEmptyRegistryEntries(Game& game)
 {
     Planet planet(nullptr);
@@ -238,6 +889,25 @@ void MovementActionsResetOnlyTheirOwnState(Game& game)
     player.SetOnGround(false);
     movement.StartDodgeMovement(player, input);
     ExpectNear(movement.GetDodgeDuration() * 4, movement.GetDodgeTimer(), 0.0001f, "airborne dodge duration");
+
+    PlayerMovement splitMovement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+    splitMovement.InheritDodgeAvailability(movement);
+    ExpectFalse(splitMovement.CanDodge(), "split body inherits consumed airborne dodge");
+    ExpectNear(movement.GetDodgeCooldown(), splitMovement.GetDodgeCooldown(), 0.0001f,
+               "split body inherits remaining dodge cooldown");
+    splitMovement.UpdateDodgeCooldown(10.0f);
+    ExpectFalse(splitMovement.CanDodge(), "split does not restore air dodge when cooldown expires");
+    splitMovement.RestoreAirDodge();
+    ExpectTrue(splitMovement.CanDodge(), "landing still restores the split body's dodge");
+    movement.InheritDodgeAvailability(splitMovement);
+    ExpectTrue(movement.CanDodge(), "merge inherits restored availability instead of stale body state");
+
+    splitMovement.StartDodgeMovement(player, input);
+    ExpectTrue(splitMovement.GetDodgeTimer() > 0.0f, "reused body still has an old dodge movement timer");
+    splitMovement.ResetForPlacementInheritance(movement);
+    ExpectNear(0.0f, splitMovement.GetDodgeTimer(), 0.0f,
+               "idle split body cannot retain a dodge timer that affects ellipsoid gravity");
+    ExpectTrue(splitMovement.CanDodge(), "clearing old movement preserves the source's available dodge");
 
     movement.SetJumpHeight(2);
     movement.SetJumpAscentDuration(0.4f);
@@ -359,17 +1029,156 @@ void WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(Game& game)
     std::cout << "[PASS] Runtime.WorldInvalidatesRegistriesBeforeActorDestruction\n";
 }
 
+void SoulOwnershipAndGuardBreakSwitchStayIndependentOfBodyIdentity(Game& game)
+{
+    Platform previousFloor(&game);
+    Player mainPlayer(&game);
+    Player clone(&game);
+    mainPlayer.SetPlayerNum(1);
+    clone.SetPlayerNum(2);
+    mainPlayer.SetPos(glm::vec3(1000.0f));
+    mainPlayer.SetOnGround(true);
+    mainPlayer.SetHp(6.0f);
+    clone.SetIsActive(false);
+    clone.AttachToPlatform(&previousFloor);
+    GameWorld world;
+    world.AddPlayer(&mainPlayer);
+    world.AddPlayer(&clone);
+    const std::string stagePath = game.GetCurrentStageYamlPath();
+    GameProgressController progress(world, *game.GetPhysicsSystem(), stagePath, false);
+    GamepadRumbleService gamepads;
+    PauseMenuController pause;
+    SceneSystem scene(&game, *game.GetUIRenderer()->GetUILoadSystem());
+    SequenceSystem sequences(&game);
+    scene.StartPlayingScene();
+    PlayerConfigurationController controller({world, game.GetActorLoadSystem()->GetPlayerLoader(), scene,
+                                              *game.GetCameraSystem(), sequences, progress, gamepads, pause,
+                                              *game.GetPhysicsSystem(), true});
+
+    ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == nullptr, "no split-only soul in one body");
+    ExpectTrue(controller.ToggleSplit() == PlayerConfigurationController::SplitToggleResult::Accepted,
+               "split begins in empty space");
+    ExpectFalse(clone.IsAttachedToPlatform(), "split discards the reused body's previous platform attachment");
+    // 分裂開始直後の本体のジャンプ・落下も、完了時の状態として扱う。
+    mainPlayer.SetOnGround(false);
+    mainPlayer.SetVelocity(glm::vec3(0.0f, 3.0f, 0.0f));
+    mainPlayer.SetShouldJudgeLanding(false);
+    controller.UpdateSplitMergeTransition(0.4f);
+    ExpectFalse(clone.GetOnGround(), "split completion does not keep its initial grounded flag in midair");
+    ExpectTrue(clone.GetGroundActor() == nullptr, "airborne clone has no stale supporting actor");
+    ExpectVectorNear(mainPlayer.GetVelocity(), clone.GetVelocity(), 0.0001f,
+                     "split completion inherits the current vertical velocity instead of starting a new jump");
+    ExpectTrue(controller.GetControlledPlayer() == &clone, "split completion selects clone immediately");
+    ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == &clone, "soul follows selected body");
+    ExpectTrue(controller.SwitchControlledPlayer(), "manual transfer succeeds");
+    ExpectTrue(controller.GetControlledPlayer() == &mainPlayer, "control does not wait for the soul animation");
+    ExpectNear(0.0f, controller.CreateSoulPresentation().transferProgress, 0.0001f, "soul transfer starts at source");
+    ExpectFalse(controller.TryConsumeSplitGuard(mainPlayer), "soul-bearing body cannot use split guard");
+    ExpectTrue(controller.TryConsumeSplitGuard(clone), "first hit is guarded");
+    controller.UpdateSplitMergeTransition(0.1f);
+    ExpectTrue(controller.GetControlledPlayer() == &mainPlayer, "first guarded hit does not transfer control");
+    ExpectTrue(controller.TryConsumeSplitGuard(clone), "second hit is guarded");
+    ExpectTrue(controller.SwitchControlledPlayer(), "can transfer before guard breaks");
+    ExpectEqual(1, controller.GetSplitGuardCount(), "manual transfer does not refill shared guards");
+    ExpectTrue(controller.TryConsumeSplitGuard(mainPlayer), "last guard also protects original body");
+    ExpectTrue(controller.GetControlledPlayer() == &clone, "damage callback only schedules forced transfer");
+    const auto queuedState = controller.CaptureStageReloadState();
+    controller.Reset();
+    controller.RestoreStageReloadState(queuedState);
+    controller.UpdateSplitMergeTransition(0.0f);
+    ExpectTrue(controller.GetControlledPlayer() == &mainPlayer, "last guard forces transfer after Actor updates");
+    ExpectTrue(controller.IsPlayerSplit() && clone.GetIsActive(), "forced transfer does not merge bodies");
+    ExpectEqual(0, controller.GetSplitGuardCount(), "forced transfer leaves guard empty");
+    ExpectTrue(mainPlayer.IsInvincible(), "forced destination has damage grace");
+    ExpectEqual(1, mainPlayer.GetPlayerNum(), "original body identity remains fixed");
+    ExpectEqual(2, clone.GetPlayerNum(), "clone identity remains fixed");
+    ExpectFalse(controller.TryConsumeSplitGuard(clone), "empty shared guard cannot block another hit");
+    controller.UpdateSplitMergeTransition(0.3f);
+    ExpectNear(1.0f, controller.CreateSoulPresentation().transferProgress, 0.0001f, "transfer animation ends");
+    controller.UpdateSplitMergeTransition(9.7f);
+    ExpectEqual(1, controller.GetSplitGuardCount(), "existing ten-second guard recovery remains active");
+
+    clone.SetPos(mainPlayer.GetPos());
+    ExpectTrue(controller.ToggleSplit() == PlayerConfigurationController::SplitToggleResult::Accepted, "merge begins");
+    controller.UpdateSplitMergeTransition(0.4f);
+    ExpectFalse(controller.IsPlayerSplit(), "merge restores one body");
+    ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == nullptr, "merge clears soul presentation");
+    controller.JoinSecondPlayer();
+    ExpectTrue(controller.IsSecondPlayerJoined(), "two-player mode can still join");
+    ExpectTrue(controller.CreateSoulPresentation().controlledPlayer == nullptr, "two players do not share one soul");
+    ExpectFalse(controller.TryConsumeSplitGuard(mainPlayer), "two-player mode has no passive guard");
+    game.GetCameraSystem()->SnapBehindControlledPlayer();
+    std::cout << "[PASS] Runtime.SoulOwnershipAndGuardBreakSwitchStayIndependentOfBodyIdentity\n";
+}
+
+void GuardBreakProtectionDoesNotShortenDamageInvincibility(Game& game)
+{
+    Player player(&game);
+    player.SetDefaultInvincibleTimer(2.0f);
+    player.ApplyDamageFromActor(glm::vec3(5.0f, 0.0f, 0.0f), 1.0f);
+    ExpectNear(2.0f, player.GetInvincibleTimer(), 0.0001f, "damage grants normal invincibility");
+    player.ProtectAfterGuardBreakControlSwitch();
+    ExpectNear(2.0f, player.GetInvincibleTimer(), 0.0001f, "guard-break grace preserves longer invincibility");
+    const float hp = player.GetHp();
+    player.ApplyDamageFromActor(glm::vec3(5.0f, 0.0f, 0.0f), 1.0f);
+    ExpectNear(hp, player.GetHp(), 0.0001f, "consecutive hit does not reduce HP during grace");
+    std::cout << "[PASS] Runtime.GuardBreakProtectionDoesNotShortenDamageInvincibility\n";
+}
+
+void TransparentTrianglesUseViewDepthAcrossMeshes()
+{
+    std::array<LoadedMesh, 2> meshes;
+    auto firstTriangles = std::make_shared<std::vector<MeshTriangle>>();
+    firstTriangles->push_back({{0.0f, 0.0f, -1.0f}, {0, 1, 2}});
+    firstTriangles->push_back({{0.0f, 0.0f, -5.0f}, {3, 4, 5}});
+    auto secondTriangles = std::make_shared<std::vector<MeshTriangle>>();
+    secondTriangles->push_back({{0.0f, 0.0f, -3.0f}, {6, 7, 8}});
+    meshes[0].triangles = firstTriangles;
+    meshes[0].indexCount = 6;
+    meshes[1].triangles = secondTriangles;
+    meshes[1].indexCount = 3;
+    const auto order = CreateTransparentMeshDrawOrder(meshes, glm::mat4(1.0f));
+    ExpectTrue(order.indices == std::vector<unsigned int>{3, 4, 5, 6, 7, 8, 0, 1, 2},
+               "transparent surfaces draw far-to-near across materials");
+    ExpectEqual(std::size_t(3), order.batches.size(), "interleaved meshes preserve triangle order");
+    ExpectTrue(order.batches[0].mesh == &meshes[0] && order.batches[1].mesh == &meshes[1] &&
+                   order.batches[2].mesh == &meshes[0],
+               "each batch retains the correct material and VAO");
+    ExpectEqual(std::size_t(6), order.batches[2].firstIndex, "batch offsets refer to sorted EBO");
+    const glm::mat4 reverseView = glm::rotate(glm::mat4(1.0f), glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+    const auto reverse = CreateTransparentMeshDrawOrder(meshes, reverseView);
+    ExpectTrue(reverse.indices == std::vector<unsigned int>{0, 1, 2, 6, 7, 8, 3, 4, 5},
+               "opposite camera recomputes transparent face order");
+    ExpectEqual(0U, firstTriangles->front().indices[0], "shared source mesh indices stay unchanged");
+    meshes[0].hasBoneInfluences = true;
+    ExpectTrue(CreateTransparentMeshDrawOrder(meshes, glm::mat4(1.0f)).indices.empty(),
+               "skinned meshes do not use stale unskinned triangle centers");
+    std::cout << "[PASS] Runtime.TransparentTrianglesUseViewDepthAcrossMeshes\n";
+}
+
 } // namespace
 
 void RunRuntimeGameplayTests(Game& game)
 {
+    EllipseCameraTurnsOnHemisphereCrossing();
+    EllipseCameraDestinationUsesCurrentFraming();
+    CameraOrbitChoosesTheClearSide(game);
     EllipsoidProjectionPreservesGeometryAndHemisphere();
     SweepsStopAtThinWallsAndResolveOverlap();
+    LeaningSidesPreserveAirborneVerticalMovement(game);
+    StairCollisionProxiesRemoveNosingHeadContacts(game);
+    SwitchPressRequiresActualGroundContact(game);
+    EllipseGroundNormalIsStableAtTheEdge(game);
+    PlayerShadowsStayOnTheSupportingSurface(game);
+    LandingRequiresSupportingSurface(game);
     MovementActionsResetOnlyTheirOwnState(game);
     GravitySwitchHasHysteresisAndClearsOnLanding(game);
     NearCenterInternalPointStillProjectsOntoSurface();
     WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(game);
     CollisionFiltersSkipEmptyRegistryEntries(game);
+    SoulOwnershipAndGuardBreakSwitchStayIndependentOfBodyIdentity(game);
+    GuardBreakProtectionDoesNotShortenDamageInvincibility(game);
+    TransparentTrianglesUseViewDepthAcrossMeshes();
 }
 
 void RunRuntimeCombatTests(Game& game)
@@ -381,7 +1190,7 @@ void RunRuntimeCombatTests(Game& game)
     } restore{game, game.GetPlayerControlStyle()};
 
     auto invalidDependencies = MakeTestCombatDependencies(game);
-    invalidDependencies.readControlStyle = {};
+    invalidDependencies.onAttackHit = {};
     bool rejected = false;
     try {
         PlayerCombat invalid(invalidDependencies);
@@ -400,6 +1209,27 @@ void RunRuntimeCombatTests(Game& game)
     secondMovement.SetPlayerNum(2);
     PlayerStatus firstStatus;
     PlayerStatus secondStatus;
+
+    {
+        PlayerCombat transitionCombat(MakeTestCombatDependencies(game));
+        firstPlayer.SetOnGround(true);
+        for (int stage = 0; stage < 3; ++stage) {
+            transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            transitionCombat.CancelCurrentAttack();
+        }
+        firstPlayer.SetOnGround(false);
+        transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectEqual(1, transitionCombat.GetAttackComboIndex(), "ground combo progress does not carry into air");
+        transitionCombat.CancelCurrentAttack();
+        transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectEqual(2, transitionCombat.GetAttackComboIndex(), "air attacks continue within the same airborne combo");
+        transitionCombat.CancelCurrentAttack();
+        firstPlayer.SetOnGround(true);
+        transitionCombat.OnLanded();
+        ExpectEqual(0, transitionCombat.GetAttackComboIndex(), "landing clears air combo progress");
+        transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectEqual(1, transitionCombat.GetAttackComboIndex(), "the first ground attack restarts at stage one");
+    }
     PlayerCombat secondCombat(MakeTestCombatDependencies(game));
     secondCombat.SetAttackHitDelay(0.2f);
 
@@ -407,21 +1237,31 @@ void RunRuntimeCombatTests(Game& game)
         game.SetPlayerControlStyle(style);
         PlayerCombat combat(MakeTestCombatDependencies(game));
         combat.SetAttackHitDelay(0.2f);
-        for (int step = 1; step <= 3; ++step) {
+        const auto comboStart = combat.GetResolvedAttackSequence();
+        for (int step = 1; step <= 5; ++step) {
             combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
-            const PlayerAttackKind expected =
-                style == PlayerControlStyle::Assist && step == 3 ? PlayerAttackKind::Normal : PlayerAttackKind::Wide;
-            ExpectTrue(combat.GetAttackKind() == expected, "third assist weak input becomes the normal finisher");
-            ExpectFalse(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 0.1f),
-                        "attack cannot resolve before its delay");
+            ExpectTrue(combat.IsComboFinisher() == (step == 5), "both styles finish on the fifth input");
+            const auto attack = combat.GetCurrentComboAttackSettings();
             const auto before = combat.GetResolvedAttackSequence();
-            ExpectTrue(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 0.11f),
-                       "delayed attack resolves once even without a target");
-            ExpectEqual(before + 1, combat.GetResolvedAttackSequence(), "one sequence per resolved attack");
+            ExpectFalse(
+                combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, attack.hitDelaySeconds * 0.5f),
+                "attack waits for its configured animation hit time");
+            ExpectTrue(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus,
+                                                     attack.hitDelaySeconds * 0.5f + 0.001f),
+                       "first hit resolves at its configured time");
+            if (step == 2) {
+                ExpectTrue(combat.HasPendingAttackHit(), "second stage reserves its second hit without another input");
+                ExpectTrue(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus,
+                                                         attack.hitIntervalSeconds + 0.001f),
+                           "automatic second hit resolves");
+            }
+            ExpectEqual(before + (step == 2 ? 2 : 1), combat.GetResolvedAttackSequence(),
+                        "each hit has an independent attack sequence");
             ExpectFalse(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f),
-                        "resolved attack does not repeat");
-            ExpectEqual(step == 3 ? 0 : step, combat.GetAttackComboIndex(), "ground combo advances and then resets");
+                        "finished stage cannot repeat a hit");
+            ExpectEqual(step == 5 ? 0 : step, combat.GetAttackComboIndex(), "finisher resets the combo");
         }
+        ExpectEqual(comboStart + 6, combat.GetResolvedAttackSequence(), "five inputs produce six hits");
 
         combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
         secondCombat.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
@@ -437,24 +1277,401 @@ void RunRuntimeCombatTests(Game& game)
         ExpectEqual(secondBefore + 1, secondCombat.GetResolvedAttackSequence(),
                     "second player's sequence is independent");
     }
+    for (int weakInputs : {0, 1}) {
+        PlayerCombat combat(MakeTestCombatDependencies(game));
+        if (weakInputs == 1) {
+            combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+        }
+        const auto before = combat.GetResolvedAttackSequence();
+        ExpectFalse(combat.CanStartComboFinisher(), "ground finisher requires two completed weak stages");
+        combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Normal, firstMovement, firstStatus, 0.0f);
+        ExpectFalse(combat.HasPendingAttackHit(), "early strong input does not queue a standalone ground attack");
+        ExpectEqual(weakInputs, combat.GetAttackComboIndex(), "rejected strong input preserves combo progress");
+        ExpectEqual(before, combat.GetResolvedAttackSequence(), "rejected strong input cannot deal damage");
+    }
+    for (int weakInputs : {2, 3, 4}) {
+        PlayerCombat earlyCombat(MakeTestCombatDependencies(game));
+        for (int inputIndex = 0; inputIndex < weakInputs; ++inputIndex) {
+            earlyCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            while (earlyCombat.HasPendingAttackHit()) {
+                earlyCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+            }
+        }
+        earlyCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Normal, firstMovement, firstStatus, 0.0f);
+        ExpectTrue(earlyCombat.IsComboFinisher(), "strong input after two or more weak inputs finishes the combo");
+        const auto& sharedFinisher = earlyCombat.GetComboSettings().stages.back();
+        ExpectNear(sharedFinisher.damageMultiplier, earlyCombat.GetCurrentComboAttackSettings().damageMultiplier,
+                   0.0001f, "early and fifth stage finishers share damage settings");
+        ExpectNear(sharedFinisher.hitDelaySeconds, earlyCombat.GetCurrentComboAttackSettings().hitDelaySeconds, 0.0001f,
+                   "early and fifth stage finishers share timing settings");
+        earlyCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+        earlyCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectEqual(1, earlyCombat.GetAttackComboIndex(), "early finisher restarts the next combo at stage one");
+    }
+    PlayerCombat doubleHitCombat(MakeTestCombatDependencies(game));
+    doubleHitCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+    doubleHitCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+    doubleHitCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+    const auto doubleHitSettings = doubleHitCombat.GetCurrentComboAttackSettings();
+    doubleHitCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, doubleHitSettings.hitDelaySeconds);
+    PlayerCombat transferredCombat(MakeTestCombatDependencies(game));
+    transferredCombat.ResetForPlacementInheritance(doubleHitCombat, false);
+    ExpectEqual(2, transferredCombat.GetAttackComboIndex(),
+                "split inherits combo progress during an automatic double hit");
+    ExpectTrue(transferredCombat.GetAttackCooldownRemaining() >= doubleHitSettings.hitIntervalSeconds,
+               "split cannot bypass the reserved second hit");
+    const auto beforeCancel = doubleHitCombat.GetResolvedAttackSequence();
+    doubleHitCombat.CancelCurrentAttack();
+    ExpectFalse(doubleHitCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f),
+                "dodge cancellation also removes the automatic second hit");
+    ExpectEqual(beforeCancel, doubleHitCombat.GetResolvedAttackSequence(), "canceled second hit never resolves");
+
+    PlayerCombat oldFinisherCombat(MakeTestCombatDependencies(game));
+    for (int stage = 0; stage < 2; ++stage) {
+        oldFinisherCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        while (oldFinisherCombat.HasPendingAttackHit()) {
+            oldFinisherCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+        }
+    }
+    oldFinisherCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Normal, firstMovement, firstStatus, 0.0f);
+    oldFinisherCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+    oldFinisherCombat.InheritControlRestrictions(transferredCombat);
+    PlayerCombat nextBodyCombat(MakeTestCombatDependencies(game));
+    nextBodyCombat.InheritControlRestrictions(oldFinisherCombat);
+    ExpectEqual(2, nextBodyCombat.GetAttackComboIndex(),
+                "an old finisher cannot erase inherited progress on the next switch");
+
+    Enemy reactingEnemy(&game);
+    reactingEnemy.SetHp(100.0f);
+    reactingEnemy.SetIsBoss(false);
+    reactingEnemy.SetOnGroundForEnemy(true);
+    reactingEnemy.SetDefaultStandByAttackTimer(2.0f);
+    reactingEnemy.SetActionState(Enemy::ActionState::PreparingAttack);
+    const float preparationBefore = reactingEnemy.GetStandByAttackTimer();
+    reactingEnemy.ApplyDamage(1.0f, &firstPlayer);
+    ExpectTrue(reactingEnemy.GetActionState() == Enemy::ActionState::PreparingAttack,
+               "ordinary damage preserves a normal enemy's preparation state");
+    ExpectNear(preparationBefore, reactingEnemy.GetStandByAttackTimer(), 0.0001f,
+               "ordinary damage does not restart the preparation timer");
+    reactingEnemy.ReactToComboFinisher(firstPlayer, 3.0f, 0.3f);
+    ExpectTrue(reactingEnemy.GetActionState() == Enemy::ActionState::KnockedBack,
+               "a ground finisher interrupts preparation and starts knockback");
+    ExpectNear(2.0f, reactingEnemy.GetStandByAttackTimer(), 0.0001f, "finisher resets preparation");
+    reactingEnemy.SetActionState(Enemy::ActionState::Attacking);
+    reactingEnemy.ReactToComboFinisher(firstPlayer, 3.0f, 0.3f);
+    ExpectTrue(reactingEnemy.GetActionState() == Enemy::ActionState::Attacking,
+               "a finisher does not interrupt an attack already in progress");
+    reactingEnemy.SetIsBoss(true);
+    reactingEnemy.SetActionState(Enemy::ActionState::PreparingAttack);
+    reactingEnemy.ApplyDamage(1.0f, &firstPlayer);
+    reactingEnemy.ReactToComboFinisher(firstPlayer, 3.0f, 0.3f);
+    ExpectTrue(reactingEnemy.GetActionState() == Enemy::ActionState::PreparingAttack,
+               "boss preparation survives ordinary damage and ground finishers");
+    {
+        EnemyStateMachine counterState;
+        EnemyStatus counterStatus;
+        counterStatus.SetAttackHitDelaySeconds(0.0f);
+        counterStatus.SetDefaultStandByAttackTimer(0.31f);
+        counterState.StartPreparingAttack(reactingEnemy, counterStatus);
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus), "charge counter rejects earlier hits");
+        counterStatus.SetStandByAttackTimer(0.3f);
+        ExpectTrue(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                   "charge counter includes the 0.3s boundary");
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                    "charge counter is consumed once per preparation");
+        counterState.StartPreparingAttack(reactingEnemy, counterStatus);
+        counterStatus.SetStandByAttackTimer(0.1f);
+        ExpectTrue(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                   "the next attack preparation accepts another counter");
+        counterState.StartPreparingAttack(reactingEnemy, counterStatus);
+        counterStatus.SetStandByAttackTimer(0.0f);
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus), "charge counter excludes attack start");
+        counterStatus.SetStandByAttackTimer(0.1f);
+        counterState.SetActionState(EnemyStateMachine::ActionState::Attacking);
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                    "charge counter rejects attacks already started");
+        counterStatus.SetAttackHitDelaySeconds(0.5f);
+        counterState.StartPreparingAttack(reactingEnemy, counterStatus);
+        counterStatus.SetStandByAttackTimer(0.1f);
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                    "preparation includes the animation windup");
+        counterState.StartAttacking(reactingEnemy, counterStatus);
+        ExpectFalse(counterState.IsAttackImpactActive(counterStatus),
+                    "attack animation starts without immediate damage");
+        ExpectFalse(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                    "early animation is outside the counter window");
+        ExpectFalse(counterStatus.AdvanceAttackStartup(0.2f), "attack hit waits for the configured delay");
+        ExpectTrue(counterState.TryConsumeChargedAttackCounter(counterStatus),
+                   "counter is accepted during the last 0.3s of animation windup");
+        ExpectTrue(counterStatus.AdvanceAttackStartup(0.31f), "attack becomes active after windup");
+        ExpectTrue(counterState.IsAttackImpactActive(counterStatus),
+                   "hit indication matches animation windup completion");
+    }
+    {
+        Enemy airborneEnemy(&game);
+        airborneEnemy.SetHp(100.0f);
+        airborneEnemy.SetOnGroundForEnemy(false);
+        airborneEnemy.SetActionState(Enemy::ActionState::Launched);
+        EnemyStatus airborneStatus;
+        airborneStatus.ConfigureGuard(1, 20.0f);
+        airborneStatus.BreakGuard();
+        airborneStatus.SetDefaultLaunchedTimer(3.0f);
+        airborneStatus.SetLaunchedTimer(2.5f);
+        EnemyMovement airborneMovement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+        ExpectTrue(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                   "guard-broken airborne enemies accept a hover extension");
+        ExpectNear(2.8f, airborneStatus.GetLaunchedTimer(), 0.0001f, "one guard break adds 0.3 seconds");
+        airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f);
+        ExpectNear(3.0f, airborneStatus.GetLaunchedTimer(), 0.0001f, "extension is capped at the default maximum");
+        ExpectFalse(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                    "further guard breaks do not exceed the maximum");
+        airborneEnemy.SetOnGroundForEnemy(true);
+        ExpectFalse(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                    "grounded enemies do not receive airborne time");
+        airborneEnemy.SetOnGroundForEnemy(false);
+        airborneStatus.ResetGuard();
+        ExpectFalse(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                    "an enemy with restored guard cannot be kept airborne again");
+        airborneStatus.BreakGuard();
+        airborneStatus.ClearLaunchedTimer();
+        airborneEnemy.SetVelocity({0, 2, 0});
+        ExpectFalse(airborneMovement.ExtendLaunchApexWait(airborneEnemy, airborneStatus, 0.3f),
+                    "ascending enemies already receive the maximum duration at their apex");
+        ExpectNear(-1.0f, airborneStatus.GetLaunchedTimer(), 0.0001f,
+                   "extension does not start the apex timer while ascending");
+        ExpectVectorNear({0, 2, 0}, airborneEnemy.GetVelocity(), 0.0001f, "extension preserves ascent velocity");
+    }
     std::cout << "[PASS] Runtime.CombatComboDelayStyleAndPlayerIsolation\n";
 
+    for (const PlayerControlStyle style : {PlayerControlStyle::Standard, PlayerControlStyle::Assist}) {
+        game.SetPlayerControlStyle(style);
+        PlayerCombat groundCombo(MakeTestCombatDependencies(game));
+        PlayerCombat airCombo(MakeTestCombatDependencies(game));
+        firstPlayer.SetOnGround(true);
+        secondPlayer.SetOnGround(false);
+        for (int stage = 0; stage < 5; ++stage) {
+            groundCombo.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+            if (stage < 4) {
+                ExpectNear(groundCombo.GetAttack(), airCombo.GetAttack(), 0.0001f,
+                           "air and ground use the same damage");
+                ExpectNear(groundCombo.GetAttackRange(), airCombo.GetAttackRange(), 0.0001f,
+                           "air and ground share range");
+                ExpectNear(groundCombo.GetAttackAngle(), airCombo.GetAttackAngle(), 0.0001f,
+                           "air and ground share angle");
+                ExpectTrue(groundCombo.IsComboFinisher() == airCombo.IsComboFinisher(),
+                           "first four air and ground stages are weak attacks");
+            } else {
+                ExpectFalse(airCombo.IsComboFinisher(), "fifth air input stays a weak attack in both styles");
+                ExpectNear(airCombo.GetWideAttack() * airCombo.GetComboSettings().stages[3].damageMultiplier,
+                           airCombo.GetAttack(), 0.0001f, "fifth air input shares the fourth weak attack settings");
+            }
+            while (groundCombo.HasPendingAttackHit()) {
+                groundCombo.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+                airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+            }
+            ExpectEqual(groundCombo.GetResolvedAttackSequence(), airCombo.GetResolvedAttackSequence(),
+                        "air and ground share hit counts");
+            ExpectNear(airCombo.GetCurrentComboAttackSettings().cooldownSeconds + 0.5f,
+                       airCombo.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                       "every air stage hovers for its cooldown plus half a second");
+            if (stage < 4) {
+                ExpectNear(groundCombo.GetAttackMotionTimer(), airCombo.GetAttackMotionTimer(), 0.0001f,
+                           "air and ground share motion recovery");
+                ExpectNear(groundCombo.GetAttackCooldownRemaining(), airCombo.GetAttackCooldownRemaining(), 0.0001f,
+                           "air and ground share cooldown");
+                ExpectNear(groundCombo.GetAttackMoveLockRemaining(), airCombo.GetAttackMoveLockRemaining(), 0.0001f,
+                           "air and ground share movement lock");
+            }
+        }
+        ExpectEqual(std::uint64_t{6}, airCombo.GetResolvedAttackSequence(),
+                    "one air combo has five inputs and six hits");
+        ExpectEqual(0, airCombo.GetAttackComboIndex(), "fifth air stage ends the combo");
+        ExpectFalse(airCombo.IsComboFinisher(), "fifth air stage never automatically starts a strong attack");
+
+        const float fifthAirCooldown = airCombo.GetComboSettings().stages.back().cooldownSeconds;
+        const float fifthAirHover = fifthAirCooldown + 0.5f;
+        ExpectNear(fifthAirCooldown, airCombo.GetAttackCooldownRemaining(), 0.0001f,
+                   "fifth air input shares the ground finisher cooldown");
+        ExpectNear(fifthAirHover, airCombo.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                   "fifth air stage hovers for the cooldown plus half a second");
+        airCombo.UpdateAttackCooldown(0.25f);
+        ExpectNear(fifthAirHover - 0.25f, airCombo.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                   "fall suppression counts elapsed time after the final hit check");
+        PlayerCombat hoverClone(MakeTestCombatDependencies(game));
+        hoverClone.InheritControlRestrictions(airCombo);
+        ExpectNear(fifthAirHover - 0.25f, hoverClone.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                   "switching bodies inherits the remaining hover without restarting it");
+        const auto airSequence = airCombo.GetResolvedAttackSequence();
+        airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+        ExpectTrue(airCombo.HasPendingAttackHit(), "a sixth air input starts the next loop without a dodge");
+        ExpectEqual(1, airCombo.GetAttackComboIndex(), "sixth air input returns to the first stage");
+        ExpectNear(fifthAirHover - 0.25f, airCombo.GetAirComboHoverRemainingSeconds(), 0.0001f,
+                   "the next attack preserves the fifth stage's remaining hover");
+        ExpectFalse(airCombo.CanAcceptMovementInput(), "movement input is blocked during fifth stage hover");
+        ExpectFalse(hoverClone.CanAcceptMovementInput(), "switching bodies preserves the hover movement lock");
+        hoverClone.UpdateAttackCooldown(fifthAirHover);
+        ExpectFalse(hoverClone.IsAirComboFallSuppressed(), "fall suppression expires after the requested duration");
+        airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+        ExpectEqual(airSequence + 1, airCombo.GetResolvedAttackSequence(), "next air loop resolves another weak hit");
+        for (int loop = 0; loop < 3; ++loop) {
+            for (int stage = 0; stage < 5; ++stage) {
+                airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+                ExpectFalse(airCombo.IsComboFinisher(), "air loops never automatically start a strong attack");
+                while (airCombo.HasPendingAttackHit()) {
+                    airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+                }
+            }
+        }
+        ExpectEqual(airSequence + 19, airCombo.GetResolvedAttackSequence(),
+                    "repeated loops keep producing six hits per five inputs");
+        airCombo.StartAirSlamAttack(secondPlayer);
+        ExpectTrue(airCombo.GetIsStrongAttacked(), "slam can start after all five weak air inputs");
+        ExpectFalse(airCombo.HasPendingAttackHit(), "slam does not duplicate a queued combo hit");
+        ExpectEqual(0, airCombo.GetAttackComboIndex(), "slam clears old combo progress");
+
+        airCombo.OnLanded();
+
+        airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+        airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+        airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+        airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+        airCombo.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 1.0f);
+        ExpectTrue(airCombo.CanStartComboFinisher(), "air strong attack becomes available after two stages");
+        airCombo.PreserveComboDuringAssistDodge(0.4f);
+        airCombo.CancelAirAttackForDodge();
+        airCombo.UpdateComboKeepTimer(0.4f);
+        ExpectEqual(2, airCombo.GetAttackComboIndex(), "assist dodge preserves the interrupted combo stage");
+        airCombo.StartAttacking(secondPlayer, PlayerAttackInputKind::Normal, secondMovement, secondStatus, 0.0f);
+        ExpectTrue(airCombo.IsComboFinisher(), "air early finisher uses the common combo branch");
+    }
+    {
+        PlayerCombat transitionCombat(MakeTestCombatDependencies(game));
+        firstPlayer.SetOnGround(true);
+        for (int stage = 0; stage < 4; ++stage) {
+            transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            while (transitionCombat.HasPendingAttackHit()) {
+                transitionCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+            }
+        }
+        firstPlayer.SetOnGround(false);
+        transitionCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectFalse(transitionCombat.IsComboFinisher(), "leaving ground changes the fifth input to an air weak attack");
+        ExpectEqual(0, transitionCombat.GetAttackComboIndex(), "shared fifth stage resets combo progress");
+    }
+    {
+        Planet airAttackPlanet(nullptr);
+        Player airAttackPlayer(&game);
+        airAttackPlayer.Actor::SetCurrentPlanet(&airAttackPlanet);
+        airAttackPlayer.SetOnGround(false);
+        PlayerCombat airAttackCombat(MakeTestCombatDependencies(game));
+        airAttackCombat.StartAttacking(airAttackPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus,
+                                       0.0f);
+        Enemy firstAirEnemy(&game);
+        Enemy secondAirEnemy(&game);
+        Enemy groundedEnemy(&game);
+        for (Enemy* enemy : {&firstAirEnemy, &secondAirEnemy, &groundedEnemy}) {
+            enemy->SetCurrentPlanet(&airAttackPlanet);
+            enemy->SetHp(100.0f);
+            enemy->SetOnGroundForEnemy(false);
+            airAttackPlanet.AddEnemy(enemy);
+        }
+        firstAirEnemy.SetPos({10000, 10000, 10000});
+        secondAirEnemy.SetPos({-10000, -10000, -10000});
+        groundedEnemy.SetPos({20000, 20000, 20000});
+        groundedEnemy.SetOnGroundForEnemy(true);
+        PlayerAttackHitDetector detector(*game.GetPhysicsSystem());
+        const auto hits = detector.FindHitEnemies(airAttackPlayer, airAttackCombat);
+        const auto slamTargets = detector.FindAirborneEnemiesOnCurrentPlanet(airAttackPlayer);
+        ExpectEqual(2U, slamTargets.size(), "slam includes all airborne enemies regardless of range or direction");
+        ExpectTrue(std::find(slamTargets.begin(), slamTargets.end(), &firstAirEnemy) != slamTargets.end(),
+                   "slam includes the first distant airborne enemy");
+        ExpectTrue(std::find(slamTargets.begin(), slamTargets.end(), &secondAirEnemy) != slamTargets.end(),
+                   "slam includes the opposite airborne enemy");
+        ExpectEqual(2U, hits.size(), "air combos hit all airborne enemies regardless of range or direction");
+        ExpectTrue(std::find(hits.begin(), hits.end(), &firstAirEnemy) != hits.end(),
+                   "first airborne enemy is included");
+        ExpectTrue(std::find(hits.begin(), hits.end(), &secondAirEnemy) != hits.end(),
+                   "second airborne enemy is included");
+        ExpectTrue(std::find(hits.begin(), hits.end(), &groundedEnemy) == hits.end(),
+                   "distant ground enemies remain out of range");
+    }
+    {
+        Planet chasePlanet(nullptr);
+        chasePlanet.SetScale(glm::vec3(10.0f));
+        Player chasePlayer(&game);
+        chasePlayer.Actor::SetCurrentPlanet(&chasePlanet);
+        chasePlayer.SetPos({0, 10, 0});
+        chasePlayer.SetUpVec({0, 1, 0});
+        chasePlayer.SetOnGround(false);
+        const auto selectFollowup = [&]() {
+            return PlayerTargetingAssist::FindAirDodgeFollowupTarget(chasePlayer, 3.0f, glm::two_pi<float>(), 2.0f);
+        };
+        ExpectTrue(selectFollowup() == nullptr, "no enemy never triggers an automatic dodge");
+        Enemy chaseEnemy(&game);
+        chaseEnemy.SetCurrentPlanet(&chasePlanet);
+        chaseEnemy.SetHp(100.0f);
+        chaseEnemy.SetRadius(0.0f);
+        chaseEnemy.SetOnGroundForEnemy(false);
+        chaseEnemy.SetActionState(Enemy::ActionState::Launched);
+        chasePlanet.AddEnemy(&chaseEnemy);
+        chaseEnemy.SetPos({2, 10, 0});
+        ExpectTrue(selectFollowup() == nullptr, "a reachable attack continues without inserting dodge");
+        chaseEnemy.SetPos({4, 10, 0});
+        ExpectTrue(selectFollowup() == &chaseEnemy, "a target just outside attack range permits a mid combo chase");
+        chaseEnemy.SetPos({6, 10, 0});
+        ExpectTrue(selectFollowup() == nullptr, "a target beyond attack plus dodge reach never triggers chase");
+        chasePlayer.SetOnGround(true);
+        ExpectTrue(selectFollowup() == nullptr, "grounded players do not start air chase");
+    }
+    {
+        Player liftPlayer(&game);
+        PlayerMovement liftMovement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+        PlayerStatus liftStatus;
+        PlayerCombat liftCombat(MakeTestCombatDependencies(game));
+        liftPlayer.SetPos({10000, 10000, 10000});
+        liftPlayer.SetUpVec({0, 1, 0});
+        liftPlayer.SetOnGround(false);
+        liftCombat.StartAttacking(liftPlayer, PlayerAttackInputKind::Wide, liftMovement, liftStatus, 0.0f);
+        Enemy firstTarget(&game), secondTarget(&game);
+        for (Enemy* target : {&firstTarget, &secondTarget}) {
+            target->SetHp(100.0f);
+            target->SetOnGroundForEnemy(false);
+        }
+        PlayerAttackResolver liftResolver(*game.GetAudioSystem(), nullptr, [](int) {});
+        const glm::vec3 before = liftPlayer.GetPos();
+        liftResolver.ResolveAttack(liftPlayer, liftMovement, liftStatus, liftCombat, {&firstTarget, &secondTarget},
+                                   false, 0.0f);
+        const glm::vec3 lifted = liftPlayer.GetPos();
+        ExpectVectorNear(before + glm::vec3(0, liftCombat.GetComboSettings().airHitPlayerLiftHeight, 0), lifted, 0.002f,
+                         "one hit on multiple enemies lifts the player only once");
+        liftResolver.ResolveAttack(liftPlayer, liftMovement, liftStatus, liftCombat, {}, false, 0.0f);
+        ExpectVectorNear(lifted, liftPlayer.GetPos(), 0.0f, "a missed air attack does not lift the player");
+        liftResolver.ResolveAttack(liftPlayer, liftMovement, liftStatus, liftCombat, {}, true, 0.0f);
+        ExpectVectorNear(lifted, liftPlayer.GetPos(), 0.0f, "hitting only a hazard does not lift the player");
+        liftPlayer.SetOnGround(true);
+        liftResolver.ResolveAttack(liftPlayer, liftMovement, liftStatus, liftCombat, {&firstTarget}, false, 0.0f);
+        ExpectVectorNear(lifted, liftPlayer.GetPos(), 0.0f, "a grounded attack does not lift the player");
+    }
     firstPlayer.NotLand();
     PlayerCombat airCombat(MakeTestCombatDependencies(game));
-    for (int index = 0; index < 3; ++index) {
-        ExpectTrue(airCombat.CanStartAirAttack(), "three airborne weak attacks available");
+    for (int index = 0; index < 5; ++index) {
+
         airCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
         ExpectTrue(airCombat.IsAirAttacking(), "air weak attack locks airborne movement");
-        ExpectFalse(airCombat.CanDodgeDuringAttack(), "air weak attack initially prevents dodge");
+        ExpectTrue(airCombat.CanDodgeDuringAttack() ==
+                       (airCombat.GetCurrentComboAttackSettings().dodgeCancelSeconds <= 0.0f),
+                   "air attack uses the shared dodge cancellation window");
         airCombat.UpdateAttackDodgeLock(0.51f);
         ExpectTrue(airCombat.CanDodgeDuringAttack(), "dodge cancel opens after delay");
         airCombat.CancelAirAttackForDodge();
         ExpectFalse(airCombat.HasPendingAttackHit(), "dodge cancel clears pending air hit");
         ExpectTrue(airCombat.CanMoveDuringAttack(), "dodge cancel permits air movement");
     }
-    ExpectFalse(airCombat.CanStartAirAttack(), "cancel does not bypass airborne attack limit");
+
     airCombat.PrepareAssistAirCombo();
-    ExpectTrue(airCombat.CanStartAirAttack(), "assist combo prepares a fresh airborne attack allowance");
+
     airCombat.RecordAirWeakAttackHit();
     airCombat.StartAirDodgeAttack();
     ExpectTrue(airCombat.IsEnhancedAirDodgeAttackActive(), "preceding air weak hit enhances the next dodge");
@@ -475,4 +1692,64 @@ void RunRuntimeCombatTests(Game& game)
     ExpectEqual(firstMovement.GetPlayerNum(), notifiedPlayer, "hazard hit reaches injected notification");
     std::cout << "[PASS] Runtime.CombatFeedbackUsesProvidedNotification\n";
     std::cout << "[PASS] Runtime.AirCombatDodgeCancelLimitAndAssistPreparation\n";
+
+    firstPlayer.SetOnGround(true);
+    PlayerCombat sourceCombat(MakeTestCombatDependencies(game));
+    PlayerCombat destinationCombat(MakeTestCombatDependencies(game));
+    sourceCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+    destinationCombat.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+    destinationCombat.ResetForPlacementInheritance(sourceCombat, false);
+    ExpectFalse(destinationCombat.HasPendingAttackHit(), "split does not duplicate a pending hit or keep an old hit");
+    ExpectTrue(sourceCombat.HasPendingAttackHit(), "split leaves the original attack with its original body");
+    const auto sourceAttack = sourceCombat.GetCurrentComboAttackSettings();
+    const float recovery = sourceAttack.hitDelaySeconds + sourceAttack.motionSeconds + sourceAttack.cooldownSeconds;
+    ExpectNear(recovery, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "split inherits pending hit and motion recovery");
+    destinationCombat.UpdateAttackCooldown(0.1f);
+    sourceCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 0.1f);
+    sourceCombat.UpdateAttackCooldown(0.1f);
+    sourceCombat.InheritControlRestrictions(destinationCombat);
+    ExpectNear(recovery - 0.1f, sourceCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "switching back preserves remaining recovery without restarting or shortening it");
+    destinationCombat.InheritControlRestrictions(sourceCombat);
+    ExpectNear(recovery - 0.1f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "repeated switching cannot bypass recovery");
+
+    firstPlayer.SetOnGround(false);
+    PlayerCombat airborneCombat(MakeTestCombatDependencies(game));
+    for (int attack = 0; attack < 7; ++attack) {
+        airborneCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        while (airborneCombat.HasPendingAttackHit()) {
+            airborneCombat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f);
+        }
+    }
+    destinationCombat.ResetForPlacementInheritance(airborneCombat, true);
+    ExpectEqual(airborneCombat.GetAttackComboIndex(), destinationCombat.GetAttackComboIndex(),
+                "split during later air loops preserves combo progress");
+    airborneCombat.InheritControlRestrictions(destinationCombat);
+    ExpectEqual(2, airborneCombat.GetAttackComboIndex(), "switching back preserves progress within the next air loop");
+
+    sourceCombat.StartTiredLock(firstStatus, firstMovement, 2.5f);
+    destinationCombat.ResetForPlacementInheritance(sourceCombat, false);
+    PlayerStatus inheritedStatus;
+    inheritedStatus.InheritPlacementState(firstStatus);
+    destinationCombat.ReduceTiredLock(inheritedStatus, secondMovement, 0.5f);
+    ExpectNear(2.0f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "fatigue recovery input also shortens inherited recovery");
+    destinationCombat.UpdateAttackMoveLock(inheritedStatus, 2.1f);
+    ExpectFalse(inheritedStatus.IsTired(), "placement keeps the timer that releases inherited fatigue");
+    destinationCombat.EndTiredLock(inheritedStatus, secondMovement);
+    ExpectNear(0.0f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "respawn or full fatigue recovery clears inherited recovery");
+    inheritedStatus.StartDamageInvincibility();
+    PlayerStatus unprotectedStatus;
+    inheritedStatus.InheritPlacementState(unprotectedStatus);
+    ExpectFalse(inheritedStatus.IsInvincible(), "reusing a body discards old damage invincibility");
+
+    PlayerCombat freshCombat(MakeTestCombatDependencies(game));
+    destinationCombat.ResetForPlacementInheritance(freshCombat, true);
+
+    ExpectNear(0.0f, destinationCombat.GetAttackCooldownRemaining(), 0.0001f,
+               "a reused body discards old recovery when the source has none");
+    std::cout << "[PASS] Runtime.ControlTransfersPreserveAttackRestrictionsWithoutDuplicatingHits\n";
 }

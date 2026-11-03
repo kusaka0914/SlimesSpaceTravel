@@ -1,7 +1,7 @@
 #include "editor/tools/camera/CameraDebugPanel.h"
 
-#include "app/Game.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "imgui.h"
 #include "system/CameraSystem.h"
 
@@ -55,23 +55,20 @@ void CameraDebugPanel::DrawPlayerCameraSettings(CameraSystem* cameraSystem)
                                                 0.5f, -89.0f, 0.0f);
         playerCameraChanged |=
             ImGui::DragFloat("上方向追従速度##PlayerCamera", &playerCameraSettings.upSmoothingSpeed, 0.1f, 0.0f, 50.0f);
-        playerCameraChanged |= ImGui::DragFloat("位置追従速度##PlayerCamera",
+        ImGui::SeparatorText("通常の位置・視線追従");
+        playerCameraChanged |= ImGui::DragFloat("視線の追跡速度##PlayerCamera",
                                                 &playerCameraSettings.targetSmoothingSpeed, 0.1f, 0.0f, 50.0f);
+        playerCameraChanged |= ImGui::DragFloat("前後位置の追従速度##PlayerCamera",
+                                                &playerCameraSettings.positionSmoothingSpeed, 0.1f, 0.0f, 50.0f);
 
-        ImGui::SeparatorText("移動時の自動追従");
-        playerCameraChanged |= ImGui::DragFloat("追従開始までの横入力時間（秒）##AutoFollowCamera",
-                                                &playerCameraSettings.autoFollowDelaySeconds, 0.05f, 0.0f, 5.0f);
-        playerCameraChanged |=
-            ImGui::DragFloat("背後まで回る時間（秒）##AutoFollowCamera",
-                             &playerCameraSettings.autoFollowRotationDurationSeconds, 0.05f, 0.05f, 5.0f);
-        playerCameraChanged |= ImGui::DragFloat("追従を始める横入力##AutoFollowCamera",
-                                                &playerCameraSettings.autoFollowMinimumLateralInput, 0.01f, 0.0f, 1.0f);
-        playerCameraChanged |=
-            ImGui::DragFloat("許容する後ろ入力##AutoFollowCamera", &playerCameraSettings.autoFollowMaximumBackwardInput,
-                             0.01f, 0.0f, 1.0f);
-        playerCameraChanged |=
-            ImGui::DragFloat("手動操作後の待機時間（秒）##AutoFollowCamera",
-                             &playerCameraSettings.autoFollowDelayAfterManualInputSeconds, 0.05f, 0.0f, 5.0f);
+        float lateralOrbitPercent = playerCameraSettings.lateralOrbitStrength * 100.0f;
+        if (ImGui::SliderFloat("左右移動の旋回補助##PlayerCamera", &lateralOrbitPercent, 0.0f, 100.0f, "%.0f%%")) {
+            playerCameraSettings.lateralOrbitStrength = lateralOrbitPercent / 100.0f;
+            playerCameraChanged = true;
+        }
+        ImGui::TextWrapped("0%%で補助なし。50%%で旋回量を約50%%追加。値を上げるほど小回りが利きます。");
+        ImGui::TextWrapped("変更は即時反映されます。次回も使う場合は「プレイヤーカメラ設定を保存」を押してください。");
+        ImGui::TextDisabled("Sphere・空中・足場上・専用カメラでは無効です。");
 
         ImGui::SeparatorText("下向き時の構図調整");
         playerCameraChanged |=
@@ -83,13 +80,6 @@ void CameraDebugPanel::DrawPlayerCameraSettings(CameraSystem* cameraSystem)
         playerCameraChanged |=
             ImGui::DragFloat("構図変更を始める下入力##BackwardFacingFraming",
                              &playerCameraSettings.backwardFacingFramingMinimumBackwardInput, 0.01f, 0.0f, 1.0f);
-        ImGui::SeparatorText("惑星を回り込んだ時の背後合わせ");
-        playerCameraChanged |=
-            ImGui::DragFloat("背後合わせを始める表面移動角度（度）##SurfaceTraversalAutoAlign",
-                             &playerCameraSettings.surfaceTraversalAutoAlignAngleDegrees, 1.0f, 0.0f, 180.0f);
-        playerCameraChanged |=
-            ImGui::DragFloat("背後合わせを有効にする移動入力##SurfaceTraversalAutoAlign",
-                             &playerCameraSettings.surfaceTraversalAutoAlignMinimumMovementInput, 0.01f, 0.0f, 1.0f);
         playerCameraChanged |=
             ImGui::DragFloat("構図を変え始める角度（度）##BackwardFacingFraming",
                              &playerCameraSettings.backwardFacingFramingStartAngleDegrees, 1.0f, 0.0f, 180.0f);
@@ -101,8 +91,11 @@ void CameraDebugPanel::DrawPlayerCameraSettings(CameraSystem* cameraSystem)
                              &playerCameraSettings.backwardFacingFramingSmoothingSpeed, 0.1f, 0.0f, 50.0f);
 
         ImGui::SeparatorText("攻撃時アシスト");
-        playerCameraChanged |= ImGui::DragFloat("対象への追従速度##AttackCamera",
+        playerCameraChanged |= ImGui::DragFloat("敵方向への回転速度##AttackCamera",
                                                 &playerCameraSettings.attackTargetSmoothingSpeed, 0.1f, 0.0f, 50.0f);
+        playerCameraChanged |=
+            ImGui::DragFloat("手動操作後に補助を再開するまで（秒）##AttackCamera",
+                             &playerCameraSettings.attackCameraManualOverrideSeconds, 0.05f, 0.0f, 5.0f);
         playerCameraChanged |= ImGui::DragFloat("空中強攻撃時の距離倍率##AirSlamCamera",
                                                 &playerCameraSettings.airSlamDistanceMultiplier, 0.05f, 1.0f, 3.0f);
         playerCameraChanged |= ImGui::DragFloat("空中強攻撃時の見下ろし角度##AirSlamCamera",

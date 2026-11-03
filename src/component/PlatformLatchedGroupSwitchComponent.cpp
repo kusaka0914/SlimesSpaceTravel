@@ -1,15 +1,15 @@
 #include "component/PlatformLatchedGroupSwitchComponent.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "app/Game.h"
 #include "component/FocusComponent.h"
 #include "component/PlatformPressDetection.h"
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
+#include "world/Stage.h"
 
 #include <algorithm>
 
@@ -312,8 +312,11 @@ void PlatformLatchedGroupSwitchComponent::ActivateGroup(
     const std::vector<PlatformLatchedGroupSwitchComponent*>& groupSwitches)
 {
     for (PlatformLatchedGroupSwitchComponent* component : groupSwitches) {
-        if (component) {
+        if (component && !component->mIsGroupActivated) {
             component->mIsGroupActivated = true;
+            if (component->mPlatform) {
+                component->mPlatform->StartSwitchCompletionFlash();
+            }
         }
     }
 }

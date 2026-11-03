@@ -64,8 +64,7 @@ void ApplyDamageAndKnockBack(Player& player, PlayerInput& input, PlayerMovement&
     }
 
     combat.CancelSpecialAttack();
-    input.ClearAttackBuffer();
-    input.SyncAttackButtonPrev();
+    input.SuppressCombatInputUntilReleased();
 }
 } // namespace
 
@@ -77,7 +76,8 @@ void PlayerDamageHandler::Apply(Player& player, PlayerInput& input, PlayerMoveme
         return;
     }
 
-    const bool canPerformJustDodgeCounter = stateMachine.IsDodging() && enemy->GetCanCountered();
+    const bool canPerformJustDodgeCounter =
+        (stateMachine.IsDodging() || status.IsDodgeCounterGraceActive()) && enemy->GetCanCountered();
     if (canPerformJustDodgeCounter) {
         player.GetGame()->OnPlayerCounter(movement.GetPlayerNum());
 

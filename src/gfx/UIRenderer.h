@@ -1,12 +1,14 @@
 #pragma once
 
 #include "gfx/Renderer.h"
+#include "gfx/ui/ContextualOperationGuide.h"
 #include "gfx/ui/UITextRenderer.h"
 #include "system/UILoadSystem.h"
 #include "text/RubyText.h"
 
 #include <GL/glew.h>
 #include <SDL_ttf.h>
+#include <array>
 #include <glm/glm.hpp>
 #include <memory>
 #include <optional>
@@ -48,6 +50,13 @@ public:
         float rotationDegrees = 0.0f;
     };
 
+    struct TextureSlotFlash {
+        int firstSlot = 0;
+        int endSlot = 0;
+        float strength = 0.0f;
+        glm::vec3 color{1.0f};
+    };
+
     using TextEffect = UITextRenderer::TextEffect;
 
     UIRenderer(Game* game);
@@ -62,6 +71,27 @@ public:
 
     // Editorなど、ゲームUIの後に描かれる画面にも遷移フェードを重ねる。
     void DrawTransitionOverlay();
+
+    // 毎フレーム1回、描画とは独立して一時操作案内の時間と表示条件を更新する。
+    void UpdateOperationGuides(float deltaTime);
+    void UpdateConsumptionFeedback(float deltaTime);
+
+    // ステージ再読込時にも呼び、旧ステージの一時案内とHP比較履歴を破棄する。
+    void ResetOperationGuides();
+
+    // 回復成功時に案内を閉じる。ソロ分身では共有HPに対応して両Player分を閉じる。
+    void NotifyPlayerRecovered(int playerNumber);
+
+    // 未分裂での切り替え失敗時は、分裂可能な場合だけ案内を予約する。
+    void NotifyPlayerSwitchRequested(bool didSwitch);
+
+    // 障害物により分裂が失敗したことを、操作対象Playerへの一時案内に反映する。
+    void NotifyPlayerSplitBlocked();
+    void NotifyPlayerMergeTooFar();
+
+    // 操作が必要個数の不足で失敗した場合に通知する。個数が満たされた案内は表示しない。
+    void NotifyInsufficientJewels(int playerNumber, int requiredJewels);
+    void NotifyCameraControlBlocked(int playerNumber);
 
     // 指定ピクセル寸法に背景を描く。非正の寸法はウィンドウのフレームバッファ寸法を使う。
     void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);
@@ -115,17 +145,22 @@ public:
                                          float screenTopY = 0.0f, float uiScale = 1.0f);
     void DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName, const std::string& UIName,
                                       float screenTopY, float screenHeight);
+
+    // 既存の疲労案内の位置・文字サイズで、入力デバイスに応じたボタン画像と説明を描く。
+    void DrawFatigueRecoveryPrompt(const Player* player, float screenTopY, float screenHeight);
     bool UsesControllerUI(const Player* player) const;
     bool DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName);
 
     void DrawSceneTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName);
     void DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName,
-                            float gap, int count, float screenTopY = 0.0f, float uiScale = 1.0f);
+                            int count, float screenTopY = 0.0f, float uiScale = 1.0f);
 
-    // gapは各スロットの開始位置の間隔。先頭activeSlotCount個を通常表示し、残りへinactiveSlotOpacityを適用する。
+    // 間隔はUI定義のrepeatSpacingRatioを使う。先頭activeSlotCount個を通常表示し、残りはグレー化してinactiveSlotBrightnessの明るさで描く。
+    // activeSlotOpacity（0〜1）は残量のあるスロットだけに適用し、消費済みは不透明のまま描く。
     void DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
-                                 const std::string& textureName, float gap, int activeSlotCount, int totalSlotCount,
-                                 float inactiveSlotOpacity, float screenTopY = 0.0f, float uiScale = 1.0f);
+                                 const std::string& textureName, int activeSlotCount, int totalSlotCount,
+                                 float inactiveSlotBrightness, float screenTopY = 0.0f, float uiScale = 1.0f,
+                                 const TextureSlotFlash* flash = nullptr, float activeSlotOpacity = 1.0f);
     void DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color);
 
     // talkIndexの本文を会話枠へ描画する。ルビ指定はその本文に対応するものを渡す。範囲外なら本文を描画しない。
@@ -133,8 +168,12 @@ public:
                     const std::vector<RubyTextSegment>* rubySegments = nullptr);
     void DrawTalkUI(const UILoadSystem::TextInfo* textInfo);
 
-    // 左上位置と寸法で背景を描画する。colorは0〜1のRGBAを4要素で渡す。
-    void DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color, float rotationDegrees = 0.0f);
+    // 左上位置と寸法で背景を描く。色は0〜1のRGBA、角丸と枠線幅はピクセル単位。
+    void DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color, float rotationDegrees = 0.0f,
+                float cornerRadius = 0.0f, float borderWidth = 0.0f, glm::vec4 borderColor = {1.0f, 1.0f, 1.0f, 0.15f});
+
+    // ビューポートの周辺だけに赤を重ねる。opacityは0〜1で、中央の視界は遮らない。
+    void DrawDamageVignette(float viewportTop, float viewportHeight, float opacity);
 
     // 文字を描画する。isCenterBaseで基準点を中心／左上に切り替える。colorは0〜255のRGBA。
     void DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase,
@@ -148,7 +187,8 @@ public:
     // 借用テクスチャを描画する。0なら何もしない。opacityとtintは0〜1で、ハンドルの所有権は移さない。
     void DrawTextureHandle(float x, float y, float width, float height, GLuint textureHandle, bool flipVertical = false,
                            float rotationDegrees = 0.0f, float opacity = 1.0f,
-                           glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f});
+                           glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f}, bool grayscale = false,
+                           float flashStrength = 0.0f, glm::vec3 flashColor = {1.0f, 1.0f, 1.0f});
 
 private:
     struct CustomScreenLayout {
@@ -161,6 +201,15 @@ private:
     void RegisterUITextures();
     void RegisterCustomUITextures();
     void DrawCustomUI();
+    bool CanShowContextualOperationGuide(int minimumStageNumber = 2) const;
+    ContextualOperationGuide::Availability GetOperationGuideAvailability() const;
+    void DrawContextualOperationGuide();
+    bool DrawContextualOperationPrompt(const ContextualOperationGuide::Prompt& prompt, int row);
+    void DrawOperationGuideZones(std::array<int, 2> usedRows);
+    void DrawOperationGuidePrompt(const std::string& iconId, const std::string& textId, const std::string& description,
+                                  const Player* player, float anchorX, float centerY, float scale, float opacity,
+                                  const std::string& alternateIconId = {}, const std::string& iconSeparator = "/",
+                                  float textScaleRatio = 0.00024f, bool leftAligned = false);
     float CalculateOperationGuideOpacity(const UILoadSystem::CustomElement& element, const Player* player,
                                          std::optional<bool>& canTogglePlayerSplit) const;
     CustomScreenLayout
@@ -209,4 +258,8 @@ private:
     int mFbWidth;
     int mFbHeight;
     bool mCustomUIPreviewEnabled = false;
+    ContextualOperationGuide mContextualOperationGuide;
+    int mOperationGuideStageNumber = -1;
+    bool mOperationGuideWasTwoPlayer = false;
+    std::array<std::optional<float>, 2> mPreviousGuidePlayerHp{};
 };
