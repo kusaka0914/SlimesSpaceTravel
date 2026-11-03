@@ -4,10 +4,12 @@
 #include <optional>
 #include <vector>
 
-// 通常ステージの一時案内を1件ずつ表示する。Player番号は1始まりで、Actorへの参照は保持しない。
+// 通常ステージの一時案内をPlayerごとに最大3件管理する。Player番号は1始まりで、Actor参照は保持しない。
 class ContextualOperationGuide {
 public:
-    // 列挙順を割り込みの優先順位として扱う。
+    static constexpr int MaximumPromptsPerPlayer = 3;
+
+    // 列挙順を表示・割り込みの優先順位として扱う。
     enum class Kind { SplitBlocked, MergeTooFar, InsufficientJewels, CameraControlBlocked, Recover, Split };
 
     struct Prompt {
@@ -47,6 +49,8 @@ public:
 
     // playerNumberが0なら全Playerを対象に、表示中・待機中の同種案内を閉じる。
     void Dismiss(Kind kind, int playerNumber = 0);
+    // 優先順位順の表示一覧。GetPromptは最優先の1件だけを返す。
+    std::vector<Prompt> GetPrompts() const;
     std::optional<Prompt> GetPrompt() const;
 
     // ステージ切り替え時に、表示・回復使用履歴・クールタイムをすべて消去する。
@@ -65,12 +69,16 @@ private:
     bool IsAvailable(const Request& request, const Availability& availability) const;
     void ClearPrompts();
 
-    std::optional<Request> mCurrent;
+    struct ActivePrompt {
+        Request request;
+        float shownSeconds = 0.0f;
+        float opacity = 0.0f;
+    };
+
+    std::vector<ActivePrompt> mCurrent;
     std::vector<Request> mPending;
     std::array<float, 2> mRecoveryCooldown{};
     std::array<bool, 2> mHasShownRecovery{};
     std::array<bool, 2> mHasRecovered{};
     float mClock = 0.0f;
-    float mShownSeconds = 0.0f;
-    float mOpacity = 0.0f;
 };

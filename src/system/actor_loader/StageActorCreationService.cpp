@@ -11,6 +11,7 @@
 #include "actor/JewelItem.h"
 #include "actor/Key.h"
 #include "actor/NPC.h"
+#include "actor/OperationGuideZone.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
@@ -270,6 +271,18 @@ CameraZone* StageActorCreationService::CreateCameraZone(const YAML::Node& node, 
         [](CameraZone* actor, const YAML::Node& config) { actor->GetSettings().Load(config["camera"]); });
     if (zone) {
         zone->SetStageSequenceName("cameraZones");
+    }
+    return zone;
+}
+
+OperationGuideZone* StageActorCreationService::CreateOperationGuideZone(const YAML::Node& node, int stageYamlIndex)
+{
+    auto* zone = mActorFactory.CreatePlacedActorFromStageNode<OperationGuideZone>(
+        node, stageYamlIndex, 2.0f, glm::vec3(6.0f), "cameraZone.obj",
+        [](Planet* planet, OperationGuideZone* actor) { planet->AddStageObject(actor); },
+        [](OperationGuideZone* actor, const YAML::Node& config) { actor->LoadGuide(config["guide"]); });
+    if (zone) {
+        zone->SetStageSequenceName("operationGuideZones");
     }
     return zone;
 }

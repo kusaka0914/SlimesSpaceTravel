@@ -145,6 +145,9 @@ public:
                                          float screenTopY = 0.0f, float uiScale = 1.0f);
     void DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName, const std::string& UIName,
                                       float screenTopY, float screenHeight);
+
+    // 既存の疲労案内の位置・文字サイズで、入力デバイスに応じたボタン画像と説明を描く。
+    void DrawFatigueRecoveryPrompt(const Player* player, float screenTopY, float screenHeight);
     bool UsesControllerUI(const Player* player) const;
     bool DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName);
 
@@ -198,12 +201,15 @@ private:
     void RegisterUITextures();
     void RegisterCustomUITextures();
     void DrawCustomUI();
-    bool CanShowContextualOperationGuide(bool allowsStageOne = false) const;
+    bool CanShowContextualOperationGuide(int minimumStageNumber = 2) const;
     ContextualOperationGuide::Availability GetOperationGuideAvailability() const;
     void DrawContextualOperationGuide();
+    bool DrawContextualOperationPrompt(const ContextualOperationGuide::Prompt& prompt, int row);
+    void DrawOperationGuideZones(std::array<int, 2> usedRows);
     void DrawOperationGuidePrompt(const std::string& iconId, const std::string& textId, const std::string& description,
-                                  const Player* player, float centerX, float centerY, float scale, float opacity,
-                                  const std::string& alternateIconId = {});
+                                  const Player* player, float anchorX, float centerY, float scale, float opacity,
+                                  const std::string& alternateIconId = {}, const std::string& iconSeparator = "/",
+                                  float textScaleRatio = 0.00024f, bool leftAligned = false);
     float CalculateOperationGuideOpacity(const UILoadSystem::CustomElement& element, const Player* player,
                                          std::optional<bool>& canTogglePlayerSplit) const;
     CustomScreenLayout

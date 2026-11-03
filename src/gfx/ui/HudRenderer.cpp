@@ -252,7 +252,7 @@ void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
 
 void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float screenHeight)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(player, "state", "recommendReduceTiredText", screenTopY, screenHeight);
+    mRenderer->DrawFatigueRecoveryPrompt(player, screenTopY, screenHeight);
 }
 
 void HudRenderer::DrawUGCClearVerificationGuide()

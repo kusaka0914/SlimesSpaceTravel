@@ -322,6 +322,7 @@ void Player::RecoverFromFatigue()
 
 void Player::OnAttachedToAdhesivePlatform()
 {
+    mSuppressAirSlamReadinessUntilLanding = false;
     RecordAirSlamGroundReference();
     // 接着直後は空中行動を解除し、接地状態として移動・攻撃の担当へ通知する。
     mMovement.ClearStrongAttackDirectionOverride();
@@ -534,7 +535,8 @@ void Player::UpdatePresentation(PlayerActionState previousActionState, const Lan
     const bool isSpecialChargeActive = mCombat.IsSpecialCharging() || mCombat.GetCanSpecialAttack();
     mParticleEffectController.UpdateSpecialCharging(*this, particles, isSpecialChargeActive, deltaTime);
     const bool isAirSlamActive = currentActionState == PlayerActionState::AirSlamAttacking;
-    const bool canShowAirSlamReadiness = GetIsActive() && IsAlive() && !GetOnGround() && !isSpecialChargeActive &&
+    const bool canShowAirSlamReadiness = GetIsActive() && IsAlive() && !GetOnGround() &&
+                                         !mSuppressAirSlamReadinessUntilLanding && !isSpecialChargeActive &&
                                          (!mCombat.GetIsStrongAttacked() || isAirSlamActive) &&
                                          currentActionState != PlayerActionState::KnockedBack;
     mParticleEffectController.UpdateAirSlamReadiness(*this, particles, canShowAirSlamReadiness, deltaTime);
@@ -610,6 +612,7 @@ void Player::InheritSplitActionState(const Player& source)
     mLastAirSlamGroundUpDirection = source.mLastAirSlamGroundUpDirection;
     mAirSlamUsesGroundContactHeight = source.mAirSlamUsesGroundContactHeight;
     mHasAirSlamGroundPosition = source.mHasAirSlamGroundPosition;
+    mSuppressAirSlamReadinessUntilLanding = source.mSuppressAirSlamReadinessUntilLanding;
     mJewelGauge = source.mJewelGauge;
     mStateMachine.ResetForPlacementInheritance(source.mStateMachine);
     mPlanetGravityController = source.mPlanetGravityController;
@@ -749,6 +752,8 @@ void Player::OnBoatArrived(Boat* boat)
 {
     mBoatRide.OnBoatArrived(*this, mMovement, mRespawn, boat);
 
+    // 到着位置は地面より上にあるため、初回着地までは攻撃の高度案内を出さない。
+    mSuppressAirSlamReadinessUntilLanding = true;
     SetOnGround(false);
     SetShouldJudgeLanding(true);
     SetVelocity(glm::vec3(0.0f));
@@ -924,6 +929,7 @@ void Player::RecordAirSlamGroundReference()
 
 void Player::OnLanded()
 {
+    mSuppressAirSlamReadinessUntilLanding = false;
     RecordAirSlamGroundReference();
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();

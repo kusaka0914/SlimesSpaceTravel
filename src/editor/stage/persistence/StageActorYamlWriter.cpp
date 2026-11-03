@@ -8,6 +8,7 @@
 #include "actor/HazardActor.h"
 #include "actor/JewelItem.h"
 #include "actor/NPC.h"
+#include "actor/OperationGuideZone.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
@@ -568,6 +569,9 @@ bool StageActorYamlWriter::WriteActorState(YAML::Node& config, const std::string
     }
     WriteBoatState(actorNode, actor);
     WriteNPCState(actorNode, actor);
+    if (auto* zone = dynamic_cast<OperationGuideZone*>(actor)) {
+        zone->SaveGuide(actorNode["guide"]);
+    }
     if (auto* zone = dynamic_cast<CameraZone*>(actor)) {
         zone->GetSettings().Save(actorNode["camera"]);
     }
@@ -751,6 +755,7 @@ void StageActorYamlWriter::WriteBoatState(YAML::Node actorNode, Actor* actor)
         actorNode["startPlanet"] = FindPlanetIndex(boat->GetCurrentPlanet());
         actorNode["destPlanet"] = FindPlanetIndex(boat->GetDestPlanet());
         actorNode["destStage"] = boat->GetDestStage();
+        actorNode["startsAppeared"] = boat->GetStartsAppeared();
         actorNode["travelSpeed"] = boat->GetTravelSpeed();
         actorNode.remove("travelDuration");
         actorNode["destMargin"] = boat->GetDestMargin();

@@ -25,7 +25,8 @@ public:
     // 合体可能な範囲をワールド単位の半径で描く。地形に応じて床面または惑星表面に沿わせる。
     void DrawPlayerMergeGuide(const Player* targetPlayer, float radiusWorldUnits) const;
 
-    // 攻撃予告を描く。状態UIはviewportPlayerと同じ惑星の敵に表示し、nullptrやshowsStatusUIがfalseなら状態UIだけを省く。
+    // 攻撃予告と空中のガード破壊表示を描く。HP・ガードUIはviewportPlayerと同じ惑星の敵に限る。
+    // viewportPlayerがnullptr、またはshowsStatusUIがfalseならHP・ガードUIだけを省く。
     void DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewMat, const Player* viewportPlayer,
                           bool showsStatusUI) const;
 
@@ -34,6 +35,9 @@ private:
     void DrawPlayerCollisionShape(const Player* player, bool isDebugEditorShowing,
                                   const PhysicsSystem* physicsSystem) const;
     void DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const;
+    void DrawEnemyGuardBreakEffect(const glm::mat4& viewMat, const Enemy* enemy) const;
+    void DrawOrbitingStars(const glm::mat4& viewMat, const glm::vec3& center, const glm::vec3& upDirection,
+                           const glm::vec3& forwardDirection, float orbitRadius, float starSize) const;
     void DrawPlayerSplitGuard(const glm::mat4& viewMat, const Player* player, int guardCount, int maximumGuardCount,
                               const PhysicsSystem* physicsSystem) const;
     void DrawEnemyAttackRange(Enemy* enemy, bool shouldFlashWhite) const;

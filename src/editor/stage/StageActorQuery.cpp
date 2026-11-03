@@ -12,6 +12,7 @@
 #include "actor/JewelItem.h"
 #include "actor/Key.h"
 #include "actor/NPC.h"
+#include "actor/OperationGuideZone.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
@@ -69,6 +70,7 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
             {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
             {StageActorType::StageObject, "stageObjects", "汎用モデル"},
             {StageActorType::CameraZone, "cameraZones", "カメラゾーン"},
+            {StageActorType::OperationGuideZone, "operationGuideZones", "操作ガイドゾーン"},
             {StageActorType::TutorialTrigger, "tutorialTriggers", "チュートリアルトリガー"},
             {StageActorType::JewelItem, "jewelItems", "ジュエルアイテム"},
             {StageActorType::HazardActor, "hazardActors", "危険アクター"},
@@ -193,6 +195,11 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
         }
 
         for (StageObject* stageObject : planet->GetStageObjects()) {
+            if (auto* zone = dynamic_cast<OperationGuideZone*>(stageObject)) {
+                AddInstance(instances, zone, StageActorType::OperationGuideZone, zone->GetStageYamlIndex(),
+                            "operationGuideZones", MakeIndexedLabel("操作ガイドゾーン", zone->GetStageYamlIndex()));
+                continue;
+            }
             if (auto* zone = dynamic_cast<CameraZone*>(stageObject)) {
                 AddInstance(instances, zone, StageActorType::CameraZone, zone->GetStageYamlIndex(), "cameraZones",
                             MakeIndexedLabel("カメラゾーン", zone->GetStageYamlIndex()));

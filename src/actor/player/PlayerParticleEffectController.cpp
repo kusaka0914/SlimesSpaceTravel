@@ -58,7 +58,7 @@ void PlayerParticleEffectController::UpdateDashing(Player& player, ParticleSyste
     const glm::vec3 up = SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
     const glm::vec3 forward = SafeNormalize(direction, player.GetFacingForwardVec());
     const glm::vec3 side = SafeNormalize(glm::cross(up, forward), player.GetLeftVec());
-    const float bodyScale = player.GetCollisionScaleMultiplier();
+    const float bodyScale = player.GetBodyScaleMultiplier();
     const glm::vec3 center = player.GetPos() + up * (0.30f * bodyScale);
 
     // カメラの向きに依存せず、体の四方から実際のダッシュ方向と逆へ流す。
@@ -107,7 +107,8 @@ void PlayerParticleEffectController::UpdateAirSlamReadiness(Player& player, Part
     // 発動後は下降してもオーラを弱めず、確定した威力を着地まで示し続ける。
     const bool isAirSlamActive = player.GetActionState() == Player::ActionState::AirSlamAttacking;
     const float height = isAirSlamActive ? player.GetAirSlamStartHeight() : player.CalculateAirSlamHeight();
-    const float minimumEffectHeight = std::max(0.0f, player.GetJumpHeight()) + 0.2f;
+    // 足場の傾きや接地誤差を含む通常ジャンプでは出ないよう、最高点に余裕を持たせる。
+    const float minimumEffectHeight = std::max(0.0f, player.GetJumpHeight()) * 1.5f + 0.5f;
     if (!isEnabled || !std::isfinite(height) || height <= minimumEffectHeight) {
         mAirSlamEmissionTimerSeconds = 0.0f;
         mWasAirSlamAtFullPower = false;

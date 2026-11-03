@@ -415,7 +415,10 @@ public:
     void InheritJewelGauge(const Player& source) { mJewelGauge = source.mJewelGauge; }
 
     bool IsSplitForm() const { return mIsSplitForm; }
-    float GetCollisionScaleMultiplier() const override { return mIsSplitForm ? SplitBodyScaleMultiplier : 1.0f; }
+    float GetBodyScaleMultiplier() const { return mIsSplitForm ? SplitBodyScaleMultiplier : 1.0f; }
+
+    // 分裂後も移動用の衝突形状・接地範囲を維持し、縮小表示と物理判定を分離する。
+    float GetCollisionScaleMultiplier() const override { return 1.0f; }
 
 private:
     struct LandingUpdateResult {
@@ -463,6 +466,7 @@ private:
     glm::vec3 mLastAirSlamGroundUpDirection{0.0f, 1.0f, 0.0f};
     bool mAirSlamUsesGroundContactHeight = false;
     bool mHasAirSlamGroundPosition = false;
+    bool mSuppressAirSlamReadinessUntilLanding = false;
     bool mUseSecondAttackAnimationNext = false;
     bool mControlLocked = false;
     bool mIsSplitForm = false;

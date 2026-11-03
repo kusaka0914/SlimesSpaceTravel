@@ -145,7 +145,12 @@ vec3 CalculateLighting(vec3 baseColor)
     // 拡散光を段階化し、toonStrengthで通常の陰影とトゥーン調の陰影を混ぜる。
     float diffuseAmount = max(sunAlignment, 0.0);
     float toonLevelCount = max(toonLevels, 1.0);
-    float toonDiffuse = floor(diffuseAmount * toonLevelCount) / toonLevelCount;
+    float scaledDiffuse = diffuseAmount * toonLevelCount;
+
+    // 段の境界だけ滑らかにつなぎ、画面上の変化量に応じて遠景のちらつきも抑える。
+    float transitionWidth = clamp(max(fwidth(scaledDiffuse) * 1.5, 0.12), 0.12, 0.5);
+    float bandTransition = smoothstep(1.0 - transitionWidth, 1.0, fract(scaledDiffuse));
+    float toonDiffuse = (floor(scaledDiffuse) + bandTransition) / toonLevelCount;
     float finalDiffuse = mix(diffuseAmount, toonDiffuse, toonStrength);
     vec3 diffuseLight = finalDiffuse * sunColor * sunIntensity;
     float shadow = CalculateShadow(worldPosition, surfaceNormal, lightDirection);

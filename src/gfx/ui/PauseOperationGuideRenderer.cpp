@@ -147,7 +147,7 @@ void PauseOperationGuideRenderer::Draw()
 
     heading("その他");
     row({"buttonB_copy_copy2_copy", "", "分裂・合体", true});
-    row({"buttonB_copy_copy2", "", "スライム切り替え", true});
+    row({"buttonB_copy_copy2", "", "分身切り替え", true});
     row({"buttonB_copy_copy_copy", "", "カメラリセット"});
 
     DrawButton("buttonA_copy", primaryController, buttonX, height * 0.87f, buttonSize, 1.0f);

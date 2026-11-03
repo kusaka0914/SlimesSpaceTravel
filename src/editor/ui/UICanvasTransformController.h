@@ -5,6 +5,7 @@
 #include "editor/ui/UICanvasEditorTypes.h"
 
 #include <string>
+#include <unordered_map>
 
 class UICanvasElementGeometry;
 class UICanvasSelectionController;
@@ -39,4 +40,5 @@ private:
     glm::mat4 mEditingMatrix = glm::mat4(1.0f);
     glm::mat4 mTransformStartSelectionMatrix = glm::mat4(1.0f);
     UICanvasEditSnapshot mTransformStartState;
+    std::unordered_map<std::size_t, UICanvasElementTransform> mTransformStartCustomTransforms;
 };

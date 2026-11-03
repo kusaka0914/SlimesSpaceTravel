@@ -21,35 +21,46 @@ void ContextualOperationGuide::Update(float deltaTime, bool canShow, const Avail
         return;
     }
 
-    if (mCurrent) {
-        mShownSeconds += elapsed;
-        if (mShownSeconds >= mCurrent->duration || !IsAvailable(*mCurrent, availability)) {
-            mCurrent.reset();
-        } else {
-            const float remaining = mCurrent->duration - mShownSeconds;
-            mOpacity = remaining <= fadeOutSeconds ? std::min(mOpacity, remaining / fadeOutSeconds)
-                                                   : std::min(1.0f, mOpacity + elapsed / fadeInSeconds);
-        }
+    for (ActivePrompt& active : mCurrent) {
+        active.shownSeconds += elapsed;
+        const float remaining = active.request.duration - active.shownSeconds;
+        active.opacity = remaining <= fadeOutSeconds ? std::min(active.opacity, remaining / fadeOutSeconds)
+                                                     : std::min(1.0f, active.opacity + elapsed / fadeInSeconds);
     }
+    std::erase_if(mCurrent, [&](const ActivePrompt& active) {
+        return active.shownSeconds >= active.request.duration || !IsAvailable(active.request, availability);
+    });
     std::erase_if(mPending, [&](const Request& request) {
         return mClock - request.requestedAt >= pendingLifetimeSeconds || !IsAvailable(request, availability);
     });
-    const auto next = std::min_element(mPending.begin(), mPending.end(), [](const Request& left, const Request& right) {
-        return left.kind < right.kind;
-    });
-    if (next == mPending.end() || (mCurrent && next->kind >= mCurrent->kind)) {
-        return;
-    }
-
-    // 割り込まれた案内は再開せず、古い操作要求を後から表示しない。
-    mCurrent = *next;
-    mPending.erase(next);
-    mShownSeconds = 0.0f;
-    mOpacity = 0.0f;
-    if (mCurrent->kind == Kind::Recover) {
-        const int playerIndex = mCurrent->playerNumber - 1;
-        mHasShownRecovery[playerIndex] = true;
-        mRecoveryCooldown[playerIndex] = recoveryCooldownSeconds;
+    std::stable_sort(mPending.begin(), mPending.end(),
+                     [](const Request& left, const Request& right) { return left.kind < right.kind; });
+    for (auto next = mPending.begin(); next != mPending.end();) {
+        const auto playerCount = std::count_if(mCurrent.begin(), mCurrent.end(), [&](const ActivePrompt& active) {
+            return active.request.playerNumber == next->playerNumber;
+        });
+        if (playerCount >= MaximumPromptsPerPlayer) {
+            auto worst = mCurrent.end();
+            for (auto active = mCurrent.begin(); active != mCurrent.end(); ++active) {
+                if (active->request.playerNumber == next->playerNumber &&
+                    (worst == mCurrent.end() || active->request.kind > worst->request.kind)) {
+                    worst = active;
+                }
+            }
+            if (worst == mCurrent.end() || next->kind >= worst->request.kind) {
+                ++next;
+                continue;
+            }
+            // 上限到達時だけ低優先の案内を終了し、古い要求として後から再表示しない。
+            mCurrent.erase(worst);
+        }
+        mCurrent.push_back({*next});
+        if (next->kind == Kind::Recover) {
+            const int playerIndex = next->playerNumber - 1;
+            mHasShownRecovery[playerIndex] = true;
+            mRecoveryCooldown[playerIndex] = recoveryCooldownSeconds;
+        }
+        next = mPending.erase(next);
     }
 }
 
@@ -71,13 +82,14 @@ void ContextualOperationGuide::RequestSplit(int playerNumber)
     if (playerNumber < 1 || playerNumber > 2) {
         return;
     }
-    if (mCurrent && mCurrent->kind == Kind::Split) {
-        mCurrent->playerNumber = playerNumber;
-        mShownSeconds = 0.0f;
-        return;
+    for (ActivePrompt& active : mCurrent) {
+        if (active.request.kind == Kind::Split && active.request.playerNumber == playerNumber) {
+            active.shownSeconds = 0.0f;
+            return;
+        }
     }
     for (Request& request : mPending) {
-        if (request.kind == Kind::Split) {
+        if (request.kind == Kind::Split && request.playerNumber == playerNumber) {
             request.playerNumber = playerNumber;
             request.requestedAt = mClock;
             return;
@@ -112,9 +124,11 @@ void ContextualOperationGuide::RequestInsufficientJewels(int playerNumber, int r
     if (playerNumber < 1 || playerNumber > 2 || requiredJewels <= 0) {
         return;
     }
-    if (mCurrent && mCurrent->kind == Kind::InsufficientJewels && mCurrent->playerNumber == playerNumber) {
-        mCurrent->requiredJewels = std::max(mCurrent->requiredJewels, requiredJewels);
-        return;
+    for (ActivePrompt& active : mCurrent) {
+        if (active.request.kind == Kind::InsufficientJewels && active.request.playerNumber == playerNumber) {
+            active.request.requiredJewels = std::max(active.request.requiredJewels, requiredJewels);
+            return;
+        }
     }
     for (Request& request : mPending) {
         if (request.kind == Kind::InsufficientJewels && request.playerNumber == playerNumber) {
@@ -139,7 +153,10 @@ void ContextualOperationGuide::NotifyRecovered(int playerNumber)
 
 void ContextualOperationGuide::Enqueue(Kind kind, int playerNumber, float duration, int requiredJewels)
 {
-    if (mCurrent && mCurrent->kind == kind && mCurrent->playerNumber == playerNumber) {
+    const bool alreadyShown = std::any_of(mCurrent.begin(), mCurrent.end(), [&](const ActivePrompt& active) {
+        return active.request.kind == kind && active.request.playerNumber == playerNumber;
+    });
+    if (alreadyShown) {
         return;
     }
     const bool alreadyPending = std::any_of(mPending.begin(), mPending.end(), [&](const Request& request) {
@@ -179,26 +196,33 @@ void ContextualOperationGuide::Dismiss(Kind kind, int playerNumber)
     const auto matches = [&](const Request& request) {
         return request.kind == kind && (playerNumber == 0 || request.playerNumber == playerNumber);
     };
-    if (mCurrent && matches(*mCurrent)) {
-        mCurrent.reset();
-    }
+    std::erase_if(mCurrent, [&](const ActivePrompt& active) { return matches(active.request); });
     std::erase_if(mPending, matches);
+}
+
+std::vector<ContextualOperationGuide::Prompt> ContextualOperationGuide::GetPrompts() const
+{
+    std::vector<Prompt> prompts;
+    prompts.reserve(mCurrent.size());
+    for (const ActivePrompt& active : mCurrent) {
+        prompts.push_back({active.request.kind, active.request.playerNumber, std::clamp(active.opacity, 0.0f, 1.0f),
+                           active.request.requiredJewels});
+    }
+    std::stable_sort(prompts.begin(), prompts.end(),
+                     [](const Prompt& left, const Prompt& right) { return left.kind < right.kind; });
+    return prompts;
 }
 
 std::optional<ContextualOperationGuide::Prompt> ContextualOperationGuide::GetPrompt() const
 {
-    if (!mCurrent) {
-        return std::nullopt;
-    }
-    return Prompt{mCurrent->kind, mCurrent->playerNumber, std::clamp(mOpacity, 0.0f, 1.0f), mCurrent->requiredJewels};
+    const auto prompts = GetPrompts();
+    return prompts.empty() ? std::nullopt : std::optional<Prompt>(prompts.front());
 }
 
 void ContextualOperationGuide::ClearPrompts()
 {
-    mCurrent.reset();
+    mCurrent.clear();
     mPending.clear();
-    mShownSeconds = 0.0f;
-    mOpacity = 0.0f;
 }
 
 void ContextualOperationGuide::Reset()

@@ -1,6 +1,7 @@
 #include "RuntimeGameplayTests.h"
 
 #include "actor/Actor.h"
+#include "actor/ActorGroundResolver.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -325,6 +326,48 @@ void StairCollisionProxiesRemoveNosingHeadContacts(Game& game)
     std::cout << "[PASS] Runtime.StairCollisionProxiesRemoveNosingHeadContacts\n";
 }
 
+void EllipseGroundNormalIsStableAtTheEdge(Game& game)
+{
+    auto* world = game.GetPhysicsSystem()->GetBulletWorld();
+    Planet planet(&game);
+    planet.SetPos({10000, 10000, 10000});
+    planet.SetScale({2, 8, 8});
+    const glm::vec3 surfacePosition = planet.GetPos() + glm::vec3(1.8f, 8.0f * std::sqrt(0.19f), 0);
+    const glm::vec3 up = planet.CalculateEllipseSurfaceProjection(surfacePosition).outwardNormal;
+    const glm::vec3 forward(0, 0, 1);
+    const glm::vec3 left = glm::normalize(glm::cross(up, forward));
+    // 粗い曲面メッシュの面法線が、滑らかな楕円面と異なる状態を再現する。
+    const glm::vec3 meshNormal = glm::angleAxis(glm::radians(10.0f), forward) * up;
+    btBoxShape shape(btVector3(2, 0.05f, 2));
+    struct ScopedSurface {
+        btDiscreteDynamicsWorld& world;
+        btCollisionObject object;
+        ~ScopedSurface() { world.removeCollisionObject(&object); }
+    } surface{*world};
+    surface.object.setCollisionShape(&shape);
+    surface.object.setUserPointer(&planet);
+    btTransform transform = btTransform::getIdentity();
+    const glm::quat rotation(glm::vec3(0, 1, 0), meshNormal);
+    transform.setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+    const glm::vec3 center = surfacePosition - meshNormal * 0.05f;
+    transform.setOrigin(btVector3(center.x, center.y, center.z));
+    surface.object.setWorldTransform(transform);
+    world->addCollisionObject(&surface.object, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+    for (float footprintScale : {1.0f, 0.8f}) {
+        for (const glm::vec3& facing : {forward, left}) {
+            const auto normal = ActorGroundResolver::CalculateAverageNormal(
+                &game, surfacePosition, up, facing, glm::cross(up, facing), {}, {}, {}, footprintScale);
+            ExpectVectorNear(up, normal, 0.002f, "ellipse edge normal is independent of body size and facing");
+        }
+    }
+    Platform platform(&game);
+    surface.object.setUserPointer(&platform);
+    const auto floorNormal =
+        ActorGroundResolver::CalculateAverageNormal(&game, surfacePosition, up, forward, left, {}, {}, {}, 0.8f);
+    ExpectVectorNear(meshNormal, floorNormal, 0.002f, "platform keeps its actual mesh normal");
+    std::cout << "[PASS] Runtime.EllipseGroundNormalIsStableAtTheEdge\n";
+}
+
 void SwitchPressRequiresActualGroundContact(Game& game)
 {
     auto* world = game.GetPhysicsSystem()->GetBulletWorld();
@@ -363,6 +406,10 @@ void SwitchPressRequiresActualGroundContact(Game& game)
             player.SetPos(origin);
             ExpectTrue(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
                        "grounded contact presses the switch at every surface orientation and body size");
+            player.SetControlLocked(true);
+            ExpectTrue(PlatformPressDetection::IsPlayerPressingPlatform(player, platform),
+                       "reveal cinematics do not release a switch while the player remains on it");
+            player.SetControlLocked(false);
             player.SetOnGround(false);
             player.SetVelocity(-up);
             player.SetPos(origin + up * 0.02f);
@@ -1121,6 +1168,7 @@ void RunRuntimeGameplayTests(Game& game)
     LeaningSidesPreserveAirborneVerticalMovement(game);
     StairCollisionProxiesRemoveNosingHeadContacts(game);
     SwitchPressRequiresActualGroundContact(game);
+    EllipseGroundNormalIsStableAtTheEdge(game);
     PlayerShadowsStayOnTheSupportingSurface(game);
     LandingRequiresSupportingSurface(game);
     MovementActionsResetOnlyTheirOwnState(game);

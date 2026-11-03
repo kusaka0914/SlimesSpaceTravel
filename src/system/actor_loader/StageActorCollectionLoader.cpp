@@ -11,6 +11,7 @@
 #include "actor/JewelItem.h"
 #include "actor/Key.h"
 #include "actor/NPC.h"
+#include "actor/OperationGuideZone.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
@@ -38,7 +39,7 @@ bool HasValidStageCollections(const YAML::Node& stageRoot)
         return false;
     }
 
-    constexpr std::array<const char*, 18> collectionNames = {
+    constexpr std::array collectionNames = {
         "planets",
         "players",
         "NPCs",
@@ -54,6 +55,7 @@ bool HasValidStageCollections(const YAML::Node& stageRoot)
         "fallRespawnPoints",
         "stageObjects",
         "cameraZones",
+        "operationGuideZones",
         "tutorialTriggers",
         "jewelItems",
         "hazardActors",
@@ -120,6 +122,9 @@ bool StageActorCollectionLoader::LoadAll()
     mActorFactory.LoadActorSequence<CameraZone>(
         stageRoot, "cameraZones", {},
         [this](const YAML::Node& node, int index) { return mCreationService.CreateCameraZone(node, index); });
+    mActorFactory.LoadActorSequence<OperationGuideZone>(
+        stageRoot, "operationGuideZones", {},
+        [this](const YAML::Node& node, int index) { return mCreationService.CreateOperationGuideZone(node, index); });
     LoadFallRespawnPoints(stageRoot);
     LoadPlayers(stageRoot);
 

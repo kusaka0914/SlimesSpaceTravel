@@ -12,6 +12,7 @@
 namespace {
 struct RayHit {
     glm::vec3 normal{0.0f};
+    glm::vec3 position{0.0f};
     const btCollisionObject* object = nullptr;
 };
 
@@ -75,6 +76,8 @@ bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, con
     }
 
     outHit.normal = hitNormal;
+    const btVector3& hitPoint = rayCallback.m_hitPointWorld;
+    outHit.position = {hitPoint.x(), hitPoint.y(), hitPoint.z()};
     outHit.object = rayCallback.m_collisionObject;
     return true;
 }
@@ -95,6 +98,14 @@ glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec
     if (!CastGroundRay(game, pos, upVec, glm::vec3(0.0f), shouldRejectNormal, onSurfaceDetected, onCastSucceeded,
                        mainHit)) {
         return glm::vec3(0.0f);
+    }
+
+    const auto* groundActor = static_cast<const Actor*>(mainHit.object->getUserPointer());
+    const auto* planet = dynamic_cast<const Planet*>(groundActor);
+    if (planet && planet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
+        // 楕円の端では周囲の法線が大きく異なり、平均すると足元から姿勢がずれる。
+        // 実際に支持された位置の表面法線を使い、継ぎ目や体の向きによる変動を避ける。
+        return planet->CalculateEllipseSurfaceProjection(mainHit.position).outwardNormal;
     }
 
     constexpr float mainWeight = 3.0f;

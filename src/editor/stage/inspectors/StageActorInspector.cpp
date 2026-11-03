@@ -9,6 +9,7 @@
 #include "actor/JewelItem.h"
 #include "actor/MathUtils.h"
 #include "actor/NPC.h"
+#include "actor/OperationGuideZone.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
@@ -17,6 +18,7 @@
 #include "component/PlatformMovementComponent.h"
 #include "editor/stage/StageActorQuery.h"
 #include "editor/stage/inspectors/StageCameraZoneInspector.h"
+#include "editor/stage/inspectors/StageOperationGuideZoneInspector.h"
 #include "editor/stage/inspectors/StagePlayerEditor.h"
 #include "editor/stage/persistence/StageActorYamlWriter.h"
 #include "editor/stage/selection/StageSelectionController.h"
@@ -174,6 +176,19 @@ void StageActorInspector::DrawActorPlacementEditor(Actor* actor, const std::stri
 bool StageActorInspector::DrawActorTypeSettings(Actor* actor, const std::string& sequenceName, std::size_t listIndex,
                                                 int yamlIndex)
 {
+    if (auto* zone = dynamic_cast<OperationGuideZone*>(actor)) {
+        ImGui::PushID(zone);
+        const bool changed = DrawOperationGuideZoneInspector(*zone);
+        ImGui::PopID();
+        if (changed) {
+            mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
+        }
+        if (!mStageActorYamlWriter.GetSaveError().empty()) {
+            ImGui::TextWrapped("%s", mStageActorYamlWriter.GetSaveError().c_str());
+        }
+        return false;
+    }
+
     if (auto* zone = dynamic_cast<CameraZone*>(actor)) {
         // 選択を切り替えたとき、入力中のImGui状態を別ゾーンへ引き継がない。
         ImGui::PushID(zone);
@@ -615,6 +630,14 @@ void StageActorInspector::DrawBoatSettings(Actor* actor, const std::string& sequ
 
     bool boatSettingsChanged = false;
     bool boatStartPlanetChanged = false;
+
+    bool startsAppeared = boat->GetStartsAppeared();
+    if (ImGui::Checkbox(("最初から出現済み##boatStartsAppeared" + std::to_string(yamlIndex)).c_str(),
+                        &startsAppeared)) {
+        boat->SetStartsAppeared(startsAppeared);
+        boatSettingsChanged = true;
+    }
+    ImGui::TextDisabled("ONなら出現条件の達成を待たずに表示され、乗れるようになります。");
 
     mStageActorAssetEditor.DrawBoatModelPicker(boat, sequenceName, listIndex);
 

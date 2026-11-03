@@ -1155,13 +1155,13 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.06676334
-      - 0.5537935
+      - 0.08501147
+      - 0.55495197
     sizeRatio:
       - 0.2
       - 0.05625
-    textScaleRatio: 0.00012999993
-    text: メニュー表示
+    textScaleRatio: 0.00012999987
+    text: メニュー表示/操作確認
     texture: ""
     usesInputDeviceVariants: false
     keyboardText: ""

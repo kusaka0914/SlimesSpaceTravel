@@ -193,11 +193,13 @@ btTransform CreatePlayerCollisionTransform(const Actor& actor, const glm::vec3& 
 class ClosestBlockingStageSweepCallback final : public btCollisionWorld::ClosestConvexResultCallback {
 public:
     ClosestBlockingStageSweepCallback(const btVector3& from, const btVector3& to, const glm::vec3& actorUpDirection,
-                                      const glm::vec3& sweepDirection, bool ignoreWalkableSurfaces = true)
+                                      const glm::vec3& sweepDirection, bool ignoreWalkableSurfaces = true,
+                                      const Actor* walkableGroundActor = nullptr)
         : btCollisionWorld::ClosestConvexResultCallback(from, to),
           mActorUpDirection(actorUpDirection),
           mSweepDirection(sweepDirection),
-          mIgnoreWalkableSurfaces(ignoreWalkableSurfaces)
+          mIgnoreWalkableSurfaces(ignoreWalkableSurfaces),
+          mWalkableGroundActor(walkableGroundActor)
     {
     }
 
@@ -218,9 +220,12 @@ public:
         }
 
         const bool isWalkableSurface = glm::dot(blockingNormal, mActorUpDirection) >= walkableSurfaceMinimumUpDot;
-        const float blockingThreshold = mIgnoreWalkableSurfaces ? blockingSweepDirectionMaximumDot : -0.000001f;
+        const float blockingThreshold =
+            mIgnoreWalkableSurfaces && !mWalkableGroundActor ? blockingSweepDirectionMaximumDot : -0.000001f;
         const bool isMovingIntoSurface = glm::dot(blockingNormal, mSweepDirection) <= blockingThreshold;
-        if ((mIgnoreWalkableSurfaces && isWalkableSurface) || !isMovingIntoSurface) {
+        const bool isIgnoredGround =
+            !mWalkableGroundActor || convexResult.m_hitCollisionObject->getUserPointer() == mWalkableGroundActor;
+        if ((mIgnoreWalkableSurfaces && isWalkableSurface && isIgnoredGround) || !isMovingIntoSurface) {
             return 1.0f;
         }
 
@@ -231,6 +236,7 @@ private:
     glm::vec3 mActorUpDirection{0.0f, 1.0f, 0.0f};
     glm::vec3 mSweepDirection{0.0f};
     bool mIgnoreWalkableSurfaces = true;
+    const Actor* mWalkableGroundActor = nullptr;
 };
 
 class DeepestPenetrationContactCallback final : public btCollisionWorld::ContactResultCallback {
@@ -672,9 +678,15 @@ ActorCollisionResolver::CheckConflictWall(btDiscreteDynamicsWorld* world, btConv
     const btTransform fromTransform = CreatePlayerCollisionTransform(*actor, sweepFrom);
     const btTransform toTransform = CreatePlayerCollisionTransform(*actor, sweepTo);
 
-    // 接触済みの面から離れる移動・面に沿う移動を、距離0の衝突で止めない。
+    // 曲面の継ぎ目で歩行を止めない。接地中の横移動だけは支持惑星の歩ける面を除外し、
+    // 移動先のめり込みはResolveStageOverlapで解消する。壁・他の足場・落下の検査は残す。
+    const auto* player = dynamic_cast<const Player*>(actor);
+    const Planet* supportPlanet = player ? dynamic_cast<const Planet*>(player->GetGroundActor()) : nullptr;
+    const bool followsPlanetSurface = player && player->GetOnGround() && supportPlanet &&
+                                      supportPlanet->GetPlanetShape() != Planet::PlanetShape::Normal &&
+                                      std::abs(glm::dot(glm::normalize(moveDelta), actorUpVec)) < 0.2f;
     ClosestBlockingStageSweepCallback sweepCallback(fromTransform.getOrigin(), toTransform.getOrigin(), actorUpVec,
-                                                    glm::normalize(moveDelta), false);
+                                                    glm::normalize(moveDelta), followsPlanetSurface, supportPlanet);
 
     sweepCallback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
     sweepCallback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
@@ -706,7 +718,8 @@ ActorCollisionResolver::CheckConflictWall(btDiscreteDynamicsWorld* world, btConv
         const btTransform slideToTransition = CreatePlayerCollisionTransform(*actor, slideTo);
 
         ClosestBlockingStageSweepCallback slideCallback(slideFromTransition.getOrigin(), slideToTransition.getOrigin(),
-                                                        actorUpVec, glm::normalize(slideVec), false);
+                                                        actorUpVec, glm::normalize(slideVec), followsPlanetSurface,
+                                                        supportPlanet);
 
         slideCallback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
         slideCallback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
@@ -778,6 +791,18 @@ ActorCollisionResolver::ResolveStageOverlap(btDiscreteDynamicsWorld* world, btCo
         const btCollisionObject* blockingCollisionObject = contactCallback.GetBlockingCollisionObject();
         Actor* blockingActor =
             blockingCollisionObject ? static_cast<Actor*>(blockingCollisionObject->getUserPointer()) : nullptr;
+        const auto* player = dynamic_cast<const Player*>(actor);
+        const auto* blockingPlanet = dynamic_cast<const Planet*>(blockingActor);
+        const bool isWalkablePlanetContact = player && player->GetOnGround() && blockingPlanet &&
+                                             blockingPlanet == player->GetCurrentPlanet() &&
+                                             blockingPlanet->GetPlanetShape() != Planet::PlanetShape::Normal &&
+                                             normalUpDot >= walkableSurfaceMinimumUpDot;
+        if (isWalkablePlanetContact) {
+            // 三角形ごとの法線で斜めに押し戻すと、曲面の継ぎ目で歩行量が削られる。
+            // 接地中の惑星面だけは上方向へ離し、接触法線に沿った分離距離を確保する。
+            correctionDirection = actorUp;
+            correctionDistance /= normalUpDot;
+        }
         Platform* blockingPlatform = dynamic_cast<Platform*>(blockingActor);
         const bool isMovingPlatformAboveActor =
             blockingPlatform && blockingPlatform->UsesKinematicPhysics() && normalUpDot <= overheadContactMaximumUpDot;

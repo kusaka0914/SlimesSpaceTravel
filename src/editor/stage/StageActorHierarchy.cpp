@@ -34,6 +34,8 @@ StageHierarchyCategory CategoryFor(StageActorType type)
         return StageHierarchyCategory::Boat;
     case StageActorType::CameraZone:
         return StageHierarchyCategory::CameraZone;
+    case StageActorType::OperationGuideZone:
+        return StageHierarchyCategory::OperationGuideZone;
     case StageActorType::TutorialTrigger:
         return StageHierarchyCategory::TutorialTrigger;
     case StageActorType::FallRespawnPoint:
@@ -61,6 +63,8 @@ const char* CategoryLabel(StageHierarchyCategory category)
         return "ボート・パーツ・到着点";
     case StageHierarchyCategory::CameraZone:
         return "カメラゾーン";
+    case StageHierarchyCategory::OperationGuideZone:
+        return "操作ガイドゾーン";
     case StageHierarchyCategory::TutorialTrigger:
         return "チュートリアルトリガー";
     case StageHierarchyCategory::Hazard:

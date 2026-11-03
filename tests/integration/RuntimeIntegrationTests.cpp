@@ -4,6 +4,7 @@
 #include "RuntimeReliabilityTests.h"
 #include "actor/Actor.h"
 #include "actor/CameraZone.h"
+#include "actor/OperationGuideZone.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "app/Game.h"
@@ -25,6 +26,7 @@
 #include "system/InputSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/UserDataPaths.h"
+#include "system/actor_loader/StageActorLocator.h"
 #include "system/camera/CameraCollisionResolver.h"
 #include "system/camera/CameraLateralOrbit.h"
 #include "system/camera/CameraProjection.h"
@@ -929,6 +931,63 @@ void SphereCameraFollowsLateralMovement(Game& game)
     std::cout << "[PASS] Runtime.SphereCameraLateralFollow\n";
 }
 
+void OperationGuideZoneUsesAuthoredBoxAndSettings(Game& game)
+{
+    OperationGuideZone zone(&game);
+    zone.SetPos({10, 20, 30});
+    zone.SetScale({2, 4, 6});
+    zone.SetOrientation(glm::angleAxis(glm::radians(45.0f), glm::vec3(0, 1, 0)));
+    const auto worldPoint = [&](const glm::vec3& local) {
+        return zone.GetPos() + zone.GetOrientation() * glm::vec3(-local.z, local.y, -local.x);
+    };
+    ExpectTrue(zone.Contains(worldPoint({0.9f, 1.9f, 2.9f})), "guide zone uses rotated authored bounds");
+    ExpectTrue(!zone.Contains(worldPoint({1.1f, 0, 0})), "leaving the guide box stops its eligibility");
+    ExpectTrue(!zone.GetCollisionEnabled(), "guide zones never block player movement");
+
+    zone.enabled = false;
+    zone.priority = 7;
+    zone.operations[0].iconId = "buttonY";
+    zone.operations[0].description = "長押しで連続攻撃";
+    zone.operations[0].repeatInput = true;
+    zone.operations.push_back({"buttonA", "空中ダッシュ", true});
+    zone.operations.push_back({"buttonB", "ダッシュ", false});
+    YAML::Node saved;
+    zone.SaveGuide(saved);
+    OperationGuideZone restored(&game);
+    restored.LoadGuide(YAML::Node());
+    ExpectTrue(restored.enabled && restored.operations[0].iconId == "buttonA", "missing guide settings use defaults");
+    YAML::Node legacy;
+    legacy["iconId"] = "buttonA";
+    legacy["description"] = "空中ダッシュ";
+    restored.LoadGuide(legacy);
+    ExpectTrue(restored.operations.size() == 1 && restored.operations[0].repeatInput,
+               "legacy single-operation zones retain the air-dash input sequence");
+    restored.LoadGuide(saved);
+    ExpectTrue(restored.operations.size() == 3 && restored.operations[1].description == "空中ダッシュ" &&
+                   restored.operations[1].repeatInput && restored.operations[2].description == "ダッシュ",
+               "three guide operations preserve their order and input sequence");
+    ExpectTrue(!restored.enabled && restored.priority == 7 && restored.operations[0].iconId == "buttonY" &&
+                   restored.operations[0].description == zone.operations[0].description &&
+                   restored.operations[0].repeatInput,
+               "guide settings survive YAML round trip");
+
+    Planet planet(&game);
+    CameraZone cameraZone(&game);
+    StageObject object(&game);
+    zone.SetStageYamlIndex(0);
+    cameraZone.SetStageYamlIndex(0);
+    object.SetStageYamlIndex(0);
+    planet.AddStageObject(&cameraZone);
+    planet.AddStageObject(&object);
+    planet.AddStageObject(&zone);
+    ScopedTestStagePlanets planets(*game.GetCurrentStage(), {&planet});
+    const StageActorLocator locator;
+    ExpectTrue(locator.FindPlacedActor(*game.GetCurrentStage(), "operationGuideZones", 0) == &zone &&
+                   locator.FindPlacedActor(*game.GetCurrentStage(), "cameraZones", 0) == &cameraZone &&
+                   locator.FindPlacedActor(*game.GetCurrentStage(), "stageObjects", 0) == &object,
+               "guide, camera, and ordinary objects keep separate YAML identities");
+}
+
 void NormalCameraRestoresFramingAfterZoneExit(Game& game, bool sphereFollow)
 {
     CameraZone zone(&game);
@@ -1409,6 +1468,7 @@ int main(int argc, char** argv)
              CameraControlsAreIndependentAndStopDuringEditorCapture(game);
              NormalCameraSeparatesPositionAndSight(game);
              SphereCameraFollowsLateralMovement(game);
+             OperationGuideZoneUsesAuthoredBoxAndSettings(game);
              NormalCameraRestoresFramingAfterZoneExit(game, false);
              NormalCameraRestoresFramingAfterZoneExit(game, true);
              LateralWalkingKeepsNormalCameraRadius(game);

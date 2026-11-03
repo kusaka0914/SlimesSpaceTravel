@@ -3,6 +3,8 @@
 #include "gfx/ui/ContextualOperationGuide.h"
 #include "gfx/ui/OperationGuideVisibility.h"
 
+#include <algorithm>
+
 namespace {
 OperationGuideDisplayState AtLocation(int stageNumber, int planetNumber)
 {
@@ -81,7 +83,8 @@ void ContextualRecoveryPreemptsAndExpiresWithCooldown()
     guide.RequestRecovery(2);
     guide.Update(0.0f, true, available);
     ExpectTrue(guide.GetPrompt() && guide.GetPrompt()->kind == Kind::Recover && guide.GetPrompt()->playerNumber == 2,
-               "recovery preempts and preserves player identity");
+               "recovery is first in priority order and preserves player identity");
+    ExpectEqual<std::size_t>(2, guide.GetPrompts().size(), "independent hints remain visible together");
     guide.Update(0.2f, true, available);
     ExpectNear(1.0f, guide.GetPrompt()->opacity, 0.001f, "fade in reaches full opacity");
     guide.Update(2.6f, true, available);
@@ -229,7 +232,9 @@ void InsufficientJewelsTracksRequiredCountWithoutRefreshing()
     ExpectTrue(guide.GetPrompt().has_value(), "one jewel is still insufficient for a two jewel skill");
     available.jewelCounts[1] = 2;
     guide.Update(0.0f, true, available);
-    ExpectFalse(guide.GetPrompt().has_value(), "enough jewels clears obsolete failure message");
+    const auto remainingPrompts = guide.GetPrompts();
+    ExpectTrue(remainingPrompts.size() == 1 && remainingPrompts.front().kind == Kind::Recover,
+               "enough jewels clears only the obsolete failure message");
     available.jewelCounts[1] = 0;
     guide.RequestInsufficientJewels(2, 1);
     guide.Update(0.0f, true, available);
@@ -287,10 +292,60 @@ void MergeDistanceFeedbackStopsWhenAvailableAndCanRepeat()
     ExpectFalse(guide.GetPrompt().has_value(), "approaching the other slime clears the hint");
 }
 
+void ThreePromptsKeepIndependentTimersAndPlayerCapacity()
+{
+    using Kind = ContextualOperationGuide::Kind;
+    ContextualOperationGuide guide;
+    ContextualOperationGuide::Availability available;
+    available.activePlayers = {true, true};
+    available.canRecover = {true, true};
+    available.canExplainBlockedCamera = {true, true};
+    available.canSplit = true;
+    available.canExplainBlockedSplit = true;
+    available.canExplainMergeTooFar = true;
+
+    guide.RequestSplit(1);
+    guide.Update(0.0f, true, available);
+    guide.Update(1.0f, true, available);
+    guide.RequestRecovery(1);
+    guide.RequestCameraControlBlocked(1);
+    guide.RequestMergeTooFar(2);
+    guide.Update(0.0f, true, available);
+    ExpectEqual<std::size_t>(4, guide.GetPrompts().size(), "each player has independent display slots");
+    guide.Update(2.01f, true, available);
+    const auto afterExpiry = guide.GetPrompts();
+    ExpectTrue(afterExpiry.size() == 3 && std::none_of(afterExpiry.begin(), afterExpiry.end(),
+                                                       [](const auto& prompt) { return prompt.kind == Kind::Split; }),
+               "one prompt expiring does not restart or dismiss the other prompts");
+
+    guide.Reset();
+    guide.RequestSplit(1);
+    guide.RequestRecovery(1);
+    guide.RequestCameraControlBlocked(1);
+    guide.Update(0.0f, true, available);
+    guide.RequestSplitBlocked(1);
+    guide.Update(0.0f, true, available);
+    const auto prioritized = guide.GetPrompts();
+    ExpectTrue(prioritized.size() == 3 && prioritized.front().kind == Kind::SplitBlocked &&
+                   std::none_of(prioritized.begin(), prioritized.end(),
+                                [](const auto& prompt) { return prompt.kind == Kind::Split; }),
+               "at capacity, action failures replace only the lowest-priority hint");
+    guide.RequestSplitBlocked(1);
+    guide.RequestMergeTooFar(2);
+    guide.RequestCameraControlBlocked(2);
+    guide.RequestRecovery(2);
+    guide.Update(0.0f, true, available);
+    ExpectEqual<std::size_t>(6, guide.GetPrompts().size(),
+                             "repeated requests do not duplicate, and player two has three slots");
+    guide.Update(0.0f, false, available);
+    ExpectTrue(guide.GetPrompts().empty(), "pause clears every displayed and pending prompt");
+}
+
 } // namespace
 
 void RegisterOperationGuideVisibilityTests(TestRegistry& tests)
 {
+    tests.emplace_back("ContextualOperationGuide.ThreePrompts", ThreePromptsKeepIndependentTimersAndPlayerCapacity);
     tests.emplace_back("ContextualOperationGuide.BlockedCamera", BlockedCameraFeedbackExpiresAndFollowsPlayerZone);
     tests.emplace_back("ContextualOperationGuide.InsufficientJewels",
                        InsufficientJewelsTracksRequiredCountWithoutRefreshing);

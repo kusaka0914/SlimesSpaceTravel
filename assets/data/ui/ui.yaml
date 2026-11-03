@@ -256,13 +256,13 @@ default:
   - id: hpTexture
     type: texture
     posRatio: [0.4245502, 0.9350294]
-    scaleRatio: [0.025, 0.025]
+    scaleRatio: [0.024999997, 0.024999999]
     repeatSpacingRatio: 0.0257
     rotationDegrees: 0
   - id: jewelTexture
     type: texture
     posRatio: [0.59975684, 0.92581195]
-    scaleRatio: [0.035, 0.035]
+    scaleRatio: [0.035, 0.034999996]
     repeatSpacingRatio: 0.032
     rotationDegrees: 0
   - id: splitGuardTexture
@@ -327,7 +327,7 @@ state:
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
     text:
-      - Y連打で疲労回復！
+      - 連打で疲労回復！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
@@ -337,7 +337,7 @@ state:
     posRatio: [0.5, 0.558]
     scaleRatio: [0.00031249996, 1.0]
     text:
-      - J連打で疲労回復！
+      - 連打で疲労回復！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true

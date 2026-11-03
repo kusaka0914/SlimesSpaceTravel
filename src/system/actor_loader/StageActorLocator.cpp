@@ -12,6 +12,7 @@
 #include "actor/JewelItem.h"
 #include "actor/Key.h"
 #include "actor/NPC.h"
+#include "actor/OperationGuideZone.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
@@ -77,11 +78,13 @@ Actor* StageActorLocator::FindPlacedActor(const Stage& stage, const std::string&
             matchingActor = findByIndex(planet->GetBoatArrivalPoints());
         } else if (sequenceName == "fallRespawnPoints") {
             matchingActor = findByIndex(planet->GetFallRespawnPoints());
-        } else if (sequenceName == "stageObjects" || sequenceName == "cameraZones") {
+        } else if (sequenceName == "stageObjects" || sequenceName == "cameraZones" ||
+                   sequenceName == "operationGuideZones") {
             for (auto* actor : planet->GetStageObjects()) {
-                const bool isZone = dynamic_cast<CameraZone*>(actor) != nullptr;
-                if (actor && actor->GetStageYamlIndex() == stageYamlIndex &&
-                    isZone == (sequenceName == "cameraZones")) {
+                const char* actorSequence = dynamic_cast<CameraZone*>(actor)           ? "cameraZones"
+                                            : dynamic_cast<OperationGuideZone*>(actor) ? "operationGuideZones"
+                                                                                       : "stageObjects";
+                if (actor && actor->GetStageYamlIndex() == stageYamlIndex && sequenceName == actorSequence) {
                     matchingActor = actor;
                     break;
                 }

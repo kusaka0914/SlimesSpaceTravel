@@ -247,6 +247,29 @@ bool StageActorCreateService::CommitCreation(YAML::Node config, const StageEditO
     return true;
 }
 
+bool StageActorCreateService::AddOperationGuideZone(int currentPlanetNum, const StageActorPlacement* placement)
+{
+    if (!CanCreateActor() || !IsValidPlanetIndex(currentPlanetNum, "操作ガイドゾーン")) {
+        return false;
+    }
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return false;
+    }
+    EnsureSequence(config, "operationGuideZones");
+    const int index = static_cast<int>(config["operationGuideZones"].size());
+    YAML::Node node = mNodeFactory.CreateStageObject(currentPlanetNum, "cameraZone.obj", false);
+    for (int axis = 0; axis < 3; ++axis) {
+        node["scale"][axis] = 6.0f;
+    }
+    node["guide"]["operations"][0]["iconId"] = "buttonA";
+    node["guide"]["operations"][0]["description"] = "ジャンプ";
+    ApplyPlacementToNode(node, currentPlanetNum, placement);
+    config["operationGuideZones"].push_back(node);
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::OperationGuideZone, node, index); });
+}
+
 bool StageActorCreateService::AddCameraZone(int currentPlanetNum, const StageActorPlacement* placement)
 {
     if (!CanCreateActor() || !IsValidPlanetIndex(currentPlanetNum, "カメラゾーン")) {

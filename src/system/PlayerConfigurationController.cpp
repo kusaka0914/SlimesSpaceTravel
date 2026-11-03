@@ -555,7 +555,7 @@ bool PlayerConfigurationController::IsSplitDirectionClear(Player& mainPlayer, co
 
 std::optional<glm::vec3> PlayerConfigurationController::FindMergedPlayerPosition(Player& player) const
 {
-    // 分裂中の縮小した判定では、合体後の体が周囲に収まるか分からない。
+    // 合体後の表示スケールで配置を検証し、分裂演出中のスケールを復元する。
     const bool wasSplit = player.IsSplitForm();
     const glm::vec3 previousScale = player.GetScale();
     player.SetSplitForm(false);

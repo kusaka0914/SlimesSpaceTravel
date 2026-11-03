@@ -120,8 +120,9 @@ namespace PlatformPressDetection {
 
 bool IsPlayerPressingPlatform(const Player& player, const Platform& platform)
 {
-    if (!player.GetIsActive() || !player.IsAlive() || player.IsControlLocked() || !player.GetOnGround() ||
-        !platform.GetIsActive() || !platform.GetCollisionEnabled()) {
+    // 出現注目などで操作がロックされても、床との接触が続く限り押下を維持する。
+    if (!player.GetIsActive() || !player.IsAlive() || !player.GetOnGround() || !platform.GetIsActive() ||
+        !platform.GetCollisionEnabled()) {
         return false;
     }
     const float upLength = glm::length(player.GetUpVec());

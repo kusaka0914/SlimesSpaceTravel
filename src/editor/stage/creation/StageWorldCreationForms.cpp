@@ -41,6 +41,17 @@ StagePlatformCreationForm::StagePlatformCreationForm(DebugEditorContext& context
 
 void StageObjectCreationForm::Draw()
 {
+    if (ImGui::TreeNode("操作ガイドゾーン追加")) {
+        StageCreationFormWidgets::DrawPlanetCombo(mContext, "追加先の惑星##operationGuideZone", mSelectedPlanetIndex);
+        if (ImGui::Button("操作ガイドゾーンを配置") && mSelectedPlanetIndex >= 0) {
+            mPlacementController.BeginPlacement("操作ガイドゾーン", mSelectedPlanetIndex,
+                                                [this](int planetIndex, const StageActorPlacement& placement) {
+                                                    return mCreateService.AddOperationGuideZone(planetIndex,
+                                                                                                &placement);
+                                                });
+        }
+        ImGui::TreePop();
+    }
     if (ImGui::TreeNode("カメラゾーン追加")) {
         StageCreationFormWidgets::DrawPlanetCombo(mContext, "追加先の惑星##cameraZone", mSelectedPlanetIndex);
         if (ImGui::Button("カメラゾーンを配置") && mSelectedPlanetIndex >= 0) {

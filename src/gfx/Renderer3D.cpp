@@ -828,7 +828,7 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
     if (player) {
         // スキニング前の頂点境界は表示寸法と一致しないため、Playerはゲーム内の体サイズを使う。
         constexpr float playerShadowBodySizeRatio = 0.75f;
-        const float halfCollisionScale = player->GetCollisionScaleMultiplier() * 0.5f * playerShadowBodySizeRatio;
+        const float halfCollisionScale = player->GetBodyScaleMultiplier() * 0.5f * playerShadowBodySizeRatio;
         radiusX = std::max(mPhysics.GetPlayerCollisionWidth() * halfCollisionScale, 0.05f);
         radiusY = std::max(mPhysics.GetPlayerCollisionDepth() * halfCollisionScale, 0.05f);
     }

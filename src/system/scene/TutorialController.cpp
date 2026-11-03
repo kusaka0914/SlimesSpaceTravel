@@ -1,13 +1,15 @@
 #include "system/scene/TutorialController.h"
 
-#include "app/Game.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "component/PlatformPressureSwitchComponent.h"
 #include "state/GameProgressState.h"
 #include "state/UIState.h"
 #include "system/AudioSystem.h"
+#include "system/SceneSystem.h"
+#include "system/sequence/SequenceSystem.h"
 
 #include <glm/glm.hpp>
 
@@ -20,6 +22,7 @@ TutorialController::TutorialController(Game* game, GameProgressState* gameProgre
 
 void TutorialController::Update(float)
 {
+    TryStartPendingGuardBreakTutorial();
     if (!HasActiveTutorial() || !mGameProgressState || !mIsActionObjectiveActive ||
         mGameProgressState->GetSceneState() != GameProgressState::SceneState::Playing) {
         return;
@@ -54,7 +57,9 @@ bool TutorialController::TryStart(const std::string& tutorialId, Player* tutoria
     if (!shouldIgnoreRepeatPolicy && definition->repeatPolicy == TutorialRepeatPolicy::OnceEver) {
         mShownOnceTutorialIds.insert(tutorialId);
     }
-    mShouldRecordActiveTutorialCompletion = !shouldIgnoreRepeatPolicy;
+
+    // ガード破壊の案内はステージ1への入場単位で管理し、完了をセーブへ記録しない。
+    mShouldRecordActiveTutorialCompletion = !shouldIgnoreRepeatPolicy && tutorialId != "enemy_break";
     mIsActionObjectiveActive = false;
 
     mUIState->SetCurrentTalkWith(UIState::TalkWith::None);
@@ -115,6 +120,18 @@ void TutorialController::ResetForNewSession()
     Stop(false);
     mShownOnceTutorialIds.clear();
     mCompletedTutorialIds.clear();
+    ResetForStageEntry();
+}
+
+void TutorialController::ResetForStageEntry()
+{
+    mHasPendingGuardBreakTutorial = false;
+    mShownOnceTutorialIds.erase("enemy_break");
+    mCompletedTutorialIds.erase("enemy_break");
+    if (mGameProgressState) {
+        mGameProgressState->SetIsFirstBreak(false);
+        mGameProgressState->SetIsFirstStrongAttack(false);
+    }
 }
 
 bool TutorialController::ResumeAfterFocus()
@@ -169,16 +186,42 @@ void TutorialController::TryStartJustDodgeTutorial()
 
 void TutorialController::OnEnemyLaunched()
 {
-    if (!mGameProgressState || mGameProgressState->GetIsFirstBreak()) {
+    if (!mGame || !mGameProgressState || mGame->GetCurrentStageNum() != 1 || mGame->IsAssistControlStyle() ||
+        mGame->GetIsUGCMode() || mGame->GetIsUGCPlaytestActive() || mGameProgressState->GetIsFirstBreak()) {
         return;
     }
 
-    mGameProgressState->SetIsFirstBreak(true);
+    mHasPendingGuardBreakTutorial = true;
+    TryStartPendingGuardBreakTutorial();
+}
 
-    if (mGame && mGame->IsAssistControlStyle()) {
+void TutorialController::TryStartPendingGuardBreakTutorial()
+{
+    if (!mHasPendingGuardBreakTutorial || !mGame || !mGameProgressState) {
         return;
     }
-    TryStart("enemy_break");
+    if (mGame->GetCurrentStageNum() != 1) {
+        mHasPendingGuardBreakTutorial = false;
+        return;
+    }
+    if (HasActiveTutorial() || mGame->IsAssistControlStyle() || mGame->GetIsUGCMode() ||
+        mGame->GetIsUGCPlaytestActive() || mGame->GetIsPauseMenuOpen() || mGame->GetIsDebugEditorShowing() ||
+        mGame->GetIsFreeCameraMode() || mGameProgressState->GetSceneState() != GameProgressState::SceneState::Playing) {
+        return;
+    }
+    const SceneSystem* scene = mGame->GetSceneSystem();
+    const SequenceSystem* sequence = mGame->GetSequenceSystem();
+    if ((scene && scene->IsTransitionActive()) ||
+        (sequence && (sequence->IsCinematicChainPlaying() || sequence->LocksPlayerControl()))) {
+        return;
+    }
+
+    // 他の会話・演出が終わるまで要求を保持し、開始成功時だけ初回を消費する。
+    // 過去のセーブに完了記録が残っていても、今回のステージ入場では一度表示する。
+    if (TryStart("enemy_break", nullptr, true)) {
+        mGameProgressState->SetIsFirstBreak(true);
+        mHasPendingGuardBreakTutorial = false;
+    }
 }
 
 void TutorialController::OnStrongAttacked()

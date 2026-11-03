@@ -16,6 +16,7 @@ enum class StageHierarchyCategory {
     NPC,
     Boat,
     CameraZone,
+    OperationGuideZone,
     TutorialTrigger,
     Hazard,
     StageObject,
