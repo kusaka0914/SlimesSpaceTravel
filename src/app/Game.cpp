@@ -445,12 +445,13 @@ void Game::Shutdown()
 void Game::RestoreDebugEditorSessionAtStartup(const std::string& editorSessionPath,
                                               const std::string& editorRestartErrorLogPath)
 {
-    if (!mDebugEditorSessionController) {
+    if (!mDebugEditorSessionController || IsReviewBuild()) {
         return;
     }
 
     const DebugEditorSessionRestoreOutcome restoreOutcome =
         mDebugEditorSessionController->RestoreAtStartup(editorSessionPath, editorRestartErrorLogPath);
+
     if (restoreOutcome.shouldShowEditor) {
         mIsDebugEditorShowing = true;
     }
@@ -458,7 +459,7 @@ void Game::RestoreDebugEditorSessionAtStartup(const std::string& editorSessionPa
 
 void Game::SavePersistentDebugEditorSession()
 {
-    if (mDebugEditorSessionController) {
+    if (mDebugEditorSessionController && !IsReviewBuild()) {
         mDebugEditorSessionController->SavePersistentSession();
     }
 }
