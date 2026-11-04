@@ -58,6 +58,7 @@ public:
 private:
     void DrawTopBar();
     void UpdateStageEditing();
+    void UpdateViewportActorSelection(DebugEditorSection section);
     void DrawDockedToolPanel(DebugEditorSection section);
     void DrawDockedAssetBrowser(DebugEditorSection section);
 

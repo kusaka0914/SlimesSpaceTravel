@@ -59,6 +59,10 @@
 
 namespace {
 
+constexpr float enemyDefeatSlowMotionDurationSeconds = 2.0f;
+constexpr float enemyDefeatSlowMotionSpeed = 0.2f;
+constexpr float enemyDefeatSlowMotionReleaseSeconds = 0.35f;
+
 std::string BuildStageIntroCinematicId(int stageNum)
 {
     if (stageNum <= 0) {
@@ -183,6 +187,12 @@ bool Game::CreateGameSystems()
                        ? mActorLoadSystem->GetActorLocator().FindPlacedActor(*stage, sequenceName, yamlIndex)
                        : nullptr;
         },
+        .onCameraControlBlocked =
+            [this](int playerNumber) {
+                if (mUIRenderer) {
+                    mUIRenderer->NotifyCameraControlBlocked(playerNumber);
+                }
+            },
     });
     mMeshLoadSystem = std::make_unique<MeshLoadSystem>();
     mUGCPreviewController->SetMeshLoadSystem(*mMeshLoadSystem);
@@ -263,6 +273,10 @@ void Game::CreateStages(int stageCount)
 
 bool Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
 {
+    mEnemyDefeatSlowMotionRemainingSeconds = 0.0f;
+    if (mUIRenderer) {
+        mUIRenderer->ResetOperationGuides();
+    }
     const auto previousPlayerConfiguration = mPlayerConfigurationController->CaptureStageReloadState();
     if (mSequenceSystem) {
         mSequenceSystem->Stop(true);
@@ -345,7 +359,13 @@ SceneRenderState Game::CreateSceneRenderState() const
         .isPlayer2Joined = GetIsPlayer2Joined(),
         .projection = {GetIsUGCMode() && GetIsUGCOrthographicView(), GetUGCOrthographicHalfHeight()},
     };
-    if (!scene.isGameUIHidden && GetIsPlayerSplit() && !scene.isPlayer2Joined) {
+    if (mPlayerConfigurationController) {
+        scene.soul = mPlayerConfigurationController->CreateSoulPresentation();
+    }
+
+    // 分裂完了時に操作対象が切り替わるため、演出途中の頭上ガードは表示しない。
+    if (!scene.isGameUIHidden && GetIsPlayerSplit() && !scene.isPlayer2Joined &&
+        (!mPlayerConfigurationController || !mPlayerConfigurationController->IsSplitMergeTransitionActive())) {
         scene.splitGuard = {scene.controlledPlayer, GetPlayerSplitGuardCount(), GetMaximumPlayerSplitGuardCount()};
     }
     if (!TryResolvePlayerMergeGuide(scene.mergeGuideTarget, scene.mergeGuideRadiusWorldUnits)) {
@@ -445,12 +465,13 @@ void Game::Shutdown()
 void Game::RestoreDebugEditorSessionAtStartup(const std::string& editorSessionPath,
                                               const std::string& editorRestartErrorLogPath)
 {
-    if (!mDebugEditorSessionController) {
+    if (!mDebugEditorSessionController || IsReviewBuild()) {
         return;
     }
 
     const DebugEditorSessionRestoreOutcome restoreOutcome =
         mDebugEditorSessionController->RestoreAtStartup(editorSessionPath, editorRestartErrorLogPath);
+
     if (restoreOutcome.shouldShowEditor) {
         mIsDebugEditorShowing = true;
     }
@@ -458,7 +479,7 @@ void Game::RestoreDebugEditorSessionAtStartup(const std::string& editorSessionPa
 
 void Game::SavePersistentDebugEditorSession()
 {
-    if (mDebugEditorSessionController) {
+    if (mDebugEditorSessionController && !IsReviewBuild()) {
         mDebugEditorSessionController->SavePersistentSession();
     }
 }
@@ -479,6 +500,11 @@ void Game::ProcessInput()
     }
 
     if (mPauseMenuController->IsOpen()) {
+        for (Player* player : GetPlayers()) {
+            if (player) {
+                player->SuppressCombatInputUntilReleased();
+            }
+        }
         return;
     }
 
@@ -645,11 +671,21 @@ void Game::UpdateGame()
     const float deltaTime = std::min(0.04f, elapsedSeconds);
     mLastTime = currentTime;
     mLastDeltaTime = deltaTime;
+    if (mAudioSystem) {
+        mAudioSystem->Update();
+    }
+    if (mUIRenderer) {
+        mUIRenderer->UpdateOperationGuides(elapsedSeconds);
+    }
 
-    // 体験時間には実経過時間を使い、物理・演出の更新には大きな時間差を制限したdeltaTimeを使う。
+    // 操作案内と体験時間には実経過時間を使い、物理・演出には時間差を制限したdeltaTimeを使う。
     mSessionController->Update(elapsedSeconds);
 
     ProcessPendingUGCClearCompletion();
+
+    if (mSceneSystem->IsTitle() || mSceneSystem->IsOpening() || mSceneSystem->IsGameOver() || mIsFreeCameraMode) {
+        mEnemyDefeatSlowMotionRemainingSeconds = 0.0f;
+    }
 
     if (mHitStopTimer >= 0.0f) {
         mHitStopTimer -= deltaTime;
@@ -658,14 +694,34 @@ void Game::UpdateGame()
             // 通常の追従更新は止めたままなので、衝撃がカメラ基準位置を乱さない。
             mCameraSystem->UpdateShakeEffects(deltaTime);
         }
+        if (mUIRenderer) {
+            mUIRenderer->UpdateConsumptionFeedback(elapsedSeconds);
+        }
         return;
     }
 
     if (mPauseMenuController->IsOpen()) {
+        if (mUIRenderer) {
+            mUIRenderer->UpdateConsumptionFeedback(elapsedSeconds);
+        }
         return;
     }
 
-    UpdateWorldAndCamera(deltaTime);
+    float worldDeltaTime = deltaTime;
+    if (IsEnemyDefeatSlowMotionActive()) {
+        // 演出の長さは実時間で数え、ワールドへ渡す時間だけを遅らせる。ポーズ・ヒットストップ中は進めない。
+        const float releaseProgress =
+            1.0f - std::clamp(mEnemyDefeatSlowMotionRemainingSeconds / enemyDefeatSlowMotionReleaseSeconds, 0.0f, 1.0f);
+        const float smoothRelease = releaseProgress * releaseProgress * (3.0f - 2.0f * releaseProgress);
+        worldDeltaTime *= enemyDefeatSlowMotionSpeed + (1.0f - enemyDefeatSlowMotionSpeed) * smoothRelease;
+        mEnemyDefeatSlowMotionRemainingSeconds =
+            std::max(0.0f, mEnemyDefeatSlowMotionRemainingSeconds - elapsedSeconds);
+    }
+    mLastDeltaTime = worldDeltaTime;
+    UpdateWorldAndCamera(worldDeltaTime);
+    if (mUIRenderer) {
+        mUIRenderer->UpdateConsumptionFeedback(elapsedSeconds);
+    }
 }
 
 void Game::UpdateWorldAndCamera(float deltaTime)
@@ -913,7 +969,18 @@ void Game::RemoveAllPlayer()
 
 bool Game::TogglePlayerSplit()
 {
-    return mPlayerConfigurationController && mPlayerConfigurationController->ToggleSplit();
+    if (!mPlayerConfigurationController) {
+        return false;
+    }
+    const auto result = mPlayerConfigurationController->ToggleSplit();
+    if (result == PlayerConfigurationController::SplitToggleResult::BlockedByObstacle && mUIRenderer) {
+        mUIRenderer->NotifyPlayerSplitBlocked();
+    }
+    if (result == PlayerConfigurationController::SplitToggleResult::MergeTooFar && mUIRenderer) {
+        mUIRenderer->NotifyPlayerMergeTooFar();
+    }
+    return result == PlayerConfigurationController::SplitToggleResult::Accepted ||
+           result == PlayerConfigurationController::SplitToggleResult::MergeTooFar;
 }
 
 void Game::SetPlayerSplitMergeButtonHeld(bool isHeld)
@@ -955,7 +1022,11 @@ bool Game::CanTogglePlayerSplit() const
 
 bool Game::SwitchControlledPlayer()
 {
-    return mPlayerConfigurationController && mPlayerConfigurationController->SwitchControlledPlayer();
+    const bool didSwitch = mPlayerConfigurationController && mPlayerConfigurationController->SwitchControlledPlayer();
+    if (mUIRenderer) {
+        mUIRenderer->NotifyPlayerSwitchRequested(didSwitch);
+    }
+    return didSwitch;
 }
 
 bool Game::CanSwitchControlledPlayer() const
@@ -1247,6 +1318,14 @@ void Game::OnBoatArrived(Boat* boat)
     if (mPlayerConfigurationController) {
         mPlayerConfigurationController->MergeSoloSplitAfterBoatArrival();
     }
+    if (mCameraSystem) {
+        // 到着先のPlanet・位置が確定してから、飛行中に保持した通常カメラの基準を更新する。
+        for (Player* player : GetPlayers()) {
+            if (player && player->GetIsActive()) {
+                mCameraSystem->SnapBehindPlayer(*player);
+            }
+        }
+    }
     mAudioSystem->TryChangeBGM();
 }
 
@@ -1388,6 +1467,29 @@ void Game::MarkNPCEndingTriggerCompleted(const NPC* npc, std::size_t talkPageInd
     }
 }
 
+void Game::OnEnemyDefeated(const Enemy& enemy)
+{
+    const Planet* planet = enemy.GetCurrentPlanet();
+    if (!planet || !mSceneSystem || !mSceneSystem->IsPlaying() || mIsFreeCameraMode || !enemy.GetIsActive() ||
+        enemy.GetHp() > 0.0f) {
+        return;
+    }
+    const auto& enemies = planet->GetEnemies();
+    if (std::find(enemies.begin(), enemies.end(), &enemy) == enemies.end()) {
+        return;
+    }
+    const bool hasLivingEnemy = std::any_of(enemies.begin(), enemies.end(), [&enemy](const Enemy* other) {
+        // 死亡モーション中の敵は数えず、同じ範囲攻撃で複数体を倒した場合も最後の1体で発火させる。
+        return other && other != &enemy && other->GetIsActive() && !other->GetIsDead() && other->GetHp() > 0.0f;
+    });
+    if (!hasLivingEnemy) {
+        mEnemyDefeatSlowMotionRemainingSeconds = enemyDefeatSlowMotionDurationSeconds;
+        if (mAudioSystem) {
+            mAudioSystem->PlaySE("all_kill");
+        }
+    }
+}
+
 void Game::OnEnemyLaunched()
 {
     mAudioSystem->PlaySE("break_se");
@@ -1431,6 +1533,7 @@ void Game::ReturnToTitleFromPauseMenu()
 
 void Game::RestartGame()
 {
+    mEnemyDefeatSlowMotionRemainingSeconds = 0.0f;
     if (mPlayerConfigurationController) {
         mPlayerConfigurationController->MergeSoloSplitBeforeRestart();
     }
@@ -1491,6 +1594,20 @@ void Game::OnPlayerApplyDamage(int playerNum)
     }
 }
 
+void Game::OnPlayerInsufficientJewels(int playerNum, int requiredJewels)
+{
+    if (mUIRenderer) {
+        mUIRenderer->NotifyInsufficientJewels(playerNum, requiredJewels);
+    }
+}
+
+void Game::OnPlayerRecovered(int playerNum)
+{
+    if (mUIRenderer) {
+        mUIRenderer->NotifyPlayerRecovered(playerNum);
+    }
+}
+
 void Game::SynchronizeSoloSplitResources(const Player& sourcePlayer)
 {
     if (mPlayerConfigurationController) {
@@ -1503,16 +1620,25 @@ void Game::OnPlayerAttackHit(int playerNum)
     VibrateControllerForPlayer(playerNum, 0, 10000, 200);
 }
 
+void Game::OnComboFinisherHit()
+{
+    if (mSceneSystem) {
+        mSceneSystem->OnStrongAttacked();
+    }
+}
+
 void Game::OnStrongAttacked(int playerNum)
 {
     mSceneSystem->OnStrongAttacked();
-    mHitStopTimer = 0.4f;
+    RequestHitStop(mHitStopSettings.airStrongAttackSeconds);
     VibrateControllerForPlayer(playerNum, 40000, 0, 500);
 }
 
 void Game::OnAirSlamAttackHit(int playerNum)
 {
-    OnStrongAttacked(playerNum);
+    mSceneSystem->OnStrongAttacked();
+    RequestHitStop(mHitStopSettings.airSlamSeconds);
+    VibrateControllerForPlayer(playerNum, 40000, 0, 500);
     if (mCameraSystem) {
         mCameraSystem->StartAirStrongAttackHitShake(playerNum);
     }
@@ -1520,7 +1646,7 @@ void Game::OnAirSlamAttackHit(int playerNum)
 
 void Game::OnPlayerCounter(int playerNum)
 {
-    mHitStopTimer = 0.3f;
+    RequestHitStop(mHitStopSettings.counterSeconds);
     VibrateControllerForPlayer(playerNum, 25000, 0, 500);
 }
 

@@ -14,6 +14,7 @@ class Player;
 class EnemyCombat {
 public:
     // Aliveの敵だけに適用する。全破壊時、接地中またはKnockedBackなら打ち上げも開始する。
+    // 打ち上げ時は同じ惑星の既存の打ち上げ敵の滞空時間を、通常の最大時間を上限に0.5秒延長する。
     EnemyGuardDamageResult ApplyGuardDamage(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
                                             EnemyStateMachine& stateMachine, float guardDamage, float deltaTime);
 

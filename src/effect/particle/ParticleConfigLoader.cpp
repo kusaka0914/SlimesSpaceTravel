@@ -80,6 +80,9 @@ ParticleBlendMode ParseBlendMode(const std::string& value)
 ParticleRenderMode ParseRenderMode(const std::string& value)
 {
     const std::string lowerValue = StringUtils::ToLower(value);
+    if (lowerValue == "surfacealigned" || lowerValue == "surface_aligned") {
+        return ParticleRenderMode::SurfaceAligned;
+    }
     return lowerValue == "velocityaligned" || lowerValue == "velocity_aligned" ? ParticleRenderMode::VelocityAligned
                                                                                : ParticleRenderMode::Billboard;
 }
@@ -106,6 +109,9 @@ const char* ToString(ParticleBlendMode blendMode)
 
 const char* ToString(ParticleRenderMode renderMode)
 {
+    if (renderMode == ParticleRenderMode::SurfaceAligned) {
+        return "surfaceAligned";
+    }
     return renderMode == ParticleRenderMode::VelocityAligned ? "velocityAligned" : "billboard";
 }
 

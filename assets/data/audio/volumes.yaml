@@ -1,0 +1,37 @@
+master: 1
+bgm: 0.625
+se: 0.46875
+bgmTracks:
+  base_bgm: 1
+  boss_bgm: 1
+  enter_stage_bgm: 1
+  opening_bgm: 1
+  stage_bgm: 1
+  star_wait_bgm: 1
+  title_bgm: 1
+seTracks:
+  air_charged_se: 1
+  all_kill: 1
+  attack_air_se: 1
+  attack_miss_se: 1
+  attack_pre_se: 1
+  attack_se: 1
+  boss_defeated_se: 1
+  break_se: 1
+  charged_se: 1
+  charging_se: 1
+  clear_se: 1
+  counter_se: 1
+  damaged_se: 1
+  defeat_se: 1
+  destroy_se: 1
+  dodge_se: 1
+  jump_se: 1
+  just_attack_se: 1
+  just_dodge_se: 1
+  message_se: 1
+  pickup_se: 1
+  recover_se: 1
+  show_boat_se: 1
+  show_key_se: 1
+  star_shown_se: 1

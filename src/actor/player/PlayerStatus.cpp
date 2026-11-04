@@ -59,6 +59,7 @@ void PlayerStatus::ReduceDamageCooldown(float deltaTime)
 
 void PlayerStatus::StartDamageInvincibility()
 {
+    mDodgeCounterGraceRemainingSeconds = 0.0f;
     mInvincibleTimer = mDefaultInvincibleTimer;
     mShouldBlinkWhileInvincible = true;
 }
@@ -73,6 +74,26 @@ void PlayerStatus::ClearInvincible()
 {
     mInvincibleTimer = -1.0f;
     mShouldBlinkWhileInvincible = false;
+}
+
+void PlayerStatus::StartDodgeCounterGrace()
+{
+    constexpr float dodgeCounterGraceSeconds = 0.5f;
+    mDodgeCounterGraceRemainingSeconds = dodgeCounterGraceSeconds;
+}
+
+void PlayerStatus::UpdateDodgeCounterGrace(float deltaTime)
+{
+    mDodgeCounterGraceRemainingSeconds = std::max(0.0f, mDodgeCounterGraceRemainingSeconds - std::max(0.0f, deltaTime));
+}
+
+void PlayerStatus::InheritPlacementState(const PlayerStatus& source)
+{
+    mDodgeCounterGraceRemainingSeconds = source.mDodgeCounterGraceRemainingSeconds;
+    mDamageTimer = source.mDamageTimer;
+    mInvincibleTimer = source.mInvincibleTimer;
+    mShouldBlinkWhileInvincible = source.mShouldBlinkWhileInvincible;
+    mIsTired = source.mIsTired;
 }
 
 void PlayerStatus::StartTired()
@@ -104,6 +125,7 @@ void PlayerStatus::UpdateTimers(float deltaTime)
 {
     UpdateDamageTimer(deltaTime);
     UpdateInvincibleTimer(deltaTime);
+    UpdateDodgeCounterGrace(deltaTime);
 }
 
 void PlayerStatus::Die(Game& game) const

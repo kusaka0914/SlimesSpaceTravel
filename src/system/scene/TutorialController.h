@@ -32,6 +32,9 @@ public:
 
     // 再生を止め、セッション内の表示・完了履歴をクリアする。保存進行は変更しない。
     void ResetForNewSession();
+
+    // ステージ入場ごとに、初回ガード破壊の案内履歴と保留要求をリセットする。セーブ進行は変更しない。
+    void ResetForStageEntry();
     bool ResumeAfterFocus();
     void TryAdvanceFromConfirm();
 
@@ -62,6 +65,7 @@ public:
     const TutorialLibrary& GetLibrary() const { return mLibrary; }
 
 private:
+    void TryStartPendingGuardBreakTutorial();
     void BeginActionObjective();
     void AdvancePage();
     void FinishActiveTutorial();
@@ -86,6 +90,7 @@ private:
     Player* mActionPlayerAtPageStart = nullptr;
     std::uint64_t mJumpSequenceAtPageStart = 0;
     std::uint64_t mTutorialSessionSequence = 0;
+    bool mHasPendingGuardBreakTutorial = false;
     bool mHasJumpStartedOnCurrentPage = false;
     bool mIsActionObjectiveActive = false;
     bool mShouldRecordActiveTutorialCompletion = false;

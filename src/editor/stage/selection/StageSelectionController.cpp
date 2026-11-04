@@ -619,12 +619,7 @@ void StageSelectionController::ApplyPickedActor(const StageSelectionScene& scene
     }
 
     size_t hitIndex = 0;
-    const std::optional<StageActorRef> nearestHitRef =
-        StageActorQuery::FindTargetForActor(scene.stage, hits.front().actor);
-    const bool isNearestHitSelected = nearestHitRef && IsSelected(*nearestHitRef);
-    if (!isAdditive && isNearestHitSelected) {
-        hitIndex = 0;
-    } else if (!isAdditive && mHasLastPickClick) {
+    if (!isAdditive && mHasLastPickClick) {
         const float clickDeltaX = clickPos.x - mLastPickClickPos.x;
         const float clickDeltaY = clickPos.y - mLastPickClickPos.y;
         constexpr float cycleClickRadius = 6.0f;

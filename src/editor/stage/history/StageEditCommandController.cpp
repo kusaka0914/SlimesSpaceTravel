@@ -432,6 +432,38 @@ void UpdateRevealTargetReferencesAfterActorDeletion(
     targetNodes = remainingTargetNodes;
 }
 
+void UpdateCameraZoneReferencesAfterActorDeletion(
+    YAML::Node& stageYaml, const std::unordered_map<std::string, std::vector<int>>& deletedIndicesBySequence)
+{
+    const auto updateCamera = [&](YAML::Node camera) {
+        if (!camera || !camera.IsMap()) {
+            return;
+        }
+        const auto sequence = camera["targetSequence"].as<std::string>("");
+        const int index = camera["targetIndex"].as<int>(-1);
+        const auto found = deletedIndicesBySequence.find(sequence);
+        if (index < 0 || found == deletedIndicesBySequence.end()) {
+            return;
+        }
+        // 削除対象なら予備の注視位置へ戻し、後続要素を別のActorとして誤参照しない。
+        camera["targetIndex"] =
+            IsDeletedActorIndex(found->second, index) ? -1 : CalculateActorIndexAfterDeletion(found->second, index);
+    };
+    for (const char* sequence : {"cameraZones", "platforms", "movingPlatforms"}) {
+        const YAML::Node actors = stageYaml[sequence];
+        if (!actors || !actors.IsSequence()) {
+            continue;
+        }
+        for (const auto& actor : actors) {
+            YAML::Node camera = actor["camera"];
+            updateCamera(camera);
+            if (camera && camera.IsMap()) {
+                updateCamera(camera["returnCamera"]);
+            }
+        }
+    }
+}
+
 void UpdateSwitchTargetReferencesAfterActorDeletion(
     YAML::Node& stageYaml, const std::unordered_map<std::string, std::vector<int>>& deletedIndicesBySequence)
 {
@@ -599,6 +631,7 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
     }
 
     UpdateSwitchTargetReferencesAfterActorDeletion(config, deleteIndicesBySequence);
+    UpdateCameraZoneReferencesAfterActorDeletion(config, deleteIndicesBySequence);
 
     for (auto& deletionEntry : deleteIndicesBySequence) {
         const std::string& sequenceName = deletionEntry.first;
@@ -670,6 +703,33 @@ bool StageEditCommandController::DeletePlanet(int planetIndex)
         planetIndex >= static_cast<int>(planets.size())) {
         return false;
     }
+
+    std::unordered_map<std::string, std::vector<int>> deletedIndices;
+    deletedIndices["planets"].push_back(planetIndex);
+    for (const auto& info : StageActorQuery::GetTypeInfos()) {
+        if (info.sequenceName == "planets" || deletedIndices.contains(info.sequenceName)) {
+            continue;
+        }
+        const YAML::Node nodes = stageYaml[info.sequenceName];
+        if (!nodes || !nodes.IsSequence()) {
+            continue;
+        }
+        auto& indices = deletedIndices[info.sequenceName];
+        for (std::size_t index = 0; index < nodes.size(); ++index) {
+            if (!nodes[index].IsMap()) {
+                continue;
+            }
+            if (info.sequenceName == "boats") {
+                if (nodes[index]["startPlanet"].as<int>(0) == planetIndex ||
+                    nodes[index]["destPlanet"].as<int>(0) == planetIndex) {
+                    indices.push_back(static_cast<int>(index));
+                }
+            } else if (nodes[index]["currentPlanetNum"].as<int>(0) == planetIndex) {
+                indices.push_back(static_cast<int>(index));
+            }
+        }
+    }
+    UpdateCameraZoneReferencesAfterActorDeletion(stageYaml, deletedIndices);
 
     if (!StageYamlRepository::RemoveSequenceElement(stageYaml, "planets", planetIndex)) {
         return false;

@@ -35,8 +35,17 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, cons
     }
 
     for (Enemy* enemy : player.GetCurrentPlanet()->GetEnemies()) {
-        if (!enemy || enemy->GetIsDead() || !enemy->GetIsActive() ||
-            !player.GetCurrentPlanet()->ArePositionsOnSameSurfaceFace(player.GetPos(), enemy->GetPos())) {
+        if (!enemy || enemy->GetIsDead() || !enemy->IsAlive() || !enemy->GetIsActive()) {
+            continue;
+        }
+
+        // 空中コンボは同じ惑星の空中敵全体を巻き込み、距離・向き・惑星の表裏で対象を絞らない。
+        if (combat.IsComboAttack() && combat.IsAirAttacking() && !enemy->GetOnGround() &&
+            enemy->GetCurrentPlanet() == player.GetCurrentPlanet()) {
+            hitEnemies.push_back(enemy);
+            continue;
+        }
+        if (!player.GetCurrentPlanet()->ArePositionsOnSameSurfaceFace(player.GetPos(), enemy->GetPos())) {
             continue;
         }
 
@@ -57,6 +66,22 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, cons
     return hitEnemies;
 }
 
+std::vector<Enemy*> PlayerAttackHitDetector::FindAirborneEnemiesOnCurrentPlanet(const Player& player) const
+{
+    std::vector<Enemy*> enemies;
+    const Planet* planet = player.GetCurrentPlanet();
+    if (!planet) {
+        return enemies;
+    }
+    for (Enemy* enemy : planet->GetEnemies()) {
+        if (enemy && enemy->GetIsActive() && enemy->IsAlive() && !enemy->GetIsDead() && !enemy->IsOnGround() &&
+            enemy->GetCurrentPlanet() == planet) {
+            enemies.push_back(enemy);
+        }
+    }
+    return enemies;
+}
+
 bool PlayerAttackHitDetector::IsGroundedEnemyWithinAirAttackHeight(const Player& player, const Enemy& enemy) const
 {
     const glm::vec3 playerUp = player.GetUpVec();
@@ -72,7 +97,7 @@ bool PlayerAttackHitDetector::IsGroundedEnemyWithinAirAttackHeight(const Player&
     }
 
     const float scaledPlayerHalfHeight =
-        mPhysicsSystem.GetPlayerCollisionHeight() * player.GetCollisionScaleMultiplier() * 0.5f;
+        mPhysicsSystem.GetPlayerCollisionHeight() * player.GetBodyScaleMultiplier() * 0.5f;
     constexpr float airAttackDownwardReach = 0.35f;
     ModelBounds enemyBounds;
     const float enemyModelTopOffset = TryCreateModelBounds(enemy, enemyBounds)
@@ -122,7 +147,7 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
 
     const float playerHorizontalRadius =
         0.5f * std::max(mPhysicsSystem.GetPlayerCollisionWidth(), mPhysicsSystem.GetPlayerCollisionDepth()) *
-        player.GetCollisionScaleMultiplier() * std::max(0.0f, horizontalHitboxScale);
+        player.GetBodyScaleMultiplier() * std::max(0.0f, horizontalHitboxScale);
     const glm::vec3 playerUp = player.GetUpVec();
     const float playerUpLengthSquared = glm::dot(playerUp, playerUp);
     if (playerUpLengthSquared <= 0.000001f) {
@@ -233,7 +258,7 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(const Player& play
         return false;
     }
 
-    const float collisionScaleMultiplier = player.GetCollisionScaleMultiplier();
+    const float collisionScaleMultiplier = player.GetBodyScaleMultiplier();
     const float horizontalCollisionRadius =
         0.5f * std::max(mPhysicsSystem.GetPlayerCollisionWidth(), mPhysicsSystem.GetPlayerCollisionDepth()) *
         collisionScaleMultiplier * std::max(0.0f, horizontalHitboxScale);

@@ -5659,7 +5659,6 @@ jewelItems:
     height: -4.0050325
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22

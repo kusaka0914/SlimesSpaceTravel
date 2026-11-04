@@ -1,5 +1,7 @@
 enemies:
   - type: common
+    attackAnimationSpeed: 1
+    attackHitDelaySeconds: 0.25
     guardValuePerSegment: 20
     knockBackSpeed: 8
     defaultLaunchedTimer: 5

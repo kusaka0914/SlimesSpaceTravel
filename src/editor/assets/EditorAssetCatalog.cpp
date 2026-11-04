@@ -13,6 +13,10 @@ bool IsSupportedAssetExtension(EditorAssetType type, const std::filesystem::path
 
     switch (type) {
     case EditorAssetType::Model:
+        // 衝突専用モデルは描画・配置用のアセット一覧へ出さない。
+        if (StringUtils::ToLower(path.filename().string()).ends_with(".collision.obj")) {
+            return false;
+        }
         return extension == ".obj" || extension == ".fbx" || extension == ".gltf" || extension == ".glb" ||
                extension == ".dae";
     case EditorAssetType::Texture:

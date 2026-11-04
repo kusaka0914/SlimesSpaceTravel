@@ -15,6 +15,9 @@ public:
     // UI定義を直接編集する。明示的な保存操作に加え、キャンバスの複製・削除・ギズモ操作終了時にも保存する。
     void Draw() override;
 
+    // ゲーム画面内のUI要素・ギズモ操作を優先し、背後の3Dオブジェクト選択を抑制する。
+    bool HandlesViewportClick() const;
+
 private:
     enum class SelectedElementSource {
         None,

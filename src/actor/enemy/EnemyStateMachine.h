@@ -5,6 +5,7 @@
 #include <random>
 
 class Enemy;
+class Player;
 class EnemyBehaviorController;
 class EnemyCombat;
 class EnemyMovement;
@@ -70,8 +71,11 @@ public:
 
     // KnockedBackへ移り、秒数と押し戻し方向を設定して頂点待機タイマーを解除する。速度は設定しない。
     void StartKnockedBack(Enemy& enemy, EnemyStatus& status, float knockBackTimer);
+    void StartGroundFinisherKnockBack(Enemy& enemy, EnemyStatus& status, const Player& player, float pushSpeed,
+                                      float durationSeconds);
 
-    // HPを0にして死亡演出を開始する。ボス戦では他の通常敵の撃破、演出用の再配置、BGM停止も行う。
+    // Aliveの敵をHP0・死亡状態へ移す。惑星の最後の敵ではスローを依頼する。
+    // ボス戦では他の通常敵を撃破し、スロー終了後に再配置・BGM停止・撃破演出を始める。
     void StartDying(Enemy& enemy, EnemyStatus& status);
 
     // ガードを最大値へ戻し、通常着地判定を再開して頂点待機を解除する。行動状態は変更しない。
@@ -93,6 +97,9 @@ public:
     // 予兆未通知で、攻撃準備の残り時間が1秒以下かを返す。通知済みフラグは変更しない。
     bool IsJustBeforeAttack(const EnemyStatus& status) const;
     bool IsAttackImpactActive(const EnemyStatus& status) const;
+
+    // 命中判定開始まで（アニメーションの予備動作を含む）残り0.3秒以内なら一度だけtrueを返す。
+    bool TryConsumeChargedAttackCounter(const EnemyStatus& status);
     bool ShouldPreservePreparationTimer() const { return mShouldPreservePreparationTimer; }
     bool IsProgressing(const EnemyStatus& status) const;
     bool IsAlive() const { return mLifeState == LifeState::Alive; }
@@ -103,8 +110,10 @@ public:
 private:
     bool ShouldTriggerProbability(float probabilityPercent);
 
+    bool mIsBossDefeatPresentationPending = false;
     LifeState mLifeState;
     ActionState mActionState;
+    float mGroundFinisherPushSpeed = -1.0f;
     float mPreAttackApproachProbabilityPercent = 0.0f;
     float mPreAttackApproachSpeed = 12.0f;
     float mPreAttackApproachStopDistance = 2.5f;
@@ -119,6 +128,7 @@ private:
     float mPostRetreatFollowupApproachProbabilityPercent = 0.0f;
     bool mHasEvaluatedPreAttackApproach = false;
     bool mShouldPreservePreparationTimer = false;
+    bool mHasReceivedChargedAttackCounter = false;
     EnemyAttackFrame mActiveAttackFrame;
     std::mt19937 mManeuverRandomEngine;
 };

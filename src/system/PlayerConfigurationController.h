@@ -1,9 +1,11 @@
 #pragma once
 
+#include "actor/player/PlayerSoulPresentation.h"
 #include "system/PlayerControlConfigurationState.h"
 #include "system/PlayerSplitGuardState.h"
 
 #include <glm/glm.hpp>
+#include <optional>
 
 class CameraSystem;
 class GameProgressController;
@@ -35,7 +37,7 @@ public:
     // 依存先は借用する。各オブジェクトはこのコントローラーより長く生存すること。
     explicit PlayerConfigurationController(const PlayerConfigurationDependencies& dependencies);
 
-    // 操作対象・分裂遷移・ガードを初期化する。2人参加の状態は保持する。
+    // 操作対象・分裂遷移・魂演出・ガードと切替予約を初期化する。2人参加の状態は保持する。
     void Reset();
 
     // 追加Playerの有効・操作ロック・分裂形態を、現在の参加状態に合わせる。
@@ -47,20 +49,25 @@ public:
     void ReturnToSinglePlayer();
     bool CanStartTwoPlayerFromPauseMenu() const;
 
-    // 実行条件を満たす場合に分裂・合体を要求する。受理時はtrue。演出の完了を表す値ではない。
-    bool ToggleSplit();
+    enum class SplitToggleResult { Accepted, Unavailable, BlockedByObstacle, MergeTooFar };
+
+    // 分裂・合体を要求し、入力制限・障害物・合体距離を区別する。MergeTooFarでは既存の呼び寄せを開始する。
+    SplitToggleResult ToggleSplit();
     bool CanToggleSplit() const;
     void SetSplitMergeButtonHeld(bool isHeld);
 
     // 合体ガイドの対象への借用参照とワールド単位の半径を返す。表示条件を満たさなければfalse。
     bool TryResolveMergeGuide(const Player*& targetPlayer, float& radiusWorldUnits) const;
 
-    // 対象Playerがガード可能な分裂状態なら1回分を消費する。適用できなければfalse。
+    // 非操作側への攻撃を1回防ぐ。最後の1回では、Actor更新後に被弾側へ操作を移す。適用不可ならfalse。
     bool TryConsumeSplitGuard(const Player& damagedPlayer);
     int GetSplitGuardCount() const;
     int GetMaximumSplitGuardCount() const;
 
-    // 秒単位で分裂合体の遷移とガード回復を更新する。
+    // 1人プレイの分裂中だけ魂の表示情報を返す。Playerへの参照は描画中のみ有効。
+    PlayerSoulPresentation CreateSoulPresentation() const;
+
+    // Actor更新後に呼ぶ。秒単位で分裂合体・魂の演出・ガード回復と、ガード切れによる切替を更新する。
     void UpdateSplitMergeTransition(float deltaTime);
     bool IsSplitMergeTransitionActive() const;
     bool SwitchControlledPlayer();
@@ -100,6 +107,12 @@ private:
         glm::vec3 mainPlayerStartScale{1.0f};
     };
 
+    struct SoulTransferState {
+        float transferSeconds = 1.0f;
+        glm::vec3 startPosition{0.0f};
+        glm::vec3 upDirection{0.0f, 1.0f, 0.0f};
+    };
+
 public:
     // ステージ構築中に変更されるPlayer構成を退避する。Actorそのものや依存先は含まない。
     class StageReloadState {
@@ -110,21 +123,26 @@ public:
         bool mIsSplitMergeButtonHeld = false;
         bool mIsMergeGuideRequested = false;
         PlayerSplitGuardState mSplitGuardState;
+        SoulTransferState mSoulTransfer;
+        int mPendingGuardBreakPlayerIndex = -1;
     };
 
     StageReloadState CaptureStageReloadState() const { return mRuntimeState; }
 
-    // 構築失敗で旧GameWorldを戻した後に呼び、参加・操作対象・分裂遷移・ガードを復元する。
+    // 構築失敗で旧GameWorldを戻した後に呼び、参加・操作対象・分裂遷移・魂演出・ガードと切替予約を復元する。
     void RestoreStageReloadState(const StageReloadState& state) { mRuntimeState = state; }
 
 private:
-    bool CanStartSplitMergeInput() const;
+    SplitToggleResult CheckSplitMergeInput() const;
     bool CanChangeSoloConfiguration() const;
+    void UpdateGuardBreakControlSwitch();
+    void BeginSoloControlTransfer(int previousPlayerIndex, int currentPlayerIndex);
     bool SplitPlayer();
-    bool BeginSoloSplitTransition();
-    bool TryResolveSplitDirection(Player& mainPlayer, glm::vec3& splitDirection) const;
-    bool IsSplitDirectionClear(Player& mainPlayer, const glm::vec3& splitDirection) const;
+    SplitToggleResult BeginSoloSplitTransition();
+    bool TryResolveSplitDirection(Player& mainPlayer, glm::vec3& splitDirection, bool& wasBlockedByObstacle) const;
+    bool IsSplitDirectionClear(Player& mainPlayer, const glm::vec3& splitDirection, bool& wasBlockedByObstacle) const;
     bool BeginSoloMergeTransition();
+    std::optional<glm::vec3> FindMergedPlayerPosition(Player& player) const;
     void UpdatePendingSoloMergeRequest();
     void UpdateMergeRecall(float deltaTime);
     Player* FindMergeGuideTargetPlayer() const;

@@ -43,6 +43,15 @@ bool UICanvasElementGeometry::ResolveElementTransform(const UILoadSystem* uiLoad
             return false;
         }
         outTransform.rotationDegrees = customElement.rotationDegrees;
+        // 画面下への配置補正や縮小を反映した、実際の描画矩形を優先する。
+        const auto& renderedElements = mContext.uiRenderer->GetRenderedUIElements();
+        const auto rendered = std::find_if(renderedElements.begin(), renderedElements.end(), [&](const auto& entry) {
+            return entry.source == UIRenderer::RenderedUIElementSource::Custom &&
+                   entry.screen == customElement.screen && entry.id == customElement.id;
+        });
+        if (rendered != renderedElements.end()) {
+            screenTransform = rendered->transform;
+        }
         break;
     }
     case SelectionSource::ExistingTexture: {

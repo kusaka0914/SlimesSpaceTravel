@@ -2,6 +2,10 @@
 setlocal EnableExtensions
 
 cd /d "%~dp0"
+if errorlevel 1 (
+    echo [ERROR] Failed to open the project directory.
+    exit /b 1
+)
 
 echo ==========================================
 echo  Slime's Space Travel - Windows Build
@@ -41,70 +45,89 @@ echo.
 if /i "%~1"=="--check-cmake" exit /b 0
 
 rem --------------------------------------------------
-rem 2. Find / Install vcpkg
+rem 2. Prepare a project-specific vcpkg installation
 rem --------------------------------------------------
 
-if defined VCPKG_ROOT (
-    if exist "%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" (
-        echo [OK] Using existing vcpkg:
-        echo      %VCPKG_ROOT%
-        goto vcpkg_ready
-    )
-)
-
-set "VCPKG_ROOT=%LOCALAPPDATA%\SlimesSpaceTravel\vcpkg"
-
-if exist "%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" (
-    echo [OK] Using cached vcpkg:
-    echo      %VCPKG_ROOT%
-    goto vcpkg_ready
-)
-
-echo [INFO] vcpkg was not found.
-echo [INFO] Installing vcpkg automatically...
-echo.
+rem Use an isolated vcpkg to avoid changing another project's installation.
+rem Keep dependency build paths outside deeply nested source directories.
+set "VCPKG_BASELINE_COMMIT=664933b8d385dfc01f4e0cdff4c7c74e71f6a740"
+set "VCPKG_CACHE_ROOT=%LOCALAPPDATA%\SlimesSpaceTravel"
+set "VCPKG_ROOT=%VCPKG_CACHE_ROOT%\vcpkg"
+set "VCPKG_INSTALLED_DIR=%VCPKG_CACHE_ROOT%\vcpkg_installed"
 
 where git >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] Git was not found.
-    echo.
     echo Please install Git for Windows and run this file again.
     pause
     exit /b 1
 )
 
-if not exist "%LOCALAPPDATA%\SlimesSpaceTravel" (
-    mkdir "%LOCALAPPDATA%\SlimesSpaceTravel"
+if not exist "%VCPKG_CACHE_ROOT%" (
+    mkdir "%VCPKG_CACHE_ROOT%"
+    if errorlevel 1 (
+        echo [ERROR] Failed to create the vcpkg cache directory.
+        pause
+        exit /b 1
+    )
 )
 
-git clone --no-checkout https://github.com/microsoft/vcpkg.git "%VCPKG_ROOT%"
+if not exist "%VCPKG_ROOT%\.git" (
+    if exist "%VCPKG_ROOT%" (
+        echo [ERROR] An incomplete vcpkg installation was found:
+        echo      %VCPKG_ROOT%
+        echo Rename this directory and run this file again.
+        pause
+        exit /b 1
+    )
+
+    echo [INFO] Installing a project-specific vcpkg...
+    git clone --no-checkout --depth 1 https://github.com/microsoft/vcpkg.git "%VCPKG_ROOT%"
+    if errorlevel 1 (
+        echo [ERROR] Failed to download vcpkg.
+        pause
+        exit /b 1
+    )
+)
+
+rem The manifest baseline must be readable even in shallow Git clones.
+git -C "%VCPKG_ROOT%" cat-file -e "%VCPKG_BASELINE_COMMIT%:versions/baseline.json" 2>nul
 if errorlevel 1 (
-    echo.
-    echo [ERROR] Failed to download vcpkg.
+    echo [INFO] Fetching the required vcpkg revision...
+    git -C "%VCPKG_ROOT%" fetch --depth 1 origin "%VCPKG_BASELINE_COMMIT%"
+    if errorlevel 1 (
+        echo [ERROR] Failed to fetch the required vcpkg revision.
+        pause
+        exit /b 1
+    )
+)
+
+git -C "%VCPKG_ROOT%" cat-file -e "%VCPKG_BASELINE_COMMIT%:versions/baseline.json" 2>nul
+if errorlevel 1 (
+    echo [ERROR] The required vcpkg baseline is unavailable.
     pause
     exit /b 1
 )
 
-rem Match the tool revision used by CI; builtin-baseline pins the dependency ports.
-git -C "%VCPKG_ROOT%" checkout --detach 664933b8d385dfc01f4e0cdff4c7c74e71f6a740
+git -C "%VCPKG_ROOT%" checkout --detach "%VCPKG_BASELINE_COMMIT%"
 if errorlevel 1 (
-    echo [ERROR] Failed to select the supported vcpkg revision.
+    echo [ERROR] Failed to select the required vcpkg revision.
     pause
     exit /b 1
 )
 
 call "%VCPKG_ROOT%\bootstrap-vcpkg.bat" -disableMetrics
 if errorlevel 1 (
-    echo.
     echo [ERROR] Failed to initialize vcpkg.
     pause
     exit /b 1
 )
 
-:vcpkg_ready
-
 echo.
-echo [OK] vcpkg ready.
+echo [OK] vcpkg ready:
+echo      %VCPKG_ROOT%
+echo [INFO] Dependency installation directory:
+echo      %VCPKG_INSTALLED_DIR%
 echo.
 
 rem --------------------------------------------------
@@ -123,8 +146,9 @@ echo.
     -B "%BUILD_DIR%" ^
     -G "Visual Studio 17 2022" ^
     -A x64 ^
-    -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
-    -DVCPKG_TARGET_TRIPLET=x64-windows
+    -DCMAKE_TOOLCHAIN_FILE:FILEPATH="%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
+    -DVCPKG_TARGET_TRIPLET=x64-windows ^
+    -DVCPKG_INSTALLED_DIR:PATH="%VCPKG_INSTALLED_DIR%"
 
 if errorlevel 1 (
     echo.

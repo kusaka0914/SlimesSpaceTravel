@@ -101,6 +101,8 @@ if (BUILD_TESTING)
         target_compile_options(game_asset_check PRIVATE /utf-8)
     endif()
     add_executable(game_tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerCombatInputTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerCombatInput.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/EditorReliabilityTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/selection/StagePickPolicy.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ui/UICanvasEditHistory.cpp
@@ -146,6 +148,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/CameraShakeEffectTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TutorialObjectiveTextTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/OperationGuideVisibilityTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/ResourceConsumptionFeedbackTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerJewelGaugeTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerSplitGuardStateTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TgsExperienceControllerTests.cpp
@@ -173,6 +176,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/StageProgressSystem.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerConfigLoader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerComboSettings.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyConfigLoader.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyGuardGauge.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerControlConfigurationState.cpp
@@ -192,6 +196,8 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/tutorial/TutorialLibrary.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/text/JapaneseRubyGenerator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/OperationGuideVisibility.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/ContextualOperationGuide.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/ResourceConsumptionFeedback.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerJewelGauge.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerSplitGuardState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/tgs/TgsExperienceController.cpp

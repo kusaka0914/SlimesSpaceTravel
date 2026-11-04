@@ -55,7 +55,7 @@ void SceneUIRenderer::DrawCredits()
                                           ? std::clamp(endImageElapsed / config.endImageFadeInDuration, 0.0f, 1.0f)
                                           : 1.0f;
         mRenderer->DrawTextureHandle(0.0f, 0.0f, width, height,
-                                     mRenderer->GetCustomUITextureHandle(config.endImagePath), true, 0.0f,
+                                     mRenderer->GetCustomUITextureHandle(config.endImagePath), false, 0.0f,
                                      endImageOpacity);
         return;
     }
@@ -67,7 +67,7 @@ void SceneUIRenderer::DrawCredits()
         mRenderer->DrawTextureHandle(width * event.xRatio - width * event.widthRatio * 0.5f,
                                      height * event.yRatio - height * event.heightRatio * 0.5f,
                                      width * event.widthRatio, height * event.heightRatio,
-                                     mRenderer->GetCustomUITextureHandle(event.imagePath), true, 0.0f,
+                                     mRenderer->GetCustomUITextureHandle(event.imagePath), false, 0.0f,
                                      CalculateEndingRollImageOpacity(event, elapsed));
     }
 
@@ -193,7 +193,7 @@ void SceneUIRenderer::DrawStorybookPage(const std::string& trackId, const std::s
     if (!imagePath.empty() && mRenderer->RegisterCustomUITexture(imagePath)) {
         mRenderer->DrawTextureHandle(0.0f, 0.0f, static_cast<float>(mRenderer->GetFbWidth()),
                                      static_cast<float>(mRenderer->GetFbHeight()),
-                                     mRenderer->GetCustomUITextureHandle(imagePath), true);
+                                     mRenderer->GetCustomUITextureHandle(imagePath), false);
         return;
     }
     mRenderer->DrawSceneTexture(fallbackScene, "bgTexture", fallbackScene);

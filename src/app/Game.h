@@ -4,6 +4,7 @@
 #include "app/GameWindow.h"
 #include "gfx/performance/FramePerformanceTracker.h"
 #include "state/ProgressUpdateResult.h"
+#include "system/HitStopSettings.h"
 #include "system/StageFlowController.h"
 #include "system/UGCModeRuntime.h"
 
@@ -186,7 +187,16 @@ public:
     void OnPlayerDied();
     void OnBoatPartsObtained();
     void OnPlayerApplyDamage(int playerNum);
+
+    // 回復成功を操作案内へ通知し、回復の一時案内を終了する。
+    void OnPlayerRecovered(int playerNum);
+
+    // ジュエル不足による操作失敗を対象Playerへの一時案内に反映する。
+    void OnPlayerInsufficientJewels(int playerNum, int requiredJewels);
+
     void OnPlayerAttackHit(int playerNum);
+    // 通常コンボの強攻撃命中を進行へ通知する。停止時間と振動は共通コンボの設定側で適用する。
+    void OnComboFinisherHit();
     void OnStrongAttacked(int playerNum);
     void OnAirSlamAttackHit(int playerNum);
     void OnPlayerCounter(int playerNum);
@@ -237,7 +247,26 @@ public:
     bool CanSwitchControlledPlayer() const;
     void RequestSoloSplitControlSwitchAfterBoarding();
 
-    void SetHitStopTimer(float hitStopTimer) { mHitStopTimer = hitStopTimer; }
+    // HPが0になった敵を通知する。所属惑星に生存中の敵が残っていなければ、実時間約2秒のスローを開始する。
+    void OnEnemyDefeated(const Enemy& enemy);
+    bool IsEnemyDefeatSlowMotionActive() const { return mEnemyDefeatSlowMotionRemainingSeconds > 0.0f; }
+
+    const HitStopSettings& GetHitStopSettings() const { return mHitStopSettings; }
+
+    // 次回のイベントから反映する。実行中の停止時間は変更しない。
+    void SetHitStopSettings(HitStopSettings settings)
+    {
+        settings.Sanitize();
+        mHitStopSettings = settings;
+    }
+
+    // より長い既存のヒットストップを短縮せずに、命中の停止時間を要求する。
+    void RequestHitStop(float seconds)
+    {
+        if (seconds > 0.0f && seconds > mHitStopTimer) {
+            mHitStopTimer = seconds;
+        }
+    }
 
     // 接地判定レイの長さをワールド単位で設定し、最小0.01に制限する。
     void SetGroundNormalRayLength(float rayLength) { mGroundNormalRayLength = rayLength > 0.01f ? rayLength : 0.01f; }
@@ -372,8 +401,6 @@ public:
     bool HasGameControllerForPlayer(int playerNum) const;
     InputDeviceType GetLastUsedInputDevice() const { return mLastUsedInputDevice; }
     void RecordInputDeviceUsage(InputDeviceType inputDevice) { mLastUsedInputDevice = inputDevice; }
-    bool IsInputModifierHeld() const { return mIsInputModifierHeld; }
-    void SetInputModifierHeld(bool isHeld) { mIsInputModifierHeld = isHeld; }
 
 private:
     void InitializeGameController();
@@ -435,7 +462,9 @@ private:
     std::unique_ptr<SequenceSystem> mSequenceSystem;
     std::unique_ptr<EnemyJewelDropSystem> mEnemyJewelDropSystem;
 
+    HitStopSettings mHitStopSettings;
     float mHitStopTimer = -1.0f;
+    float mEnemyDefeatSlowMotionRemainingSeconds = 0.0f;
     float mGroundNormalRayLength = 5.0f;
     float mOverheadGravityRayLength = 15.0f;
 
@@ -451,5 +480,4 @@ private:
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
     std::unique_ptr<GameSessionController> mSessionController;
     InputDeviceType mLastUsedInputDevice = InputDeviceType::KeyboardMouse;
-    bool mIsInputModifierHeld = false;
 };

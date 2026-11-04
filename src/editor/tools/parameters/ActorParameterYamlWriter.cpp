@@ -126,6 +126,15 @@ bool ActorParameterYamlWriter::SavePlayer(const Player& player) const
     set("scale", player.GetBaseScale().x);
     set("attack", player.GetAttack());
     set("attackSpeed", player.GetAttackSpeed());
+    set("combo", WritePlayerComboSettings(player.GetComboSettings()));
+    config[sequenceName][index].remove("groundCombo");
+    const auto& hitStop = player.GetGame()->GetHitStopSettings();
+    YAML::Node hitStopNode;
+    hitStopNode["guardBreakSeconds"] = hitStop.guardBreakSeconds;
+    hitStopNode["airStrongAttackSeconds"] = hitStop.airStrongAttackSeconds;
+    hitStopNode["airSlamSeconds"] = hitStop.airSlamSeconds;
+    hitStopNode["counterSeconds"] = hitStop.counterSeconds;
+    set("hitStop", hitStopNode);
     set("moveSpeed", player.GetMoveSpeed());
     set("maximumStepHeight", player.GetMaximumStepHeight());
     set("jumpHeight", player.GetJumpHeight());
@@ -212,6 +221,10 @@ bool ActorParameterYamlWriter::SaveEnemies(const Enemy* normalEnemy, const Enemy
     const auto bossIndex = FindEntryIndex(config, sequenceName, "type", "boss");
     const Enemy* commonEnemy = normalEnemy ? normalEnemy : bossEnemy;
     if (commonEnemy && commonIndex) {
+        SetSequenceValue(config, sequenceName, *commonIndex, "attackAnimationSpeed",
+                         commonEnemy->GetAttackAnimationSpeed());
+        SetSequenceValue(config, sequenceName, *commonIndex, "attackHitDelaySeconds",
+                         commonEnemy->GetAttackHitDelaySeconds());
         SetSequenceValue(config, sequenceName, *commonIndex, "knockBackSpeed", commonEnemy->GetKnockBackSpeed());
         SetSequenceValue(config, sequenceName, *commonIndex, "defaultLaunchedTimer",
                          commonEnemy->GetDefaultLaunchedTimer());

@@ -11,6 +11,8 @@ void ParsedEnemyYamlCombinesCommonAndSelectedTypeConfig()
     const YAML::Node enemyRoot = YAML::Load("enemies:\n"
                                             "  - type: common\n"
                                             "    detectionRange: 14\n"
+                                            "    attackAnimationSpeed: 0.75\n"
+                                            "    attackHitDelaySeconds: 0.4\n"
                                             "  - type: guard\n"
                                             "    hp: 240\n"
                                             "    speed: 3.5\n");
@@ -18,6 +20,8 @@ void ParsedEnemyYamlCombinesCommonAndSelectedTypeConfig()
     const EnemyConfig config = EnemyConfigLoader::Parse(enemyRoot, "guard");
 
     ExpectNear(14.0f, config.detectionRange, 0.0001f, "common detection range");
+    ExpectNear(0.75f, config.attackAnimationSpeed, 0.0001f, "common attack animation speed");
+    ExpectNear(0.4f, config.attackHitDelaySeconds, 0.0001f, "common delay from animation start to hit");
     ExpectNear(240.0f, config.hp, 0.0001f, "selected enemy hp");
     ExpectNear(3.5f, config.moveSpeed, 0.0001f, "selected enemy move speed");
 }

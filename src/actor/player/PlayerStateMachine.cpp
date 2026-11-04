@@ -1,6 +1,5 @@
 #include "actor/player/PlayerStateMachine.h"
 
-#include "app/Game.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerBoatRide.h"
 #include "actor/player/PlayerCombat.h"
@@ -10,10 +9,20 @@
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerRespawn.h"
 #include "actor/player/PlayerStatus.h"
+#include "app/Game.h"
 #include "system/SceneSystem.h"
 
 #include <algorithm>
 #include <glm/glm.hpp>
+
+void PlayerStateMachine::ResetForPlacementInheritance(const PlayerStateMachine& source)
+{
+    mActionState = PlayerActionState::Idle;
+    mAttackDirectionTarget = nullptr;
+    mShouldSkipAirDodgePostHover = false;
+    mAllowsAirMovementAfterDodge = false;
+    mCoyoteTimeRemaining = source.mCoyoteTimeRemaining;
+}
 
 void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMovement& movement,
                                 PlayerGrounding& grounding, PlayerBoatRide& boatRide, PlayerCombat& combat,
@@ -22,6 +31,7 @@ void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMoveme
 {
     SceneSystem* sceneSystem = player.GetGame()->GetSceneSystem();
     if (!sceneSystem || (!sceneSystem->IsPlaying() && !sceneSystem->IsWaitingForTutorialPlayerJump())) {
+        input.SuppressCombatInputUntilReleased();
         return;
     }
 
@@ -40,6 +50,15 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
                                      PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
                                      float deltaTime)
 {
+    const auto& combo = combat.GetComboSettings();
+    input.SetAttackBufferDuration(player.GetGame()->IsAssistControlStyle() ? combo.assistInputBufferSeconds
+                                                                           : combo.inputBufferSeconds);
+    input.UpdateCombatInput(deltaTime, player.GetGame()->IsAssistControlStyle(),
+                            combat.IsSpecialCharging() || combat.GetCanSpecialAttack());
+    const bool allowsAirDodgeBuffering = mActionState == PlayerActionState::Idle ||
+                                         mActionState == PlayerActionState::Attacking ||
+                                         mActionState == PlayerActionState::StrongAttacking;
+    input.CaptureAirDodgeInput(!player.GetOnGround(), allowsAirDodgeBuffering);
     movement.UpdateCameraRelativeMovementDirections(player, input);
     boatRide.Update(player, input, movement, respawn, deltaTime);
     UpdateCoyoteTime(player, deltaTime);
@@ -48,12 +67,28 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
         StartJewelTimer(jewelGauge);
     }
 
+    // 弱攻撃の命中判定を終えてから長押しへ移行し、予約中の攻撃や移動ロックを持ち越さない。
+    const bool canTransitionFromAttack =
+        (mActionState == PlayerActionState::Idle || mActionState == PlayerActionState::Attacking) &&
+        !player.IsAttachedToPlatform() && !combat.HasPendingAttackHit();
+    if (canTransitionFromAttack && (TryStartSpecialAttack(player, input, combat, jewelGauge) ||
+                                    TryStartContinuousAttack(player, input, combat, jewelGauge))) {
+        mAttackDirectionTarget = nullptr;
+        movement.ClearStrongAttackDirectionOverride();
+        movement.CancelAirborneActionHover();
+        ChangeState(PlayerActionState::Idle);
+        // 長押しが成立したフレームの経過時間を、溜め・連続攻撃にも重ねて加算しない。
+        UpdateTimer(player, input, movement, grounding, combat, jewelGauge, status, deltaTime);
+        input.EndFrame();
+        return;
+    }
+
     switch (mActionState) {
     case PlayerActionState::Idle:
         UpdateIdle(player, input, movement, combat, jewelGauge, status, deltaTime);
         break;
     case PlayerActionState::Dodging:
-        UpdateDodging(player, input, movement, grounding, combat, deltaTime);
+        UpdateDodging(player, input, movement, grounding, combat, status, deltaTime);
         break;
     case PlayerActionState::Attacking:
         UpdateAttacking(player, input, movement, combat, status, deltaTime);
@@ -69,19 +104,22 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
         break;
     }
 
-    UpdateTimer(input, movement, grounding, combat, jewelGauge, status, deltaTime);
+    UpdateTimer(player, input, movement, grounding, combat, jewelGauge, status, deltaTime);
 
     // 各状態の押下開始判定が終わるまで、前フレームの入力を保持する。
     input.EndFrame();
 }
 
-void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
-                                     PlayerCombat& combat, PlayerJewelGauge& jewelGauge, PlayerStatus& status,
-                                     float deltaTime)
+void PlayerStateMachine::UpdateTimer(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                     PlayerGrounding& grounding, PlayerCombat& combat, PlayerJewelGauge& jewelGauge,
+                                     PlayerStatus& status, float deltaTime)
 {
     movement.UpdateDodgeCooldown(deltaTime);
 
-    if (jewelGauge.GetRecoverTimer() >= 0.0f) {
+    // 1人分の共有タイマーを2体の更新で二重に進めない。
+    const bool ownsJewelRecovery = !player.GetGame()->GetIsPlayerSplit() || player.GetGame()->GetIsPlayer2Joined() ||
+                                   player.GetGame()->GetControlledPlayer() == &player;
+    if (ownsJewelRecovery && jewelGauge.GetRecoverTimer() >= 0.0f) {
         jewelGauge.UpdateRecoverTimer(deltaTime);
     }
 
@@ -89,9 +127,11 @@ void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movemen
     combat.UpdateAttackMoveLock(status, deltaTime);
     combat.UpdateAttackDodgeLock(deltaTime);
     status.UpdateInvincibleTimer(deltaTime);
+    status.UpdateDodgeCounterGrace(deltaTime);
     grounding.UpdateRayCastTimer(deltaTime);
     input.UpdateInputAvailableTimer(deltaTime);
     input.UpdateAttackBuffer(deltaTime);
+    input.UpdateAirDodgeBuffer(deltaTime);
 
     if (combat.GetComboKeepTimer() > 0.0f) {
         combat.UpdateComboKeepTimer(deltaTime);

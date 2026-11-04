@@ -100,6 +100,7 @@ Boat* StageBoatCreator::CreateFromStageNode(const YAML::Node& node, int stageYam
     mPlacementLoader.ApplyScaleFromStageNode(boat.get(), node);
 
     boat->Initialize();
+    boat->SetStartsAppeared(node["startsAppeared"] ? node["startsAppeared"].as<bool>() : false);
     if (hasTravelSpeed) {
         boat->SetTravelSpeed(travelSpeed);
     } else if (hasLegacyTravelDuration) {

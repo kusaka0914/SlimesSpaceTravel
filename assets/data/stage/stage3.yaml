@@ -3584,7 +3584,6 @@ jewelItems:
     height: 0.13188274
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
@@ -3606,7 +3605,6 @@ jewelItems:
     height: 0.28741908
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
@@ -3628,7 +3626,6 @@ jewelItems:
     height: -0.31697083
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
@@ -3650,7 +3647,6 @@ jewelItems:
     height: 3.974274
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
@@ -3672,7 +3668,6 @@ jewelItems:
     height: 1.4717712
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
@@ -3694,7 +3689,6 @@ jewelItems:
     height: -3.9899518
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
@@ -3716,7 +3710,6 @@ jewelItems:
     height: -3.9976487
     facingYaw: 0
     modelPath: crystal.obj
-    textureOverride: textures/jewel.png
     scale:
       - 0.22
       - 0.22
