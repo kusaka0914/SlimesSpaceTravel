@@ -32,12 +32,20 @@ void NormalPlayShowsOnlyMenuOperationGuide()
     }
 }
 
-void UGCPlaytestsShowAllUnlockedActions()
+void UGCPlaytestsShowOnlyReturnGuide()
 {
     for (int stage : {0, 1, 2}) {
         OperationGuideDisplayState ugcPlaytest = AtLocation(stage, 0);
         ugcPlaytest.isUGCPlaytestActive = true;
-        ExpectTrue(ShouldShowOperationGuideElement("buttonY", ugcPlaytest), "combat guide in UGC playtest");
+        for (bool pauseOpen : {false, true}) {
+            ugcPlaytest.isPauseMenuOpen = pauseOpen;
+            for (const char* id : {"buttonY", "buttonX", "buttonA", "buttonTextA", "buttonB",
+                                   "buttonTextB", "weakAttackHoldGuide", "strongAttackHoldGuide"}) {
+                ExpectFalse(ShouldShowOperationGuideElement(id, ugcPlaytest), "UGC play hides permanent controls");
+            }
+            ExpectTrue(ShouldShowOperationGuideElement("buttonA_copy", ugcPlaytest), "return icon remains visible");
+            ExpectTrue(ShouldShowOperationGuideElement("buttonTextB_copy", ugcPlaytest), "return text remains visible");
+        }
     }
 }
 
@@ -55,7 +63,7 @@ void TwoPlayerModeHidesSoloConfigurationGuides()
                 "split button in two player mode");
     ExpectFalse(ShouldShowOperationGuideElement("buttonTextB_copy2_copy2_copy", displayState),
                 "split text in two player mode");
-    ExpectTrue(ShouldShowOperationGuideElement("buttonA", displayState), "unrelated guide in two player mode");
+    ExpectFalse(ShouldShowOperationGuideElement("buttonA", displayState), "UGC controls stay hidden in two player mode");
 }
 
 void PauseShowsAllGuidesRegardlessOfStageProgress()
@@ -360,7 +368,7 @@ void RegisterOperationGuideVisibilityTests(TestRegistry& tests)
                        RecoveryUsageSuppressesOnlyNormalHintsAndResetsPerStage);
     tests.emplace_back("ContextualOperationGuide.DiscardsInvalidHints", UnavailableAndStaleHintsAreDiscarded);
     tests.emplace_back("OperationGuideVisibility.NormalPlayShowsOnlyMenu", NormalPlayShowsOnlyMenuOperationGuide);
-    tests.emplace_back("OperationGuideVisibility.UGCShowsAll", UGCPlaytestsShowAllUnlockedActions);
+    tests.emplace_back("OperationGuideVisibility.UGCShowsOnlyReturn", UGCPlaytestsShowOnlyReturnGuide);
     tests.emplace_back("OperationGuideVisibility.TwoPlayerModeHidesSoloConfigurationGuides",
                        TwoPlayerModeHidesSoloConfigurationGuides);
 }

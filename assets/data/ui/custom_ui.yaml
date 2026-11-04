@@ -1150,7 +1150,7 @@ elements:
     name: buttonTextB_copy
     type: text
     visibleByDefault: false
-    centerBased: true
+    centerBased: false
     flipVertical: true
     zOrder: 0
     rotationDegrees: 0
