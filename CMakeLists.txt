@@ -383,6 +383,11 @@ set_target_properties(editor_restart_helper PROPERTIES
 )
 
 target_compile_definitions(game_runtime PUBLIC SDL_MAIN_HANDLED)
+if (NOT GAME_REVIEW_BUILD AND NOT GAME_TGS_BUILD)
+    target_compile_definitions(game PRIVATE
+        GAME_SOURCE_DIRECTORY="${CMAKE_SOURCE_DIR}"
+        GAME_BUILD_DIRECTORY="${CMAKE_BINARY_DIR}")
+endif()
 if (GAME_REVIEW_BUILD)
     target_compile_definitions(game_runtime PUBLIC GAME_REVIEW_BUILD=1)
 endif()
