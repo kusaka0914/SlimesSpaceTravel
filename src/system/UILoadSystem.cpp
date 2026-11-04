@@ -9,6 +9,20 @@
 #include <iostream>
 #include <set>
 
+namespace {
+const std::filesystem::path uiDefinitionDirectory = "../assets/data/ui";
+} // namespace
+
+std::string UILoadSystem::DefaultUIPath()
+{
+    return (uiDefinitionDirectory / "ui.yaml").string();
+}
+
+std::string UILoadSystem::DefaultCustomUIPath()
+{
+    return (uiDefinitionDirectory / "custom_ui.yaml").string();
+}
+
 UILoadSystem::UILoadSystem()
 {
     Initialize();

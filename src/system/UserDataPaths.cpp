@@ -9,6 +9,7 @@
 namespace {
 
 constexpr const char* applicationDirectoryName = "SlimesSpaceTravel";
+std::filesystem::path fallbackBaseDirectory;
 
 std::filesystem::path FindPlatformDataDirectory()
 {
@@ -33,7 +34,7 @@ std::filesystem::path FindPlatformDataDirectory()
     }
 #endif
 
-    return std::filesystem::current_path() / "user_data";
+    return (fallbackBaseDirectory.empty() ? std::filesystem::current_path() : fallbackBaseDirectory) / "user_data";
 }
 
 bool CopyFileIfMissing(const std::filesystem::path& sourceFile, const std::filesystem::path& destinationFile,
@@ -91,6 +92,11 @@ bool CopyYamlFilesIfMissing(const std::filesystem::path& sourceDirectory,
 } // namespace
 
 namespace UserDataPaths {
+
+void SetFallbackBaseDirectory(const std::filesystem::path& directory)
+{
+    fallbackBaseDirectory = directory;
+}
 std::filesystem::path FindRootDirectory()
 {
     return FindPlatformDataDirectory() / applicationDirectoryName;

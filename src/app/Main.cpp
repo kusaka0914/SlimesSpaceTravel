@@ -1,4 +1,5 @@
 #include "app/Game.h"
+#include "system/UserDataPaths.h"
 
 #include <cstring>
 #include <filesystem>
@@ -59,7 +60,7 @@ GameLaunchOptions ParseLaunchOptions(int argc, const char* argv[])
     return launchOptions;
 }
 
-void UseExecutableDirectoryForPackagedBuild(const char* executablePathText)
+void ConfigureAssetWorkingDirectory(const char* executablePathText)
 {
     const std::filesystem::path executablePath = std::filesystem::absolute(executablePathText);
     const std::filesystem::path executableDirectory = executablePath.parent_path();
@@ -69,13 +70,26 @@ void UseExecutableDirectoryForPackagedBuild(const char* executablePathText)
         std::filesystem::is_directory(executableDirectory / "../shaders")) {
         std::filesystem::current_path(executableDirectory);
     }
+#ifdef GAME_SOURCE_DIRECTORY
+    std::error_code error;
+    const bool isLocalBuild = std::filesystem::equivalent(executableDirectory, GAME_BUILD_DIRECTORY, error) ||
+                              std::filesystem::equivalent(executableDirectory.parent_path(), GAME_BUILD_DIRECTORY, error);
+    const std::filesystem::path sourceDirectory = GAME_SOURCE_DIRECTORY;
+    // 既存の ../assets・../shaders をすべてコピー元へ向け、読み書きと再ビルドの参照先を統一する。
+    if (isLocalBuild && std::filesystem::is_directory(sourceDirectory / "src", error) &&
+        std::filesystem::is_directory(sourceDirectory / "assets/data", error) &&
+        std::filesystem::is_directory(sourceDirectory / "shaders", error)) {
+        UserDataPaths::SetFallbackBaseDirectory(std::filesystem::current_path());
+        std::filesystem::current_path(sourceDirectory / "src");
+    }
+#endif
 }
 
 } // namespace
 
 int main(int argc, const char* argv[])
 {
-    UseExecutableDirectoryForPackagedBuild(argv[0]);
+    ConfigureAssetWorkingDirectory(argv[0]);
     const GameLaunchOptions launchOptions = ParseLaunchOptions(argc, argv);
 
     Game game;
