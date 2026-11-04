@@ -113,7 +113,9 @@ public:
     const std::unordered_map<std::string, TextInfo>& GetEditableTextInfos() const { return mTextInfo; }
 
     // 定義を再読込する。YAML読込・変換の失敗時は以前の定義を復元してfalseを返す。
-    bool ReloadUIInfo(const std::string& path = "../assets/data/ui/ui.yaml");
+    static std::string DefaultUIPath();
+    static std::string DefaultCustomUIPath();
+    bool ReloadUIInfo(const std::string& path = DefaultUIPath());
     // 現在の標準UI設定を保存する。解析・書込失敗時はfalseで元ファイルを保持する。
     bool SaveUIInfo(const std::string& path);
 
@@ -123,8 +125,8 @@ public:
 
     // 標準・カスタムUIをまとめて保存する。失敗時は置換済みファイルの復旧を試み、理由をoutErrorへ返す。
     // 復旧自体の失敗はoutErrorに復旧用コピーの場所を含めて通知する。
-    bool SaveEditorUI(std::string& outError, const std::string& uiPath = "../assets/data/ui/ui.yaml",
-                      const std::string& customPath = "../assets/data/ui/custom_ui.yaml") const;
+    bool SaveEditorUI(std::string& outError, const std::string& uiPath = DefaultUIPath(),
+                      const std::string& customPath = DefaultCustomUIPath()) const;
 
     // テキストとルビを更新する。キー・インデックスが不正ならfalse。ファイルへは保存しない。
     bool UpdateTextInfoContent(const std::string& mapId, std::size_t textIndex, const std::string& text);
@@ -146,8 +148,8 @@ public:
 
     // 全定義を読めた場合だけ置き換え、表示上書きを解除する。失敗時はfalseで現在の定義・上書きを維持する。
     // ファイル未作成なら空の定義としてtrueを返す。
-    bool LoadCustomUI(const std::string& path = "../assets/data/ui/custom_ui.yaml");
-    bool SaveCustomUI(const std::string& path = "../assets/data/ui/custom_ui.yaml") const;
+    bool LoadCustomUI(const std::string& path = DefaultCustomUIPath());
+    bool SaveCustomUI(const std::string& path = DefaultCustomUIPath()) const;
 
     void SetCustomElementVisible(const std::string& screen, const std::string& id, bool visible);
     void SetCustomScreenVisible(const std::string& screen, bool visible);

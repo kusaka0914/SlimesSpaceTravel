@@ -37,7 +37,7 @@ StorybookDebugPanel::StorybookDebugPanel(DebugEditorContext& context)
 void StorybookDebugPanel::Reload()
 {
     if (mContext.uiRenderer && mContext.uiRenderer->GetUILoadSystem()) {
-        mContext.uiRenderer->GetUILoadSystem()->ReloadUIInfo("../assets/data/ui/ui.yaml");
+        mContext.uiRenderer->GetUILoadSystem()->ReloadUIInfo();
     }
     mStatusMessage = mConfig.Load() ? "storybook.yaml を読み込みました" : "読み込みに失敗しました";
     if (mContext.game && mContext.game->GetSceneSystem()) {
@@ -78,7 +78,8 @@ void StorybookDebugPanel::Draw()
         NormalizeTrackImageCount("opening", true);
         NormalizeTrackImageCount("ending", false);
         std::string error;
-        const bool wasSaved = StorybookEditorPersistence::Save(*mContext.uiRenderer->GetUILoadSystem(), mConfig, error);
+        const bool wasSaved = StorybookEditorPersistence::Save(*mContext.uiRenderer->GetUILoadSystem(), mConfig, error,
+                                                               UILoadSystem::DefaultUIPath());
         mStatusMessage = wasSaved ? "会話文と画像設定を保存しました" : "保存に失敗しました: " + error;
         if (wasSaved && mContext.game && mContext.game->GetSceneSystem()) {
             mContext.game->GetSceneSystem()->ReloadStorybookConfig();

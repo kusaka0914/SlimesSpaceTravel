@@ -1155,8 +1155,8 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.08501147
-      - 0.55495197
+      - 0.035972998
+      - 0.54822123
     sizeRatio:
       - 0.2
       - 0.05625

@@ -5,6 +5,9 @@
 
 namespace UserDataPaths {
 
+// 開発時にアセットの作業ディレクトリを切り替える前の保存先基準を保持する。
+void SetFallbackBaseDirectory(const std::filesystem::path& directory);
+
 // OSのユーザーデータ領域を返す。環境変数が得られなければカレント配下のuser_dataを使う。
 // パスの解決だけを行い、ディレクトリは作成しない。
 std::filesystem::path FindRootDirectory();
