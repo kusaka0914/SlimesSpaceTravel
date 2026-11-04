@@ -108,6 +108,21 @@ PlayerConfig PlayerConfigLoader::Parse(const YAML::Node& playerRoot)
         config.hp = YamlRead::ReadOr<float>(playerNode, "hp", config.hp);
         config.scale = YamlRead::ReadOr<float>(playerNode, "scale", config.scale);
 
+        const auto comboNode = playerNode["combo"];
+        config.combo = ReadPlayerComboSettings(comboNode ? comboNode : playerNode["groundCombo"]);
+        const auto hitStop = playerNode["hitStop"];
+        if (hitStop && hitStop.IsMap()) {
+            config.hitStop.guardBreakSeconds =
+                YamlRead::ReadOr<float>(hitStop, "guardBreakSeconds", config.hitStop.guardBreakSeconds);
+            config.hitStop.airStrongAttackSeconds =
+                YamlRead::ReadOr<float>(hitStop, "airStrongAttackSeconds", config.hitStop.airStrongAttackSeconds);
+            config.hitStop.airSlamSeconds =
+                YamlRead::ReadOr<float>(hitStop, "airSlamSeconds", config.hitStop.airSlamSeconds);
+            config.hitStop.counterSeconds =
+                YamlRead::ReadOr<float>(hitStop, "counterSeconds", config.hitStop.counterSeconds);
+        }
+        config.hitStop.Sanitize();
+
         config.attackSpeed = YamlRead::ReadOr<float>(playerNode, "attackSpeed", config.attackSpeed);
         config.attack = YamlRead::ReadOr<float>(playerNode, "attack", config.attack);
         config.moveSpeed = YamlRead::ReadOr<float>(playerNode, "moveSpeed", config.moveSpeed);

@@ -23,7 +23,7 @@ planets:
     stageNum: 1
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
-  - center: [47.9321, 11.178402, 0]
+  - center: [47.93188, 11.17763, -2.7939677e-09]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
@@ -41,7 +41,7 @@ planets:
       - 1.9073486e-06
     scale:
       - 2
-      - 8
+      - 8.000001
       - 8
     color:
       - 1
@@ -348,9 +348,9 @@ enemies:
     height: 2.3555999
     currentPlanetNum: 1
     pos:
-      - -1.4210358
-      - -1.9052544
-      - 3.6499195
+      - -1.42
+      - -1.91
+      - 3.65
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -601,9 +601,9 @@ enemies:
     height: 0.8135612
     currentPlanetNum: 1
     pos:
-      - -1.8444481
-      - -2.0271873
-      - -0.6361208
+      - -1.85
+      - -2.02
+      - -0.55
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -704,24 +704,24 @@ boats:
     theta: -0.023540327
     phi: 0.042714715
     height: 14.146238
-    facingYaw: 1.7763568e-15
+    facingYaw: -2.4442656
     pos:
-      - 9.13
-      - 3.95
-      - -0.87
+      - 6.76
+      - 2.45
+      - -1.03
     upVec:
       - 1
-      - -2.3841858e-07
-      - -2.9802322e-08
+      - -4.768371e-07
+      - -2.9802319e-08
     rotation:
-      - 0
-      - 0
-      - 0
+      - -3.1415925
+      - 0.6973274
+      - 3.1415923
     rotationQuat:
-      - -0.70710665
-      - 1.053671e-08
-      - -1.0536713e-08
-      - 0.7071069
+      - 0.24157748
+      - 0.6645604
+      - 0.6645602
+      - -0.24157757
     scale:
       - 0.8
       - 0.8
@@ -733,30 +733,31 @@ boats:
       - 1
       - 1
     travelSpeed: 10
+    startsAppeared: true
   - startPlanet: 3
     destPlanet: 1
     destStage: 0
     theta: 0.54062873
     phi: -0.05604329
     height: 5.283442
-    facingYaw: 1.7763568e-15
+    facingYaw: 0.68842334
     pos:
-      - 10.31
-      - -1.38
-      - 3.44
+      - 10.34
+      - -1.44
+      - 3.43
     upVec:
       - 1
-      - -2.3841858e-07
-      - -2.9802322e-08
+      - -3.576278e-07
+      - -2.9802319e-08
     rotation:
-      - 0
-      - 0
-      - 0
+      - -7.415649e-08
+      - -0.6884233
+      - -2.1095286e-07
     rotationQuat:
-      - -0.70710665
-      - 1.053671e-08
-      - -1.0536713e-08
-      - 0.7071069
+      - -0.6656291
+      - 0.23861653
+      - 0.23861644
+      - 0.66562927
     scale:
       - 0.8
       - 0.8
@@ -768,6 +769,7 @@ boats:
     textureTiling:
       - 1
       - 1
+    startsAppeared: false
   - startPlanet: 1
     destPlanet: 2
     destStage: 0
@@ -803,6 +805,7 @@ boats:
     textureTiling:
       - 1
       - 1
+    startsAppeared: false
 boatParts: []
 players:
   - pos: [1.1971725, -4.632353, 4.246785]
@@ -878,15 +881,15 @@ NPCs:
     type: spaceSlime
     name: BoatPartsNPC
     talkTexts:
-      - 星を探している？残念だがこの惑星にはそんなものないぞ。
-      - "あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。"
-      - "そこに行ってみたらどうだ？\n隣の惑星に行くためのロケットを探しな！"
-      - "そうだな...まずはあいつのところまで行ってみたらどうだ？\n移動とジャンプを使えば行けるぞ！"
-      - "そうだそうだ。見たい場所が見えないとき、\nカメラを回転するといいぞ！覚えておきな！"
+      - 星を探している？残念だがこの惑星にはそんなものないぞ！
+      - "あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことがあるな..."
+      - "そこに行ってみたらどうだ？\nどこかに隣の惑星に行くためのロケットがあるはず..."
+      - "そうだそうだ！そこの足場はスイッチを押さないと乗れないから\nまずはスイッチを探してみな！"
+      - あれをたどればスイッチがあるはずだ！
     pos:
       - 1.42
-      - -3.56
-      - 4.21
+      - -3.57
+      - 4.2
     facingYaw: 2.296081
     rotation:
       - 0
@@ -907,181 +910,11 @@ NPCs:
       - 0.66413116
       - 0.62051785
       - 0.3642367
-    talkRubies:
-      - talkIndex: 0
-        segments:
-          - text: 星
-            ruby: true
-            reading: ほし
-          - text: を
-            ruby: false
-          - text: 探
-            ruby: true
-            reading: さが
-          - text: している？
-            ruby: false
-          - text: 残
-            ruby: true
-            reading: ざん
-          - text: 念
-            ruby: true
-            reading: ねん
-          - text: だがこの
-            ruby: false
-          - text: 惑
-            ruby: true
-            reading: わく
-          - text: 星
-            ruby: true
-            reading: せい
-          - text: にはそんなものないぞ。
-            ruby: false
-      - talkIndex: 1
-        segments:
-          - text: あー、
-            ruby: false
-          - text: 確
-            ruby: true
-            reading: たし
-          - text: か
-            ruby: false
-          - text: 近
-            ruby: true
-            reading: ちか
-          - text: くの
-            ruby: false
-          - text: 惑
-            ruby: true
-            reading: わく
-          - text: 星
-            ruby: true
-            reading: せい
-          - text: にいいものを
-            ruby: false
-          - text: 持
-            ruby: true
-            reading: も
-          - text: "っている\nでっかいやつがいるって"
-            ruby: false
-          - text: 噂
-            ruby: true
-            reading: うわさ
-          - text: を
-            ruby: false
-          - text: 聞
-            ruby: true
-            reading: き
-          - text: いたことあるな。
-            ruby: false
-      - talkIndex: 2
-        segments:
-          - text: そこに
-            ruby: false
-          - text: 行
-            ruby: true
-            reading: い
-          - text: "ってみたらどうだ？\n"
-            ruby: false
-          - text: 隣
-            ruby: true
-            reading: となり
-          - text: の
-            ruby: false
-          - text: 惑
-            ruby: true
-            reading: わく
-          - text: 星
-            ruby: true
-            reading: せい
-          - text: に
-            ruby: false
-          - text: 行
-            ruby: true
-            reading: い
-          - text: くためのロケットを
-            ruby: false
-          - text: 探
-            ruby: true
-            reading: さが
-          - text: しな！
-            ruby: false
-      - talkIndex: 3
-        segments:
-          - text: そうだな...まずはあいつのところまで
-            ruby: false
-          - text: 行
-            ruby: true
-            reading: い
-          - text: "ってみたらどうだ？\n"
-            ruby: false
-          - text: 移
-            ruby: true
-            reading: い
-          - text: 動
-            ruby: true
-            reading: どう
-          - text: とジャンプを
-            ruby: false
-          - text: 使
-            ruby: true
-            reading: つか
-          - text: えば
-            ruby: false
-          - text: 行
-            ruby: true
-            reading: い
-          - text: けるぞ！
-            ruby: false
-      - talkIndex: 4
-        segments:
-          - text: そうだそうだ。
-            ruby: false
-          - text: 見
-            ruby: true
-            reading: み
-          - text: たい
-            ruby: false
-          - text: 場
-            ruby: true
-            reading: ば
-          - text: 所
-            ruby: true
-            reading: しょ
-          - text: が
-            ruby: false
-          - text: 見
-            ruby: true
-            reading: み
-          - text: "えないとき、\nカメラを"
-            ruby: false
-          - text: 回
-            ruby: true
-            reading: かい
-          - text: 転
-            ruby: true
-            reading: てん
-          - text: するといいぞ！
-            ruby: false
-          - text: 覚
-            ruby: true
-            reading: おぼ
-          - text: えておきな！
-            ruby: false
     proximityMessage:
       mode: afterTalk
       variants:
         - talkIndex: 4
-          text: あいつのところまで行ってみろ！
-      rubies:
-        - talkIndex: 4
-          segments:
-            - text: あいつのところまで
-              ruby: false
-            - text: 行
-              ruby: true
-              reading: い
-            - text: ってみろ！
-              ruby: false
+          text: あれをたどってスイッチを探しな！
       range: 3
       height: 1.8
       scale: 1
@@ -1089,7 +922,10 @@ NPCs:
     forceTalkOnArrival: true
     talkCameraFocus:
       - talkIndex: 3
-        sequence: NPCs
+        sequence: platforms
+        index: 0
+      - talkIndex: 4
+        sequence: jewelItems
         index: 1
   - theta: -0.63021153
     phi: 0.5423254
@@ -1099,10 +935,10 @@ NPCs:
     talkTexts:
       - ""
     pos:
-      - 4.5
-      - -1.29
-      - 0.14
-    facingYaw: 2.4558797
+      - -3.21
+      - -2.03
+      - 3.29
+    facingYaw: -0.7317285
     rotation:
       - 0
       - 0.7317284
@@ -1110,33 +946,23 @@ NPCs:
     scale:
       - 0.25
       - 0.25
-      - 0.25
+      - 0.25000003
     upVec:
-      - 1
-      - -1.1920928e-07
+      - -1
+      - -1.19209275e-07
       - 0
     modelPath: spaceSlime.obj
     radius: 0.75
     rotationQuat:
-      - -0.2377142
-      - 0.66595197
-      - 0.66595185
-      - 0.23771423
+      - 0.66030693
+      - -0.252972
+      - 0.252972
+      - 0.66030693
     proximityMessage:
       mode: always
       variants:
         - talkIndex: 0
-          text: ジャンプでここまで来て！
-      rubies:
-        - talkIndex: 0
-          segments:
-            - text: ジャンプでここまで
-              ruby: false
-            - text: 来
-              ruby: true
-              reading: き
-            - text: て！
-              ruby: false
+          text: ジャンプでここまでこれるよ！
       range: 3
       height: 1.8
       scale: 1
@@ -1158,8 +984,8 @@ NPCs:
       - ""
     pos:
       - 2.6
-      - -4.77
-      - 0.88
+      - -4.54
+      - 0.94
     upVec:
       - 1
       - -1.19209275e-07
@@ -1169,31 +995,7 @@ NPCs:
       mode: always
       variants:
         - talkIndex: 0
-          text: 遠い足場にはジャンプして回避！
-      rubies:
-        - talkIndex: 0
-          segments:
-            - text: 遠
-              ruby: true
-              reading: とお
-            - text: い
-              ruby: false
-            - text: 足
-              ruby: true
-              reading: あし
-            - text: 場
-              ruby: true
-              reading: ば
-            - text: にはジャンプして
-              ruby: false
-            - text: 回
-              ruby: true
-              reading: かい
-            - text: 避
-              ruby: true
-              reading: ひ
-            - text: ！
-              ruby: false
+          text: 遠い足場にはジャンプしてダッシュ！
       range: 3
       height: 1.8
       scale: 1
@@ -1363,6 +1165,47 @@ NPCs:
             reading: も
           - text: てるよ！
             ruby: false
+  - theta: -0.63021153
+    phi: 0.5423254
+    height: -0.08914423
+    type: spaceSlime
+    name: JumpTutorialNPC
+    talkTexts:
+      - ""
+    pos:
+      - -4.82
+      - 5.81
+      - -2.2
+    facingYaw: -0.7317285
+    rotation:
+      - 0
+      - 0.7317284
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25000003
+    upVec:
+      - -1
+      - -1.19209275e-07
+      - 0
+    modelPath: spaceSlime.obj
+    radius: 0.75
+    rotationQuat:
+      - 0.66030693
+      - -0.252972
+      - 0.252972
+      - 0.66030693
+    proximityMessage:
+      mode: always
+      variants:
+        - talkIndex: 0
+          text: これがスイッチ！乗ると足場が現れるよ！
+      range: 3
+      height: 1.8
+      scale: 1
+    currentPlanetNum: 0
+    forceTalkOnArrival: false
 platforms:
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1461,41 +1304,43 @@ platforms:
     theta: 1.0494097
     phi: 0.01994101
     height: 2.8906236
-    facingYaw: 0.78801614
+    facingYaw: 0.7878189
     scale:
       - 0.5569991
       - 0.12775151
       - 0.5513343
     modelPath: platform.obj
     upVec:
-      - -0.9947703
-      - 0.10019605
-      - -0.019820986
+      - -0.9967187
+      - 0.08094156
+      - -0.0005656779
     pos:
-      - -6.19
-      - 3.83
-      - -1.53
+      - -4.5
+      - 4.64
+      - -2.39
     rotation:
-      - -0.028102864
-      - -0.78781873
-      - -0.080462
+      - -0.00080192747
+      - -0.7878188
+      - -0.08046181
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - 0.6822769
-      - 0.2506917
-      - -0.29085454
-      - 0.62213796
+      - 0.6787913
+      - 0.25998154
+      - -0.28233525
+      - 0.6260502
     platformId: platform_2
     components:
       pressureSwitch:
         inactiveOpacity: 0.2
         targets:
-          - platform_1
-        remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+          - legacy_platforms_7
+        remainsOnAfterPressed: true
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1503,9 +1348,9 @@ platforms:
     height: 2.8906236
     facingYaw: -0.7851747
     scale:
-      - 1
-      - 1.0585048
-      - 1.0000001
+      - 1.4
+      - 1.06
+      - 1.4
     modelPath: platform.obj
     upVec:
       - -1
@@ -1513,8 +1358,8 @@ platforms:
       - 0
     pos:
       - -2.15
-      - -1.28
-      - 2.86
+      - -1.25
+      - 3.41
     rotation:
       - 0
       - 0.7851746
@@ -1534,18 +1379,18 @@ platforms:
     height: 0.93243814
     facingYaw: 0.78517455
     scale:
-      - 1
-      - 1.9866325
-      - 1.0000001
+      - 1.4
+      - 1.43
+      - 1.4
     modelPath: platform.obj
     upVec:
       - -0.99723196
       - 0.034769297
       - -0.06572279
     pos:
-      - -2.95
-      - -0.81
-      - -1.09
+      - -2.92
+      - -0.52
+      - -1.38
     rotation:
       - 0
       - 0.7851746
@@ -1565,18 +1410,18 @@ platforms:
     height: 1.665479
     facingYaw: 0.78517467
     scale:
-      - 1
-      - 2.419743
-      - 1.0000001
+      - 1.4
+      - 1.66
+      - 1.4
     modelPath: platform.obj
     upVec:
       - -0.99437326
       - 0.10588895
       - 0.0030532177
     pos:
-      - -3.87
-      - 3.57
-      - -1.54
+      - -2.9
+      - 4.41
+      - -2.38
     rotation:
       - 0
       - 0.7851746
@@ -1596,7 +1441,7 @@ platforms:
     height: 2.3078227
     facingYaw: -0.85060734
     scale:
-      - 1.1776116
+      - 2.7990007
       - 2.9901476
       - 3.2790415
     modelPath: platform.obj
@@ -1606,8 +1451,8 @@ platforms:
       - -2.9802322e-08
     pos:
       - 3.76
-      - 1.04
-      - -0.01
+      - 2.36
+      - -1.17
     rotation:
       - -2.9541619e-08
       - 0.8506076
@@ -1621,90 +1466,14 @@ platforms:
       - -0.2917504
       - 0.6441132
     platformId: platform_6
-  - currentPlanetNum: 0
-    theta: 0.038756523
-    phi: 0.37385318
-    height: 5.2564435
-    facingYaw: -0.8554586
-    scale:
-      - 0.5569991
-      - 0.12775151
-      - 0.5513343
-    modelPath: platform.obj
-    upVec:
-      - 1
-      - -3.5762787e-07
-      - -5.9604645e-08
-    pos:
-      - 7.64
-      - 2.6
-      - -2.4
-    rotation:
-      - -1.02144575e-07
-      - 0.8554588
-      - -4.3960176e-07
-    textureTiling:
-      - 1
-      - 1
-    platformId: platform_7
-    textureOverride: textures/Crystal_MAT_BaseColor.png
-    rotationQuat:
-      - -0.6434034
-      - -0.29331198
-      - -0.29331192
-      - 0.64340365
-    components:
-      latchedGroupSwitch:
-        groupId: stage1_planet1
-        targets:
-          - sequence: boats
-            index: 0
-        hideTargets: []
-  - currentPlanetNum: 0
-    theta: -0.28730252
-    phi: 0.12781243
-    height: 5.0965357
-    facingYaw: -0.8462935
-    scale:
-      - 0.5569991
-      - 0.12775151
-      - 0.5513343
-    modelPath: platform.obj
-    upVec:
-      - 1
-      - -2.3841858e-07
-      - -8.940697e-08
-    pos:
-      - 7.66
-      - 1.31
-      - -3.82
-    rotation:
-      - -1.3957585e-07
-      - 0.8462937
-      - -4.5507963e-07
-    textureTiling:
-      - 1
-      - 1
-    platformId: platform_8
-    textureOverride: textures/Crystal_MAT_BaseColor.png
-    rotationQuat:
-      - -0.64474076
-      - -0.29036045
-      - -0.29036042
-      - 0.644741
-    components:
-      latchedGroupSwitch:
-        groupId: stage1_planet1
-        targets: []
-        hideTargets: []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
     height: 0.22606882
     facingYaw: -0.7851746
     scale:
-      - 1
-      - 0.75999814
+      - 2.3667095
+      - 0.7599984
       - 1
     modelPath: platform.obj
     upVec:
@@ -1713,14 +1482,14 @@ platforms:
       - 0
     pos:
       - 1.84
-      - -4.6
-      - 0.27
+      - -5.13
+      - 0.81
     rotation:
       - 6.689822e-09
       - 0.7851746
       - -6.174248e-08
     textureTiling:
-      - 1
+      - 2.3667095
       - 1
     rotationQuat:
       - -0.6533117
@@ -1744,8 +1513,8 @@ platforms:
       - -2.9802322e-08
     pos:
       - 2.85
-      - -1.67
-      - -4.4
+      - -0.98
+      - -5.03
     rotation:
       - -2.9541619e-08
       - 0.8506076
@@ -1759,6 +1528,79 @@ platforms:
       - -0.2917504
       - 0.6441132
     platformId: platform_10
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 8
+      pitchDegrees: 20
+      fieldOfViewDegrees: 60
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - 0
+        - 1
+        - 0
+      backDirection:
+        - 0
+        - 0
+        - 1
+      lookOffset:
+        - 0
+        - 1.5
+        - 0
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: false
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      allowManualRotation: false
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
   - currentPlanetNum: 3
     theta: -0.53696233
     phi: 0.8425314
@@ -1827,8 +1669,10 @@ platforms:
         targets:
           - platform_11
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -1958,7 +1802,7 @@ platforms:
     theta: 0.5492466
     phi: 0.30622298
     height: 5.315322
-    facingYaw: 2.3032894
+    facingYaw: 2.3024437
     scale:
       - 0.5569991
       - 0.12775151
@@ -1966,33 +1810,34 @@ platforms:
     modelPath: platform.obj
     upVec:
       - 1
-      - -3.5762793e-07
-      - -8.940698e-08
+      - -3.5762787e-07
+      - -8.940697e-08
     pos:
       - 8.21
-      - 2.29
-      - 3.93
+      - 2.39
+      - 3.79
     rotation:
       - -3.1415925
-      - -0.83830345
-      - 3.141592
+      - -0.83914906
+      - 3.1415923
     textureTiling:
       - 1
       - 1
     platformId: platform_17
     textureOverride: textures/Crystal_MAT_BaseColor.png
     rotationQuat:
-      - -0.28778228
-      - 0.6458959
-      - 0.6458956
-      - 0.28778234
+      - -0.28805542
+      - 0.6457741
+      - 0.6457739
+      - 0.28805545
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
         targets:
           - sequence: boats
             index: 1
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.40818188
     phi: 0.1889368
@@ -2028,39 +1873,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets: []
-        hideTargets: []
-  - currentPlanetNum: 0
-    theta: -0.5523795
-    phi: 0.08754171
-    height: 2.3078227
-    facingYaw: -0.85060734
-    scale:
-      - 1.6499327
-      - 3.9134552
-      - 1.7202996
-    modelPath: platform.obj
-    upVec:
-      - 1
-      - -2.3841858e-07
-      - -2.9802322e-08
-    pos:
-      - 4.89
-      - 4.16
-      - -0.66
-    rotation:
-      - -2.9541619e-08
-      - 0.8506076
-      - -2.0968263e-07
-    textureTiling:
-      - 2.4785843
-      - 3.2790415
-    rotationQuat:
-      - -0.64411306
-      - -0.29175043
-      - -0.2917504
-      - 0.6441132
-    platformId: platform_19
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2096,173 +1912,6 @@ platforms:
       jumpToggle:
         initiallyVisible: true
     debugDisabled: true
-  - currentPlanetNum: 0
-    theta: -0.28730252
-    phi: 0.12781243
-    height: 5.0965357
-    facingYaw: -0.8494247
-    scale:
-      - 0.5569991
-      - 0.12775151
-      - 0.5513343
-    modelPath: platform.obj
-    upVec:
-      - 1
-      - -3.5762787e-07
-      - -2.9802322e-08
-    pos:
-      - 6.68
-      - 2.59
-      - 1.79
-    rotation:
-      - -2.1478398e-08
-      - 0.84942496
-      - -3.3679538e-07
-    textureTiling:
-      - 1
-      - 1
-    platformId: platform_21
-    textureOverride: textures/Crystal_MAT_BaseColor.png
-    rotationQuat:
-      - -0.6442854
-      - -0.29136956
-      - -0.29136947
-      - 0.6442856
-    components:
-      pressureSwitch:
-        remainsOnAfterPressed: true
-        inactiveOpacity: 0.2
-        targets:
-          - platform_22
-          - platform_23
-          - platform_24
-          - platform_25
-        enemyTargets: []
-        hideTargets: []
-  - currentPlanetNum: 0
-    theta: -0.5523795
-    phi: 0.08754171
-    height: 2.3078227
-    facingYaw: 2.4387145
-    scale:
-      - 0.46601468
-      - 0.29901484
-      - 0.17203003
-    modelPath: curvePlatform.obj
-    upVec:
-      - -0.99983
-      - 0.014071824
-      - -0.011923702
-    pos:
-      - 7.53
-      - 3.18
-      - -4.2
-    rotation:
-      - -3.125965
-      - -0.7028181
-      - -0.024174964
-    textureTiling:
-      - 2.4785843
-      - 3.2790415
-    rotationQuat:
-      - -0.2411934
-      - -0.6577261
-      - 0.6699714
-      - -0.24568368
-    platformId: platform_22
-  - currentPlanetNum: 0
-    theta: -0.5523795
-    phi: 0.08754171
-    height: 2.3078227
-    facingYaw: -2.438845
-    scale:
-      - 0.46807468
-      - 0.29901484
-      - 0.17202997
-    modelPath: curvePlatform.obj
-    upVec:
-      - 0.99956554
-      - -0.022487164
-      - 0.019054621
-    pos:
-      - 2.09
-      - 5.26
-      - -5.95
-    rotation:
-      - 3.1166222
-      - 0.70259434
-      - 3.1029615
-    textureTiling:
-      - 2.4785843
-      - 3.2790415
-    rotationQuat:
-      - 0.24701056
-      - 0.6735897
-      - 0.65402
-      - -0.23983434
-    platformId: platform_23
-  - currentPlanetNum: 0
-    theta: -0.5523795
-    phi: 0.08754171
-    height: 2.3078227
-    facingYaw: 2.4387074
-    scale:
-      - 0.4713845
-      - 0.29901484
-      - 0.17202999
-    modelPath: curvePlatform.obj
-    upVec:
-      - -0.99984455
-      - 0.013454199
-      - -0.011400163
-    pos:
-      - 2.2
-      - 5.18
-      - -5.9
-    rotation:
-      - -3.1266513
-      - -0.70283055
-      - -0.023113726
-    textureTiling:
-      - 2.4785843
-      - 3.2790415
-    rotationQuat:
-      - -0.2412929
-      - -0.6579973
-      - 0.66970503
-      - -0.24558596
-    platformId: platform_24
-  - currentPlanetNum: 0
-    theta: -0.5523795
-    phi: 0.08754171
-    height: 2.3078227
-    facingYaw: 0.6984948
-    scale:
-      - 0.46536788
-      - 0.29901502
-      - 0.17202999
-    modelPath: curvePlatform.obj
-    upVec:
-      - 0.99978936
-      - 0.01565957
-      - -0.013269603
-    pos:
-      - -3.28
-      - 5.07
-      - -6.07
-    rotation:
-      - -0.017327314
-      - -0.6984208
-      - -3.1147888
-    textureTiling:
-      - 2.4785843
-      - 3.2790415
-    rotationQuat:
-      - 0.6711797
-      - -0.24450068
-      - -0.23947363
-      - -0.6575634
-    platformId: platform_25
   - currentPlanetNum: 3
     theta: 0.72371554
     phi: 0.08511593
@@ -2395,8 +2044,10 @@ platforms:
         targets:
           - platform_30
           - platform_31
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -2404,8 +2055,8 @@ platforms:
     facingYaw: -0.7851746
     scale:
       - 0.3089877
-      - 0.44090968
-      - 0.2576997
+      - 0.4569679
+      - 0.25769973
     modelPath: curvePlatform.obj
     upVec:
       - 1
@@ -2413,8 +2064,8 @@ platforms:
       - 0
     pos:
       - 2.08
-      - -4
-      - 0.87
+      - -5.59
+      - 2.25
     rotation:
       - 6.689822e-09
       - 0.7851746
@@ -2443,9 +2094,9 @@ platforms:
       - -0.022295475
       - -0.022285432
     pos:
-      - 10.01
-      - -2.48
-      - 2.4
+      - 10
+      - -2.98
+      - 4.92
     rotation:
       - -0.032408442
       - -0.81239134
@@ -2459,44 +2110,44 @@ platforms:
       - -0.28364265
       - 0.6597746
     platformId: platform_31
-  - currentPlanetNum: 0
-    theta: -0.5523795
-    phi: 0.08754171
-    height: 2.3078227
-    facingYaw: -0.85060775
+  - currentPlanetNum: 3
+    theta: 0.2036585
+    phi: -1.1926925
+    height: 0.22606882
+    facingYaw: -0.7851746
     scale:
-      - 1.6557144
-      - 3.3802917
-      - 1.693341
+      - 1.0076374
+      - 0.7599988
+      - 0.7228909
     modelPath: platform.obj
     upVec:
       - 1
-      - 0
+      - -1.19209275e-07
       - 0
     pos:
-      - 4.36
-      - 2.07
-      - -3.02
+      - 9.57
+      - -2.5
+      - 5.41
     rotation:
-      - 0
-      - 0.8506076
-      - 0
+      - 6.689822e-09
+      - 0.7851746
+      - -6.174248e-08
     textureTiling:
-      - 2.4785843
-      - 3.2790415
+      - 1.0076374
+      - 1
     rotationQuat:
-      - 0.64411306
-      - 0.29175055
-      - 0.29175055
-      - -0.64411306
-    platformId: platform_32
+      - -0.6533117
+      - -0.27052504
+      - -0.270525
+      - 0.6533118
+    platformId: platform_7
 stageObjects: []
 tutorialTriggers:
-  - currentPlanetNum: 0
+  - currentPlanetNum: 3
     tutorialId: split_switch
-    theta: -0.54565513
-    phi: 0.08152652
-    height: 3.174387
+    theta: -1.8542761
+    phi: -0.6245598
+    height: 23.167538
     scale:
       - 1.0433857
       - 0.6487986
@@ -2508,9 +2159,9 @@ tutorialTriggers:
       - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
       - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
     pos:
-      - 4.7
-      - -0.96
-      - 0.57
+      - -6.83
+      - 4.21
+      - -0.94
     facingYaw: 0.72607154
     rotation:
       - 1.4522733e-09
@@ -2696,211 +2347,6 @@ tutorialTriggers:
     talkAdvanceConditions:
       - talkIndex: 2
         condition: playerSwitch
-  - currentPlanetNum: 0
-    tutorialId: switch_success
-    theta: -2.9007094
-    phi: 0.5252856
-    height: 5.6282964
-    scale:
-      - 0.41417444
-      - 0.6487984
-      - 0.47100267
-    talkTexts:
-      - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
-      - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
-      - "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
-      - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
-      - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
-    pos:
-      - -6.41
-      - 3.81
-      - -1.56
-    facingYaw: -0.7980493
-    rotation:
-      - -0.028390434
-      - 0.7978479
-      - -0.12071074
-    upVec:
-      - -0.9947703
-      - 0.10019632
-      - -0.0198209
-    modelPath: platform.obj
-    talkRubies:
-      - talkIndex: 0
-        segments:
-          - text: あれれ...この
-            ruby: false
-          - text: 足
-            ruby: true
-            reading: あし
-          - text: 場
-            ruby: true
-            reading: ば
-          - text: 、
-            ruby: false
-          - text: 透
-            ruby: true
-            reading: とう
-          - text: 明
-            ruby: true
-            reading: めい
-          - text: "だよ...！\nこのままでは"
-            ruby: false
-          - text: 乗
-            ruby: true
-            reading: の
-          - text: れなさそう...！
-            ruby: false
-      - talkIndex: 1
-        segments:
-          - text: 惑
-            ruby: true
-            reading: わく
-          - text: 星
-            ruby: true
-            reading: せい
-          - text: の
-            ruby: false
-          - text: 反
-            ruby: true
-            reading: はん
-          - text: 対
-            ruby: true
-            reading: たい
-          - text: 側
-            ruby: true
-            reading: がわ
-          - text: "にスイッチがありそうだけど...\n"
-            ruby: false
-          - text: 壁
-            ruby: true
-            reading: かべ
-          - text: があっていけないね...
-            ruby: false
-      - talkIndex: 2
-        segments:
-          - text: そうだ！
-            ruby: false
-          - text: 君
-            ruby: true
-            reading: きみ
-          - text: はスライムだから
-            ruby: false
-          - text: 分
-            ruby: true
-            reading: ぶん
-          - text: 裂
-            ruby: true
-            reading: れつ
-          - text: "できるんじゃない？\nZRを"
-            ruby: false
-          - text: 押
-            ruby: true
-            reading: お
-          - text: して
-            ruby: false
-          - text: 分
-            ruby: true
-            reading: ぶん
-          - text: 身
-            ruby: true
-            reading: しん
-          - text: を
-            ruby: false
-          - text: 作
-            ruby: true
-            reading: つく
-          - text: って、
-            ruby: false
-          - text: 切
-            ruby: true
-            reading: き
-          - text: り
-            ruby: false
-          - text: 替
-            ruby: true
-            reading: か
-          - text: えてみようよ！
-            ruby: false
-      - talkIndex: 3
-        segments:
-          - text: おっ！
-            ruby: false
-          - text: 上手
-            ruby: true
-            reading: うま
-          - text: く
-            ruby: false
-          - text: 分
-            ruby: true
-            reading: ぶん
-          - text: 裂
-            ruby: true
-            reading: れつ
-          - text: "できてる！ナイス！\nこれがあなたの"
-            ruby: false
-          - text: 分
-            ruby: true
-            reading: ぶん
-          - text: 身
-            ruby: true
-            reading: しん
-          - text: ！そっくりだね！
-            ruby: false
-      - talkIndex: 4
-        segments:
-          - text: 分
-            ruby: true
-            reading: ぶん
-          - text: 身
-            ruby: true
-            reading: しん
-          - text: も
-            ruby: false
-          - text: 同
-            ruby: true
-            reading: どう
-          - text: 様
-            ruby: true
-            reading: よう
-          - text: に
-            ruby: false
-          - text: 動
-            ruby: true
-            reading: うご
-          - text: "かすことができるから\nまずはスイッチを"
-            ruby: false
-          - text: 探
-            ruby: true
-            reading: さが
-          - text: し、
-            ruby: false
-          - text: 乗
-            ruby: true
-            reading: の
-          - text: って
-            ruby: false
-          - text: 起
-            ruby: true
-            reading: き
-          - text: 動
-            ruby: true
-            reading: どう
-          - text: してみよう！
-            ruby: false
-    talkCameraFocus:
-      - talkIndex: 0
-        sequence: platforms
-        index: 4
-    talkAdvanceConditions:
-      - talkIndex: 2
-        condition: playerSwitch
-    rotationQuat:
-      - 0.6859748
-      - -0.2673563
-      - 0.28202268
-      - 0.61516047
-    requiredCompletedTutorialId: split_switch
   - currentPlanetNum: 0
     tutorialId: union
     theta: -0.16046982
@@ -3122,23 +2568,23 @@ tutorialTriggers:
       - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
       - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
     pos:
-      - 7.39
-      - 2.59
-      - 1.82
-    facingYaw: 0.72607154
+      - -4.44
+      - 4.68
+      - -2.37
+    facingYaw: 0.7260715
     rotation:
-      - 1.4522733e-09
+      - 0.0007564138
       - -0.72607154
-      - -2.5559308e-07
+      - 3.0600603
     rotationQuat:
-      - -0.6610197
-      - 0.2511034
-      - 0.25110334
-      - 0.6610199
+      - -0.63362944
+      - 0.26088876
+      - 0.24092093
+      - 0.68731934
     upVec:
-      - 1
-      - -2.3841858e-07
-      - -2.9802322e-08
+      - 0.99671876
+      - -0.080941685
+      - 0.00056564814
     modelPath: platform.obj
     talkRubies:
       - talkIndex: 0
@@ -3310,15 +2756,15 @@ tutorialTriggers:
     talkAdvanceConditions:
       - talkIndex: 2
         condition: playerSwitch
-  - currentPlanetNum: 0
+  - currentPlanetNum: 3
     tutorialId: double_switch_tutorial
-    theta: -0.54565513
-    phi: 0.08152652
-    height: 3.174387
+    theta: 0.4296507
+    phi: 0.24997741
+    height: 7.4655294
     scale:
-      - 1.486991
-      - 0.64879924
-      - 1.4975554
+      - 0.3783285
+      - 0.6487994
+      - 0.4670516
     talkTexts:
       - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
       - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
@@ -3326,23 +2772,18 @@ tutorialTriggers:
       - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
       - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
     pos:
-      - 8.24
-      - 1.95
-      - -3.09
-    facingYaw: 0.72607154
+      - 8.34
+      - 2.43
+      - 3.78
+    facingYaw: -0.8432792
     rotation:
-      - 1.4522733e-09
-      - -0.72607154
-      - -2.5559308e-07
-    rotationQuat:
-      - -0.6610197
-      - 0.2511034
-      - 0.25110334
-      - 0.6610199
+      - -1.560556e-07
+      - 0.8432792
+      - -4.6488373e-07
     upVec:
       - 1
-      - -2.3841858e-07
-      - -2.9802322e-08
+      - -3.5762787e-07
+      - -8.940697e-08
     modelPath: platform.obj
     talkRubies:
       - talkIndex: 0
@@ -3514,6 +2955,11 @@ tutorialTriggers:
     talkAdvanceConditions:
       - talkIndex: 2
         condition: playerSwitch
+    rotationQuat:
+      - -0.64517766
+      - -0.28938842
+      - -0.2893884
+      - 0.6451779
 boatArrivalPoints:
   - currentPlanetNum: 3
     theta: 1.1879112
@@ -3530,9 +2976,9 @@ boatArrivalPoints:
       - 0.4
       - 0.4
     pos:
-      - 2.95
-      - -6.69
-      - 2.31
+      - 3.87
+      - -4.54
+      - 0.36
     upVec:
       - 0.9630306
       - -0.22487189
@@ -3595,3 +3041,1255 @@ boatArrivalPoints:
       - -0.021065632
       - 0.02640764
       - 0.78129524
+cameraZones:
+  - currentPlanetNum: 0
+    theta: 2.4041348
+    phi: 0.55728483
+    height: 1.0030215
+    facingYaw: -0.7461352
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0.052819684
+      - 0.7454395
+      - -0.040302843
+    scale:
+      - 14.160403
+      - 9.999335
+      - 14.695584
+    pos:
+      - -5.31
+      - -0.16
+      - 0.45
+    upVec:
+      - -0.9963516
+      - 0.07601732
+      - 0.038793325
+    rotationQuat:
+      - 0.6781203
+      - -0.23442678
+      - 0.27957383
+      - 0.6379933
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 7.831597
+      pitchDegrees: 54.141857
+      fieldOfViewDegrees: 60
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - -1
+        - -1.1920928e-07
+        - 0
+      backDirection:
+        - 8.362258e-08
+        - -0.7014771
+        - 0.712692
+      lookOffset:
+        - -0.7124057
+        - 0.5674753
+        - -0.8244729
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+      allowManualRotation: false
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 2.4041348
+    phi: 0.55728483
+    height: 1.0030215
+    facingYaw: -0.74349433
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - -0.015615036
+      - 0.7434337
+      - -3.1410472
+    scale:
+      - 14.360455
+      - 13.945567
+      - 12.481994
+    pos:
+      - 7.11
+      - -0.39
+      - 1.37
+    upVec:
+      - -0.99987227
+      - -0.011113406
+      - -0.011494548
+    rotationQuat:
+      - 0.65660954
+      - -0.2620366
+      - 0.2516092
+      - 0.6609792
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 6.8913093
+      pitchDegrees: 34.927414
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - 0.9506044
+        - -0.2282197
+        - 0.21039721
+      backDirection:
+        - -0.3102035
+        - -0.67404485
+        - 0.6704009
+      lookOffset:
+        - 1.1768861
+        - 0.24448967
+        - -0.25988817
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+      allowManualRotation: false
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 3
+    theta: 0.13915634
+    phi: -1.0753736
+    height: 3.522416
+    facingYaw: 0.73005164
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - -0.07530077
+      - -0.7286417
+      - -0.06564021
+    scale:
+      - 2.8998353
+      - 2.544908
+      - 2.173567
+    pos:
+      - 2.56
+      - -4.87
+      - -0.27
+    upVec:
+      - 0.99173313
+      - -0.11539149
+      - -0.05612728
+    rotationQuat:
+      - -0.6284179
+      - 0.28394035
+      - 0.2177044
+      - 0.6907052
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 6.9149632
+      pitchDegrees: 43.621735
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - 1
+        - -1.1920928e-07
+        - 0
+      backDirection:
+        - -8.7192916e-08
+        - -0.73142725
+        - 0.6819195
+      lookOffset:
+        - 0.78615093
+        - 0.5479889
+        - -0.5109051
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+      allowManualRotation: false
+    textureTiling:
+      - 2.8998353
+      - 2.1735678
+  - currentPlanetNum: 3
+    theta: 0.13915634
+    phi: -1.0753736
+    height: 3.522416
+    facingYaw: 0.73005164
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - -0.07530077
+      - -0.7286417
+      - -0.06564021
+    scale:
+      - 2.8998353
+      - 2.544908
+      - 3.6106389
+    pos:
+      - 5.09
+      - -0.72
+      - -5.51
+    upVec:
+      - 0.99173313
+      - -0.11539149
+      - -0.05612728
+    rotationQuat:
+      - -0.6284179
+      - 0.28394035
+      - 0.2177044
+      - 0.6907052
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 6.922527
+      pitchDegrees: 43.622173
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - 1
+        - -2.3841858e-07
+        - -2.9802322e-08
+      backDirection:
+        - -1.883126e-07
+        - -0.7006524
+        - -0.7135028
+      lookOffset:
+        - 0.7811527
+        - 0.5215988
+        - 0.53117824
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+      allowManualRotation: false
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 3
+    theta: 0.13915634
+    phi: -1.0753736
+    height: 3.522416
+    facingYaw: 0.73005164
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - -0.07530077
+      - -0.7286417
+      - -0.06564021
+    scale:
+      - 2.8998353
+      - 2.544908
+      - 3.6106389
+    pos:
+      - 6.26
+      - 4.26
+      - -1.88
+    upVec:
+      - 0.99173313
+      - -0.11539149
+      - -0.05612728
+    rotationQuat:
+      - -0.6284179
+      - 0.28394035
+      - 0.2177044
+      - 0.6907052
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 6.91521
+      pitchDegrees: 43.621967
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - 1
+        - -2.3841858e-07
+        - -2.9802322e-08
+      backDirection:
+        - 1.5454553e-07
+        - 0.7332111
+        - -0.68000114
+      lookOffset:
+        - 0.78606033
+        - -0.54927444
+        - 0.50940585
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+      allowManualRotation: false
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 3
+    theta: 0.13915634
+    phi: -1.0753736
+    height: 3.522416
+    facingYaw: 0.7235177
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0.061392825
+      - -0.7225823
+      - 3.0867639
+    scale:
+      - 16.511131
+      - 12.03021
+      - 17.36375
+    pos:
+      - -6.23
+      - 0.19
+      - -0.29
+    upVec:
+      - 0.9988398
+      - -0.014184119
+      - 0.046021882
+    rotationQuat:
+      - -0.6506529
+      - 0.23684919
+      - 0.26373997
+      - 0.67156124
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 9.011537
+      pitchDegrees: 50.174713
+      fieldOfViewDegrees: 60
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - -1
+        - -1.1920928e-07
+        - 0
+      backDirection:
+        - 6.408436e-08
+        - -0.53757864
+        - 0.84321374
+      lookOffset:
+        - -1.5329399
+        - 0.4636345
+        - -1.8844581
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+      allowManualRotation: false
+    textureTiling:
+      - 15.513761
+      - 16.056927
+  - currentPlanetNum: 3
+    theta: 0.13915634
+    phi: -1.0753736
+    height: 3.522416
+    facingYaw: 0.73005164
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - -0.07530077
+      - -0.7286417
+      - -0.06564021
+    scale:
+      - 2.8998353
+      - 9.01665
+      - 3.6106396
+    pos:
+      - 5.96
+      - -5.24
+      - 2.99
+    upVec:
+      - 0.99173313
+      - -0.11539149
+      - -0.05612728
+    rotationQuat:
+      - -0.6284179
+      - 0.28394035
+      - 0.2177044
+      - 0.6907052
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 5.631813
+      pitchDegrees: 32.371502
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - 0.74592596
+        - -0.4721484
+        - -0.46975562
+      backDirection:
+        - -0.6655176
+        - -0.500752
+        - -0.55347425
+      lookOffset:
+        - 2.0409975
+        - -0.27038574
+        - -0.20779884
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+      allowManualRotation: false
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 3
+    theta: 0.13915634
+    phi: -1.0753736
+    height: 3.522416
+    facingYaw: 0.7288121
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0.026190234
+      - -0.7286416
+      - -0.06564026
+    scale:
+      - 6.2842884
+      - 4.3309975
+      - 5.1963134
+    pos:
+      - 8.94
+      - 0.37
+      - 3.54
+    upVec:
+      - 0.99864805
+      - -0.04817128
+      - 0.019537777
+    rotationQuat:
+      - -0.64201146
+      - 0.25169915
+      - 0.2524593
+      - 0.6787733
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 6.91521
+      pitchDegrees: 43.621967
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - 1
+        - -2.3841858e-07
+        - -2.9802322e-08
+      backDirection:
+        - 1.5454553e-07
+        - 0.7332111
+        - -0.68000114
+      lookOffset:
+        - 0.78606033
+        - -0.54927444
+        - 0.50940585
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+      allowManualRotation: false
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 2.4041348
+    phi: 0.55728483
+    height: 1.0030215
+    facingYaw: -0.74349433
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - -0.015615036
+      - 0.7434337
+      - -3.1410472
+    scale:
+      - 14.375582
+      - 2.620064
+      - 2.5210047
+    pos:
+      - 2.17
+      - 4.54
+      - -3.29
+    upVec:
+      - -0.99987227
+      - -0.011113406
+      - -0.011494548
+    rotationQuat:
+      - 0.65660954
+      - -0.2620366
+      - 0.2516092
+      - 0.6609792
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 7.9616446
+      pitchDegrees: 29.995453
+      fieldOfViewDegrees: 60
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - 0.9482722
+        - 0.24677373
+        - -0.19970602
+      backDirection:
+        - -0.31740922
+        - 0.7480829
+        - -0.58277225
+      lookOffset:
+        - 2.3551683
+        - -0.3734765
+        - 0.29946184
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+      allowManualRotation: false
+    textureTiling:
+      - 6.6116533
+      - 2.5210052
+jewelItems:
+  - currentPlanetNum: 0
+    theta: -1.1876677
+    phi: 0.96568954
+    height: 4.1116934
+    facingYaw: 0
+    modelPath: crystal.obj
+    scale:
+      - 0.22
+      - 0.22
+      - 0.22
+    pos:
+      - 1.2996507
+      - 5.0265093
+      - -3.224579
+    upVec:
+      - 0.9630306
+      - 0.22487186
+      - -0.14834073
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 1.1662937
+    phi: 0.35791337
+    height: 2.5316653
+    facingYaw: 0
+    modelPath: crystal.obj
+    scale:
+      - 0.22
+      - 0.22
+      - 0.22
+    pos:
+      - 1.28
+      - 4.49
+      - 5.42
+    upVec:
+      - 0.9877636
+      - 0.060123116
+      - 0.14390418
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 1.5645945
+    phi: 0.6359396
+    height: 5.913765
+    facingYaw: 0
+    modelPath: crystal.obj
+    scale:
+      - 0.22
+      - 0.22
+      - 0.22
+    pos:
+      - 0.039484978
+      - 4.7002516
+      - 6.3666124
+    upVec:
+      - 0.11892275
+      - 0.5794912
+      - 0.8062553
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 1.7347722
+    phi: 0.6546601
+    height: 5.0724444
+    facingYaw: 0
+    modelPath: crystal.obj
+    scale:
+      - 0.22
+      - 0.22
+      - 0.22
+    pos:
+      - -1.1
+      - 4.16
+      - 5.63
+    upVec:
+      - -0.89965636
+      - 0.26659682
+      - 0.34575248
+    textureTiling:
+      - 1
+      - 1
+operationGuideZones:
+  - currentPlanetNum: 0
+    theta: 2.8831453
+    phi: 0.6282565
+    height: 0.47587323
+    facingYaw: -0.7922346
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0.0218559
+      - 0.79211545
+      - -0.03072926
+    scale:
+      - 10.814997
+      - 8.567083
+      - 11.291386
+    pos:
+      - -5.38
+      - 1.05
+      - 0.01
+    guide:
+      enabled: true
+      priority: 0
+      operations:
+        - iconId: buttonA
+          description: ジャンプ
+          repeatInput: false
+    upVec:
+      - -0.99881124
+      - 0.046266377
+      - 0.01534906
+    rotationQuat:
+      - 0.6652103
+      - -0.2613136
+      - 0.28395155
+      - 0.6392042
+    textureTiling:
+      - 10.814997
+      - 11.2913885
+  - currentPlanetNum: 3
+    theta: 0.22994241
+    phi: -1.0519814
+    height: 3.3852444
+    facingYaw: -0.8429193
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 3.5706254e-08
+      - 0.8429193
+      - -4.4564555e-07
+    scale:
+      - 8.208237
+      - 5.999998
+      - 4.252265
+    pos:
+      - 2.6
+      - -2.9
+      - -2.49
+    guide:
+      enabled: true
+      priority: 0
+      operations:
+        - iconId: buttonA
+          description: 空中ダッシュ
+          repeatInput: true
+    upVec:
+      - 1
+      - -4.7683716e-07
+      - 0
+    rotationQuat:
+      - -0.6452297
+      - -0.28927237
+      - -0.28927222
+      - 0.64523
+    textureTiling:
+      - 8.208234
+      - 4.252265
+  - currentPlanetNum: 3
+    theta: -0.84233767
+    phi: -0.2001809
+    height: 4.475964
+    facingYaw: -0.8330638
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - -9.06709e-08
+      - 0.83306384
+      - -3.860814e-07
+    scale:
+      - 2.2416837
+      - 2.0248742
+      - 2.3515084
+    pos:
+      - -7.08
+      - 4.39
+      - -0.98
+    guide:
+      enabled: true
+      priority: 0
+      operations:
+        - iconId: buttonB_copy_copy2_copy
+          description: 分裂・合体
+          repeatInput: false
+    upVec:
+      - 1
+      - -3.5762787e-07
+      - -5.9604645e-08
+    rotationQuat:
+      - -0.64664733
+      - -0.2860893
+      - -0.28608924
+      - 0.6466476
+    textureTiling:
+      - 2.2416837
+      - 2.3515084
+  - currentPlanetNum: 3
+    theta: 0.22994241
+    phi: -1.0519814
+    height: 3.3852444
+    facingYaw: -0.8429193
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 3.5706254e-08
+      - 0.8429193
+      - -4.4564555e-07
+    scale:
+      - 5.6611767
+      - 5.999998
+      - 6.048162
+    pos:
+      - 9.67
+      - 0.51
+      - 3.76
+    guide:
+      enabled: true
+      priority: 0
+      operations:
+        - iconId: buttonB_copy_copy2
+          description: 分身切り替え
+          repeatInput: false
+    upVec:
+      - 1
+      - -4.7683716e-07
+      - 0
+    rotationQuat:
+      - -0.6452297
+      - -0.28927237
+      - -0.28927222
+      - 0.64523
+    textureTiling:
+      - 5.6611767
+      - 6.048162
+  - currentPlanetNum: 3
+    theta: 0.22994241
+    phi: -1.0519814
+    height: 3.3852444
+    facingYaw: -0.8429193
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 3.5706254e-08
+      - 0.8429193
+      - -4.4564555e-07
+    scale:
+      - 4.583563
+      - 5.999998
+      - 8.347388
+    pos:
+      - 3.6
+      - 1.7
+      - -3.26
+    guide:
+      enabled: true
+      priority: 0
+      operations:
+        - iconId: buttonA
+          description: 空中ダッシュ
+          repeatInput: true
+    upVec:
+      - 1
+      - -4.7683716e-07
+      - 0
+    rotationQuat:
+      - -0.6452297
+      - -0.28927237
+      - -0.28927222
+      - 0.64523
+    textureTiling:
+      - 4.583563
+      - 8.347388
+  - currentPlanetNum: 2
+    theta: 1.7404733
+    phi: 1.0618597
+    height: -3.679353
+    facingYaw: 0
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 20.765589
+      - 24.908072
+      - 24.262995
+    pos:
+      - -0.03
+      - 0.28
+      - 0.15
+    guide:
+      enabled: true
+      priority: 0
+      operations:
+        - iconId: buttonB
+          description: ダッシュ
+          repeatInput: false
+        - iconId: buttonY
+          description: 長押しで連続攻撃
+          repeatInput: false
+        - iconId: buttonX
+          description: 長押しで溜め攻撃
+          repeatInput: false
+    upVec:
+      - -0.070906796
+      - -0.5632544
+      - -0.8232356
+    textureTiling:
+      - 20.765583
+      - 24.262983

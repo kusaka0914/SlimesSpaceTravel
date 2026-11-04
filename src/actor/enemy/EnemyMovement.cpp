@@ -4,6 +4,7 @@
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/enemy/EnemyStateMachine.h"
 #include "actor/enemy/EnemyStatus.h"
 #include "system/AudioSystem.h"
@@ -361,9 +362,14 @@ void EnemyMovement::MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status,
     enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));
 }
 
-void EnemyMovement::MoveDuringKnockBack(Enemy& enemy, const EnemyStatus& status, float deltaTime)
+void EnemyMovement::MoveDuringKnockBack(Enemy& enemy, const EnemyStatus& status, float deltaTime, float groundPushSpeed)
 {
-    const glm::vec3 moveDelta = status.GetKnockBackFrom() * status.GetKnockBackSpeed() * deltaTime;
+    glm::vec3 direction = status.GetKnockBackFrom();
+    if (groundPushSpeed >= 0.0f && !TryProjectDirectionOntoSurfaceTangent(direction, enemy.GetUpVec(), direction)) {
+        return;
+    }
+    const float speed = groundPushSpeed >= 0.0f ? groundPushSpeed : status.GetKnockBackSpeed();
+    const glm::vec3 moveDelta = direction * speed * deltaTime;
     enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));
 }
 
@@ -416,6 +422,7 @@ void EnemyMovement::ApplyAirDodgePush(Enemy& enemy, const glm::vec3& dodgeDirect
         return;
     }
 
+    mComboFinisherPushRemainingSeconds = 0.0f;
     mAirDodgePushVelocity = tangentialPushDirection * std::max(0.0f, pushSpeed);
     mAirDodgePushDampingPerSecond = std::max(0.0f, pushDampingPerSecond);
 }
@@ -444,9 +451,23 @@ void EnemyMovement::ApplyAirComboLift(Enemy& enemy, float liftHeight)
     enemy.SetShouldJudgeLandingForEnemy(false);
 }
 
+bool EnemyMovement::ExtendLaunchApexWait(Enemy& enemy, EnemyStatus& status, float seconds)
+{
+    if (!std::isfinite(seconds) || seconds <= 0.0f || !enemy.GetIsActive() || !enemy.IsAlive() || enemy.IsOnGround() ||
+        !enemy.IsLaunched() || !status.IsGuardEmpty() || mIsGravitySlamActive || mHasCompletedLaunchApexWait ||
+        status.GetLaunchedTimer() < 0.0f) {
+        return false;
+    }
+    const float previousSeconds = status.GetLaunchedTimer();
+    const float maximumSeconds = std::max(0.0f, status.GetDefaultLaunchedTimer());
+    status.SetLaunchedTimer(std::min(maximumSeconds, previousSeconds + seconds));
+    return status.GetLaunchedTimer() > previousSeconds;
+}
+
 bool EnemyMovement::StartGravitySlam(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, Player& player,
                                      float downwardSpeed, float maximumDamage, float fullDamageHeight,
-                                     float minimumDamageRatio, float groundImpactRadius, bool shouldPlayImpactFeedback)
+                                     float minimumDamageRatio, float groundImpactRadius, float attackHeight,
+                                     bool shouldPlayImpactFeedback)
 {
     if (mIsGravitySlamActive) {
         return false;
@@ -457,15 +478,8 @@ bool EnemyMovement::StartGravitySlam(Enemy& enemy, EnemyStatus& status, EnemySta
         return false;
     }
 
-    Planet* planet = enemy.GetCurrentPlanet();
-    if (planet && planet->GetPlanetShape() != Planet::PlanetShape::Normal) {
-        mGravitySlamStartHeight = planet->CalculateEllipseSurfaceProjection(enemy.GetPos()).distance;
-    } else if (enemy.HasRecordedGroundedTransform()) {
-        mGravitySlamStartHeight =
-            std::max(0.0f, glm::dot(enemy.GetPos() - enemy.GetLastGroundedPosition(), upDirection));
-    } else {
-        mGravitySlamStartHeight = 0.0f;
-    }
+    // 予備上昇や接触までの敵の移動で、表示した威力と実ダメージがずれないようにする。
+    mGravitySlamStartHeight = std::isfinite(attackHeight) ? std::max(0.0f, attackHeight) : 0.0f;
     mGravitySlamMaximumDamage = std::max(0.0f, maximumDamage);
     mGravitySlamFullDamageHeight = std::max(0.001f, fullDamageHeight);
     mGravitySlamMinimumDamageRatio = glm::clamp(minimumDamageRatio, 0.0f, 1.0f);
@@ -506,12 +520,26 @@ void EnemyMovement::ResolveGravitySlamImpact(Enemy& enemy, EnemyStatus& status)
 
     ParticleSystem* particleSystem = enemy.GetGame()->GetParticleSystem();
     if (particleSystem) {
+        // 描画モデルの横幅を使い、エディターで変更したスケールも演出に反映する。
+        constexpr float normalEnemyHorizontalHalfExtent = 0.4f;
+        constexpr float normalEnemyRadius = 0.75f;
+        float bodySizeMultiplier = std::max(0.01f, enemy.GetRadius()) / normalEnemyRadius;
+        EnemyCollisionGeometry::ModelBounds bounds;
+        if (EnemyCollisionGeometry::TryCreateModelBounds(enemy, bounds)) {
+            bodySizeMultiplier = std::max(bounds.halfExtents.x, bounds.halfExtents.z) / normalEnemyHorizontalHalfExtent;
+        }
+
         ParticleSpawnContext context;
         context.position = enemy.GetPos();
         context.normal = enemy.GetUpVec();
         context.direction = enemy.GetUpVec();
-        context.scale = glm::mix(1.0f, 1.8f, heightRatio);
+        context.scale = bodySizeMultiplier * glm::mix(1.0f, 1.8f, heightRatio);
         particleSystem->Emit("landing_dust", context);
+
+        // 衝撃波にも同じ体格倍率を使い、高さによる威力の違いを重ねる。
+        context.position += context.normal * 0.04f;
+        context.scale = bodySizeMultiplier * glm::mix(1.0f, 1.3f, heightRatio);
+        particleSystem->Emit("enemy_slam_shockwave", context);
     }
 
     enemy.SetIsStrongAttacked(true);
@@ -580,6 +608,20 @@ void EnemyMovement::StartGravitySlamImpactKnockBack(Enemy& enemy, EnemyStatus& s
     enemy.SetShouldJudgeLandingForEnemy(false);
 }
 
+void EnemyMovement::StartComboFinisherPush(Enemy& enemy, const glm::vec3& direction, float speed, float durationSeconds)
+{
+    glm::vec3 tangentialDirection;
+    if (mIsGravitySlamActive ||
+        !TryProjectDirectionOntoSurfaceTangent(direction, enemy.GetUpVec(), tangentialDirection)) {
+        return;
+    }
+    ApplyAirDodgePush(enemy, tangentialDirection, speed, 0.0f);
+    mComboFinisherPushRemainingSeconds = std::max(0.0f, durationSeconds);
+    if (mComboFinisherPushRemainingSeconds <= 0.0f) {
+        mAirDodgePushVelocity = glm::vec3(0.0f);
+    }
+}
+
 void EnemyMovement::UpdateAirDodgePushMovement(Enemy& enemy, float deltaTime)
 {
     const float pushSpeed = glm::length(mAirDodgePushVelocity);
@@ -595,7 +637,9 @@ void EnemyMovement::UpdateAirDodgePushMovement(Enemy& enemy, float deltaTime)
         return;
     }
 
-    const glm::vec3 movementDelta = tangentialPushDirection * pushSpeed * deltaTime;
+    const bool isFinisherPush = mComboFinisherPushRemainingSeconds > 0.0f;
+    const float movementSeconds = isFinisherPush ? std::min(deltaTime, mComboFinisherPushRemainingSeconds) : deltaTime;
+    const glm::vec3 movementDelta = tangentialPushDirection * pushSpeed * movementSeconds;
     const ActorMovementCollisionResult collisionResult = mPhysicsSystem.ResolveMovementCollision(
         &enemy, movementDelta, enemy.GetPos() + movementDelta, ActorCollisionFilter::StopAtEnemies);
     const glm::vec3 faceConstrainedPosition =
@@ -614,6 +658,13 @@ void EnemyMovement::UpdateAirDodgePushMovement(Enemy& enemy, float deltaTime)
         return;
     }
 
+    if (isFinisherPush) {
+        mComboFinisherPushRemainingSeconds = std::max(0.0f, mComboFinisherPushRemainingSeconds - deltaTime);
+        if (mComboFinisherPushRemainingSeconds <= 0.0f) {
+            mAirDodgePushVelocity = glm::vec3(0.0f);
+            return;
+        }
+    }
     const float dampedPushSpeed = pushSpeed * std::exp(-mAirDodgePushDampingPerSecond * deltaTime);
     mAirDodgePushVelocity = tangentialPushDirection * dampedPushSpeed;
 }
@@ -651,7 +702,7 @@ void EnemyMovement::LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateM
     status.SetStandByAttackTimer(-1.0f);
     status.SetAttackMotionTimer(-1.0f);
     enemy.SetShouldJudgeLandingForEnemy(false);
-    enemy.GetGame()->SetHitStopTimer(0.3f);
+    enemy.GetGame()->RequestHitStop(enemy.GetGame()->GetHitStopSettings().guardBreakSeconds);
 
     stateMachine.StartLaunched(enemy);
 }

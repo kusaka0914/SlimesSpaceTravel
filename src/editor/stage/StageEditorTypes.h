@@ -21,6 +21,8 @@ enum class StageActorType {
     Boat,
     BoatArrivalPoint,
     FallRespawnPoint,
+    CameraZone,
+    OperationGuideZone,
     Key,
     Star,
     StageObject,

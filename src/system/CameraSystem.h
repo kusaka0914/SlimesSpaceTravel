@@ -8,11 +8,14 @@
 #include "system/camera/FocusCamera.h"
 #include "system/camera/PlayerCamera.h"
 #include "system/camera/PlayerCameraSettings.h"
+#include "system/camera/zones/CameraZoneController.h"
 #include "system/sequence/BossDefeatSequence.h"
 
 #include <glm/glm.hpp>
 
+#include <array>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -52,6 +55,8 @@ struct CameraSystemDependencies {
     std::function<PhysicsSystem*()> physicsProvider{};
     std::function<CameraControlState()> readControlState{};
     std::function<Actor*(const std::string&, int)> findPlacedActor{};
+    // ゾーンで操作を拒否したときに1始まりのPlayer番号を通知する。未設定なら通知を省略する。
+    std::function<void(int)> onCameraControlBlocked{};
 };
 
 // プレイヤー追従・会話・演出のカメラを調停し、描画用のビューを生成する。
@@ -97,6 +102,13 @@ public:
     void ResetForStageChange();
     void SnapBehindControlledPlayer();
 
+    // 演出による移動後、指定Playerの現在位置・上方向から通常の追従状態を作り直す。
+    // Worldに登録されていないPlayerは無視する。距離・ピッチなどの設定は維持する。
+    void SnapBehindPlayer(Player& player);
+
+    // 演出から位置を直接変更したPlayerを、通常の距離・ピッチで全方向へ追従する。方位は保持する。
+    void NotifyScriptedPlayerMovement(Player& player);
+
     bool GetTalkCameraPreviewEnabled() const { return mIsTalkCameraPreviewEnabled; }
     void SetTalkCameraPreviewEnabled(bool enabled) { mIsTalkCameraPreviewEnabled = enabled; }
     bool GetBoatRideCameraPreviewEnabled() const { return mIsBoatRideCameraPreviewEnabled; }
@@ -105,16 +117,29 @@ public:
     CinematicSequenceLibrary& GetCinematicLibrary() { return mCinematicLibrary; }
     const CinematicSequenceLibrary& GetCinematicLibrary() const { return mCinematicLibrary; }
 
+    // 操作対象の現在のビューと画角を取得する。ビュー未生成時はnullopt。フリーカメラにも対応する。
+    std::optional<CameraPose> GetCurrentCameraPose();
+
     CameraPose GetDebugCameraPose() const { return mDebugCamera.GetPose(mReadControlState().isUGCMode); }
     void SetDebugCameraPose(const CameraPose& pose) { mDebugCamera.SetPose(pose, mReadControlState().isUGCMode); }
 
     float GetFieldOfViewDegrees() const;
+    float GetPlayerFieldOfViewDegrees(int playerIndex) const;
+    // 実際の描画先の幅/高さ。上下分割する前の画面全体の比率を渡す。
+    void SetViewportAspectRatio(float aspect) { mViewportAspectRatio = aspect > 0.0f ? aspect : 1.0f; }
+    // Editor専用。-1でプレビューを解除し、現在位置からゾーンを再評価する。
+    void SetCameraZonePreview(int yamlIndex);
+    int GetCameraZonePreview() const { return mCameraZonePreviewIndex; }
+    bool HasActiveCameraZone(int playerIndex) const { return mCameraZones.HasActiveZone(playerIndex); }
 
     void SetIsTargetFocus(bool isTargetFocus) { mIsTargetFocus = isTargetFocus; }
 
     bool GetIsTargetFocus() const { return mIsTargetFocus; }
     bool HasActiveRevealFocus() const;
     bool AllowsPlayerInput() const;
+
+    // 分裂した側へ元の行き・帰りを引き継ぐ。接地判定の確定前でも呼べる。
+    void InheritSplitPlayerCameraDirection(int fromPlayerIndex, int toPlayerIndex);
 
     // 0始まりの操作対象切替に合わせてカメラを即座に合わせる。
     void SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex);
@@ -166,6 +191,8 @@ private:
     SceneSystem& mScene;
     std::function<CameraControlState()> mReadControlState;
     std::function<Actor*(const std::string&, int)> mFindPlacedActor;
+    std::function<void(int)> mOnCameraControlBlocked;
+    std::array<bool, 2> mWasBlockedRotationInput{};
     BossDefeatSequence mBossDefeatSequence;
 
     bool mIsTargetFocus = false;
@@ -201,6 +228,11 @@ private:
     CameraCollisionResolver mCollisionResolver;
     DebugCamera mDebugCamera;
     FocusCamera mFocusCamera;
+    CameraZoneController mCameraZones;
+    std::uint64_t mCameraFrameNumber = 0;
+    float mCameraDeltaTime = 0.0f;
+    float mViewportAspectRatio = 1.0f;
+    int mCameraZonePreviewIndex = -1;
     PlayerCamera mPlayerCamera;
     PlayerCameraSettings mPlayerCameraSettings;
     PlayerCameraSettingsRepository mPlayerCameraSettingsRepository;

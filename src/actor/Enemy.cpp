@@ -1,6 +1,5 @@
 #include "actor/Enemy.h"
 
-#include "app/Game.h"
 #include "actor/CharacterActor.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -10,6 +9,7 @@
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStateMachine.h"
 #include "actor/enemy/behavior/EnemyBehaviorController.h"
+#include "app/Game.h"
 #include "state/UIState.h"
 #include "system/SceneSystem.h"
 
@@ -21,6 +21,7 @@
 
 namespace {
 constexpr float dormantEnemyUpdateIntervalSeconds = 0.25f;
+constexpr float recoveryWarningDurationSeconds = 1.5f;
 constexpr float groundedPositionEpsilon = 0.0001f;
 constexpr float normalEnemySpinDurationSeconds = 0.42f;
 constexpr float bossSquashDurationSeconds = 0.10f;
@@ -124,8 +125,30 @@ bool Enemy::ShouldAcceptLandingSurface(Actor* surfaceActor, const glm::vec3& sur
     return dynamic_cast<Enemy*>(surfaceActor) == nullptr;
 }
 
+void Enemy::OnLoadedModelChanged()
+{
+    mAttackAnimation.Configure(GetLoadedModel());
+}
+
+const std::vector<glm::mat4>* Enemy::GetSkinningMatrices() const
+{
+    return mAttackAnimation.GetSkinningMatrices();
+}
+
+void Enemy::SetAttackAnimationSpeed(float speed)
+{
+    mAttackAnimationSpeed = std::isfinite(speed) ? std::clamp(speed, 0.25f, 2.0f) : 1.0f;
+}
+
+void Enemy::StartAttackAnimation()
+{
+    mAttackAnimation.Start(mAttackAnimationSpeed);
+}
+
 void Enemy::ApplyConfig(const EnemyConfig& config)
 {
+    SetAttackAnimationSpeed(config.attackAnimationSpeed);
+    SetAttackHitDelaySeconds(config.attackHitDelaySeconds);
     SetIsBoss(config.isBoss);
     SetIsBossEncounter(config.isBossEncounter);
     SetIsNormalHitKnockBackEnabled(config.isNormalHitKnockBackEnabled);
@@ -171,6 +194,7 @@ void Enemy::UpdateActor(float deltaTime)
         return;
     }
 
+    mAttackAnimation.Update(deltaTime);
     mMovement->SeparateAfterOverlappingEnemyLanding(*this, deltaTime);
 
     mStatus.SetNearestPlayer(ResolvePursuitTarget());
@@ -188,27 +212,28 @@ void Enemy::UpdateActor(float deltaTime)
         break;
     }
 
+    if (mStateMachine->GetActionState() != ActionState::Attacking || !mStateMachine->IsAlive()) {
+        mAttackAnimation.Stop();
+    }
     mMovement->RestoreGroundedEnemyInsideMovementArea(*this);
+}
+
+bool Enemy::IsRecoveryWarningActive() const
+{
+    const float launchedTimerSeconds = mStatus.GetLaunchedTimer();
+    return IsAlive() && mStateMachine->GetActionState() == ActionState::Launched && launchedTimerSeconds >= 0.0f &&
+           launchedTimerSeconds <= recoveryWarningDurationSeconds;
 }
 
 bool Enemy::ShouldRenderSolidWhite() const
 {
-    if (!IsAlive()) {
-        return false;
-    }
-
-    constexpr float recoveryWarningDurationSeconds = 1.5f;
-    const float launchedTimerSeconds = mStatus.GetLaunchedTimer();
-    const bool shouldBlink = mStateMachine->GetActionState() == ActionState::Launched && launchedTimerSeconds >= 0.0f &&
-                             launchedTimerSeconds <= recoveryWarningDurationSeconds;
-    if (!shouldBlink) {
+    if (!IsRecoveryWarningActive()) {
         return false;
     }
 
     constexpr float blinkIntervalSeconds = 0.12f;
-    const float warningElapsedSeconds = recoveryWarningDurationSeconds - launchedTimerSeconds;
+    const float warningElapsedSeconds = recoveryWarningDurationSeconds - mStatus.GetLaunchedTimer();
     const int blinkPhase = static_cast<int>(warningElapsedSeconds / blinkIntervalSeconds);
-
     return (blinkPhase % 2) != 0;
 }
 
@@ -285,6 +310,42 @@ void Enemy::ApplyDamage(float damage, Player* player)
 {
     RegisterPlayerAttackForAggro(player);
     mDamageHandler->ApplyDamage(*this, mStatus, *mStateMachine, *mMovement, damage, player);
+}
+
+bool Enemy::TryConsumeChargedAttackCounter()
+{
+    return IsAlive() && mStateMachine->TryConsumeChargedAttackCounter(mStatus);
+}
+
+void Enemy::ReactToComboFinisher(const Player& player, float pushSpeed, float durationSeconds)
+{
+    if (GetIsBoss() || IsBossEncounter() || !IsAlive() || mStateMachine->GetActionState() == ActionState::Attacking) {
+        return;
+    }
+    if (!IsOnGround()) {
+        // 空中では打ち上げ状態とガードの復帰条件を保ち、同じ速度・時間で横へ押す。
+        mMovement->StartComboFinisherPush(*this, GetPos() - player.GetPos(), pushSpeed, durationSeconds);
+        return;
+    }
+    mStateMachine->StartGroundFinisherKnockBack(*this, mStatus, player, pushSpeed, durationSeconds);
+}
+
+void Enemy::ReactToSuccessfulCounter(const Player& player)
+{
+    if (!IsAlive()) {
+        return;
+    }
+
+    constexpr float counterPushDurationSeconds = 0.3f;
+    const float pushSpeed = std::max(0.0f, GetKnockBackSpeed());
+    mStatus.SetCanCountered(false);
+    StartBossHitReaction();
+
+    if (!IsOnGround()) {
+        mMovement->StartComboFinisherPush(*this, GetPos() - player.GetPos(), pushSpeed, counterPushDurationSeconds);
+        return;
+    }
+    mStateMachine->StartGroundFinisherKnockBack(*this, mStatus, player, pushSpeed, counterPushDurationSeconds);
 }
 
 void Enemy::DefeatImmediately()
@@ -397,15 +458,21 @@ void Enemy::ApplyAirComboLift(float liftHeight)
     mMovement->ApplyAirComboLift(*this, liftHeight);
 }
 
+bool Enemy::ExtendLaunchApexWait(float seconds)
+{
+    return mMovement->ExtendLaunchApexWait(*this, mStatus, seconds);
+}
+
 bool Enemy::StartGravitySlam(Player& player, float downwardSpeed, float maximumDamage, float fullDamageHeight,
-                             float minimumDamageRatio, float groundImpactRadius, bool shouldPlayImpactFeedback)
+                             float minimumDamageRatio, float groundImpactRadius, float attackHeight,
+                             bool shouldPlayImpactFeedback)
 {
     if (IsOnGround() || !IsAlive()) {
         return false;
     }
 
     return mMovement->StartGravitySlam(*this, mStatus, *mStateMachine, player, downwardSpeed, maximumDamage,
-                                       fullDamageHeight, minimumDamageRatio, groundImpactRadius,
+                                       fullDamageHeight, minimumDamageRatio, groundImpactRadius, attackHeight,
                                        shouldPlayImpactFeedback);
 }
 

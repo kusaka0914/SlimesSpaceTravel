@@ -1,5 +1,6 @@
 #include "editor/ui/UICanvasEditorController.h"
 
+#include "ImGuizmo.h"
 #include "imgui.h"
 
 #include <algorithm>
@@ -17,6 +18,12 @@ UICanvasEditorController::UICanvasEditorController(DebugEditorContext& context)
       mSelection(context, mGeometry),
       mTransformController(context, mGeometry, mSelection, mEditHistory)
 {
+}
+
+bool UICanvasEditorController::HandlesViewportClick(const UILoadSystem* uiLoadSystem) const
+{
+    return mTransformController.IsUsingGizmo() || ImGuizmo::IsOver() || ImGuizmo::IsUsing() ||
+           mSelection.HasElementAtMouse(uiLoadSystem);
 }
 
 void UICanvasEditorController::Update(UILoadSystem* uiLoadSystem, std::string& statusMessage)

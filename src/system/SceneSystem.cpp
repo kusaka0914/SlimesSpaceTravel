@@ -306,6 +306,7 @@ void SceneSystem::ClearActorReferencesForStageReload()
 {
     if (mTutorialController) {
         mTutorialController->Stop(false);
+        mTutorialController->ResetForStageEntry();
     }
     if (mTalkController) {
         mTalkController->ClearActorReferencesForStageReload();

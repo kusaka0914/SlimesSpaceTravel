@@ -1,10 +1,16 @@
 #include "RuntimeEditorPersistenceTests.h"
 
+#include "actor/CameraZone.h"
+#include "actor/Crystal.h"
+#include "actor/JewelItem.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/StageObject.h"
 #include "app/Game.h"
 #include "component/PlatformMovementComponent.h"
+#include "editor/stage/StageActorHierarchy.h"
+#include "editor/stage/StageActorQuery.h"
 #include "editor/stage/history/StageEditCommandController.h"
 #include "editor/stage/persistence/StageActorYamlWriter.h"
 #include "support/RuntimeStageSupport.h"
@@ -12,6 +18,7 @@
 #include "support/TestSupport.h"
 #include "system/UserDataPaths.h"
 
+#include <algorithm>
 #include <iostream>
 #include <yaml-cpp/yaml.h>
 
@@ -23,6 +30,122 @@ void ExpectYamlVector(const glm::vec3& expected, const YAML::Node& actual, const
     for (int axis = 0; axis < 3; ++axis) {
         ExpectNear(expected[axis], actual[axis].as<float>(), 0.0001f, description);
     }
+}
+
+void HierarchyGroupsRuntimePlanetsAndKeepsActorReferences(Game& game)
+{
+    Stage stage;
+    Planet first(nullptr), second(nullptr), empty(nullptr), foreign(nullptr);
+    stage.AddPlanet(&first);
+    stage.AddPlanet(&second);
+    stage.AddPlanet(&empty);
+    Platform normal(&game), moving(&game);
+    normal.SetCurrentPlanet(&first);
+    normal.SetStageYamlIndex(0);
+    normal.SetStageSequenceName("platforms");
+    moving.SetCurrentPlanet(&first);
+    moving.SetStageYamlIndex(0);
+    moving.SetStageSequenceName("movingPlatforms");
+    first.AddPlatform(&normal);
+    first.AddPlatform(&moving);
+    Crystal crystal(&game);
+    crystal.SetCurrentPlanet(&first);
+    crystal.SetStageYamlIndex(0);
+    first.AddCrystal(&crystal);
+    JewelItem jewel(&game);
+    jewel.SetCurrentPlanet(&first);
+    jewel.SetStageYamlIndex(0);
+    first.AddJewelItem(&jewel);
+    CameraZone zone(&game);
+    zone.SetCurrentPlanet(&first);
+    zone.SetStageYamlIndex(0);
+    first.AddStageObject(&zone);
+    StageObject model(&game), reassigned(&game), orphan(&game), outsideStage(&game);
+    model.SetCurrentPlanet(&first);
+    model.SetModelPath("Props/Same.fbx");
+    model.SetStageYamlIndex(0);
+    reassigned.SetCurrentPlanet(&second);
+    reassigned.SetModelPath("Props/Same.fbx");
+    reassigned.SetStageYamlIndex(1);
+    orphan.SetStageYamlIndex(2);
+    outsideStage.SetCurrentPlanet(&foreign);
+    outsideStage.SetStageYamlIndex(3);
+    first.AddStageObject(&model);
+    first.AddStageObject(&reassigned);
+    first.AddStageObject(&orphan);
+    second.AddStageObject(&outsideStage);
+
+    const auto hierarchy = StageActorHierarchy::Collect(&stage);
+    ExpectEqual(std::size_t(4), hierarchy.size(), "all planets and the unassigned group appear");
+    ExpectEqual(std::size_t(6), hierarchy[0].actorCount, "planet count excludes the planet itself");
+    ExpectEqual(std::size_t(1), hierarchy[1].actorCount, "current planet wins over stale registry membership");
+    ExpectTrue(hierarchy[2].groups.empty() && hierarchy[2].actorCount == 0, "empty planet remains visible");
+    ExpectTrue(hierarchy[3].planetIndex == -1 && hierarchy[3].actorCount == 2,
+               "null and out-of-stage planet references are not lost");
+    const auto& groups = hierarchy[0].groups;
+    ExpectEqual(std::size_t(4), groups.size(), "only populated categories appear");
+    ExpectTrue(groups[0].category == StageHierarchyCategory::Platform &&
+                   groups[1].category == StageHierarchyCategory::Item &&
+                   groups[2].category == StageHierarchyCategory::CameraZone &&
+                   groups[3].category == StageHierarchyCategory::StageObject,
+               "categories follow the declared display order");
+    ExpectEqual(std::size_t(2), groups[0].actors.size(), "platform YAML sequences share one category");
+    ExpectEqual(std::size_t(2), groups[1].actors.size(), "different item types share one category");
+    ExpectTrue(StageActorQuery::MakeKey(groups[0].actors[0].ref) != StageActorQuery::MakeKey(groups[0].actors[1].ref),
+               "equal YAML indices in different sequences remain distinct");
+
+    const auto platformFilter = StageActorHierarchy::Filter(hierarchy, "足場");
+    ExpectTrue(platformFilter.size() == 1 && platformFilter[0].groups.size() == 1 &&
+                   platformFilter[0].groups[0].actors.size() == 2,
+               "category search keeps its planet and all matching children");
+    const auto planetFilter = StageActorHierarchy::Filter(hierarchy, "惑星0");
+    ExpectTrue(planetFilter.size() == 1 && planetFilter[0].actorCount == 6,
+               "planet search ignores the space before the index");
+    const auto emptyFilter = StageActorHierarchy::Filter(hierarchy, "惑星2");
+    ExpectTrue(emptyFilter.size() == 1 && emptyFilter[0].groups.empty(), "empty planet can be searched");
+    const auto zoneFilter = StageActorHierarchy::Filter(hierarchy, "カメラゾーン0");
+    ExpectTrue(zoneFilter.size() == 1 && zoneFilter[0].groups.size() == 1 &&
+                   zoneFilter[0].groups[0].actors[0].actor == &zone,
+               "Japanese camera-zone name identifies the existing actor");
+    ExpectEqual(std::size_t(2), StageActorHierarchy::Filter(hierarchy, "props/SAME").size(),
+                "model search is case insensitive across planets");
+    ExpectTrue(StageActorHierarchy::Filter(hierarchy, "not-present").empty(), "no false search results");
+    ExpectEqual(hierarchy.size(), StageActorHierarchy::Filter(hierarchy, "").size(),
+                "clearing search restores all rows");
+    ExpectTrue(StageActorHierarchy::Collect(nullptr).empty(), "missing stage is safe");
+
+    DebugEditorContext context;
+    StageSelectionController selection([&]() { return StageSelectionScene{.stage = &stage}; }, context.gameViewport,
+                                       context.planetMoveMode);
+    selection.SetSingleSelection(groups[0].actors[0].actor, groups[0].actors[0].ref);
+    selection.ToggleSelection(groups[0].actors[1].actor, groups[0].actors[1].ref);
+    ExpectEqual(2, selection.GetSelectedActorCount(), "hierarchy uses the existing multi-selection controller");
+    (void)StageActorHierarchy::Filter(hierarchy, "カメラゾーン");
+    ExpectEqual(2, selection.GetSelectedActorCount(), "search does not change selection");
+    ExpectTrue(selection.IsSelected(groups[0].actors[0].ref) && selection.IsSelected(groups[0].actors[1].ref),
+               "selected YAML references remain highlighted independently");
+    selection.SetSingleSelection(&first, hierarchy[0].planet.ref);
+    ExpectTrue(selection.GetSingleSelectedActor() == &first, "planet node selects the existing inspector target");
+
+    moving.SetCurrentPlanet(&second);
+    first.RemovePlatform(&normal);
+    first.RemoveCrystal(&crystal);
+    first.RemoveJewelItem(&jewel);
+    const auto updated = StageActorHierarchy::Collect(&stage);
+    ExpectTrue(std::none_of(updated[0].groups.begin(), updated[0].groups.end(),
+                            [](const auto& group) {
+                                return group.category == StageHierarchyCategory::Platform ||
+                                       group.category == StageHierarchyCategory::Item;
+                            }),
+               "removed or reassigned actors do not leave empty categories");
+    ExpectEqual(std::size_t(2), updated[1].actorCount, "runtime reassignment is reflected without moving registries");
+    second.AddStageObject(&reassigned);
+    ExpectEqual(updated[1].actorCount, StageActorHierarchy::Collect(&stage)[1].actorCount,
+                "a temporarily duplicated registry entry is counted once");
+    ExpectTrue(reassigned.GetCurrentPlanet() == &second && orphan.GetCurrentPlanet() == nullptr &&
+                   !model.FindEditorAuthoredTransform(),
+               "hierarchy does not author transforms or planet bindings");
+    std::cout << "[PASS] Runtime.HierarchyGroupingSearchAndSelectionReferences\n";
 }
 
 void MovingPlatformSavePreservesAuthoredStartAndSchema(Game& game)
@@ -216,6 +339,7 @@ void MovingPlatformDuplicationTranslatesPathAndSupportsHistory(Game& game)
 
 void RunRuntimeEditorPersistenceTests(Game& game)
 {
+    HierarchyGroupsRuntimePlanetsAndKeepsActorReferences(game);
     MovingPlatformSavePreservesAuthoredStartAndSchema(game);
     NPCTalkSerializationKeepsMetadataAndRemovesStaleKeys(game);
     MovingPlatformDuplicationTranslatesPathAndSupportsHistory(game);

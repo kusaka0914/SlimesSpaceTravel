@@ -69,6 +69,10 @@ EnemyBehaviorActionResult EnemyFanAttackAction::Update(EnemyBehaviorContext& con
         return EnemyBehaviorActionResult::Finished;
     }
 
+    if (!context.status.AdvanceAttackStartup(deltaTime)) {
+        return EnemyBehaviorActionResult::Running;
+    }
+
     context.status.DecreaseCanCounteredTimer(deltaTime);
     if (context.status.GetCanCounteredTimer() <= 0.0f) {
         context.status.SetCanCountered(false);
@@ -79,7 +83,7 @@ EnemyBehaviorActionResult EnemyFanAttackAction::Update(EnemyBehaviorContext& con
                                          deltaTime);
         mHasAppliedDamage = true;
 
-        // ジャスト回避でガードが破壊されるとLaunchedへ移るため、被弾処理後に状態を確認する。
+        // ジャストダッシュでガードが破壊されるとLaunchedへ移るため、被弾処理後に状態を確認する。
         if (context.stateMachine.GetActionState() != EnemyStateMachine::ActionState::Attacking) {
             return EnemyBehaviorActionResult::Finished;
         }

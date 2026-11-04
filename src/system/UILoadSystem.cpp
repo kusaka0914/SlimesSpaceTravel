@@ -74,7 +74,25 @@ void UILoadSystem::LoadTextureInfo(const std::string& screenName, YAML::Node& no
     info.heightRatio = node["scaleRatio"][1] ? node["scaleRatio"][1].as<float>() : 0.0f;
     info.rotationDegrees = node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
 
-    std::string textureId = screenName + "." + node["id"].as<std::string>();
+    const std::string id = node["id"].as<std::string>();
+    // 既存のUI定義に間隔がない場合も、従来のHUD配置を保つ。
+    if (screenName == "default") {
+        if (id == "hpTexture") {
+            info.repeatSpacingRatio = 1.0f / 28.0f;
+        } else if (id == "jewelTexture") {
+            info.repeatSpacingRatio = 1.0f / 20.0f;
+        } else if (id == "splitGuardTexture") {
+            info.repeatSpacingRatio = 0.025f;
+        }
+    }
+    if (node["repeatSpacingRatio"]) {
+        const float spacing = node["repeatSpacingRatio"].as<float>();
+        if (std::isfinite(spacing) && spacing >= 0.0f) {
+            info.repeatSpacingRatio = spacing;
+        }
+    }
+
+    std::string textureId = screenName + "." + id;
     mTextureInfo[textureId] = info;
 }
 
@@ -141,6 +159,9 @@ YAML::Node UILoadSystem::BuildUIInfo(const std::string& path) const
                 node["scaleRatio"][0] = info.widthRatio;
                 node["scaleRatio"][1] = info.heightRatio;
                 node["rotationDegrees"] = info.rotationDegrees;
+                if (info.repeatSpacingRatio) {
+                    node["repeatSpacingRatio"] = *info.repeatSpacingRatio;
+                }
             } else if (type == "text") {
                 auto infoIterator = mTextInfo.find(mapId);
                 if (infoIterator == mTextInfo.end()) {

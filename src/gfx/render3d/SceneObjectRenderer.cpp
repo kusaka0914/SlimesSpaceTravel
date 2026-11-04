@@ -24,6 +24,7 @@
 #include "world/Stage.h"
 
 #include <GL/glew.h>
+#include <algorithm>
 
 SceneObjectRenderer::SceneObjectRenderer(const Renderer3D* renderer, const PhysicsSystem& physics,
                                          const PlayerEffectRenderer* playerEffectRenderer,
@@ -47,18 +48,23 @@ void SceneObjectRenderer::DrawSceneObjects(const glm::mat4& viewMat, const Playe
     const std::vector<Planet*>& planets = scene.stage->GetPlanets();
 
     const bool shouldDrawPlayers = !scene.hidesPlayersForCinematic;
+    std::vector<TransparentActorDraw> transparentActors;
 
     DrawPlanets(planets);
     mRenderer->DrawEnvironmentDecorations(scene);
-    DrawActorOnPlanets(planets, viewMat, viewportPlayer, scene);
+    DrawActorOnPlanets(planets, viewMat, scene, transparentActors);
     DrawCharacterShadows(planets, shouldDrawPlayers, scene.players);
 
     if (mPlayerEffectRenderer && shouldDrawPlayers) {
         mPlayerEffectRenderer->DrawPlayers(viewMat, scene.players, scene.isDebugEditorShowing, &mPhysics,
-                                           scene.splitGuard);
-        if (scene.mergeGuideTarget) {
-            mPlayerEffectRenderer->DrawPlayerMergeGuide(scene.mergeGuideTarget, scene.mergeGuideRadiusWorldUnits);
-        }
+                                           scene.splitGuard, scene.soul);
+    }
+
+    // 足場やPlayerの深度を確定してから半透明モデルを重ね、手前の不透明物が透けることを防ぐ。
+    DrawTransparentActors(transparentActors);
+    DrawEnemyEffects(planets, viewMat, viewportPlayer, scene);
+    if (mPlayerEffectRenderer && shouldDrawPlayers && scene.mergeGuideTarget) {
+        mPlayerEffectRenderer->DrawPlayerMergeGuide(scene.mergeGuideTarget, scene.mergeGuideRadiusWorldUnits);
     }
 
     if (!scene.isGameUIHidden && mNPCProximityMessageRenderer) {
@@ -78,10 +84,32 @@ void SceneObjectRenderer::DrawPlanets(const std::vector<Planet*>& planets) const
 }
 
 void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets, const glm::mat4& viewMat,
-                                             const Player* viewportPlayer, const SceneRenderState& scene) const
+                                             const SceneRenderState& scene,
+                                             std::vector<TransparentActorDraw>& transparentActors) const
 {
     glUniform1f(mRenderer->GetShader3D()->GetLocToonLevels(), 3.0f);
     glUniform1f(mRenderer->GetShader3D()->GetLocToonStrength(), 0.6f);
+
+    const auto drawActor = [&](Actor* actor, float opacityMultiplier = 1.0f, bool allowsInactive = false) {
+        if (!actor || (!actor->GetIsActive() && !allowsInactive)) {
+            return;
+        }
+        const float opacity = glm::clamp(actor->GetRenderOpacity() * opacityMultiplier, 0.0f, 1.0f);
+        if (opacity <= 0.001f) {
+            return;
+        }
+        if (opacity < 0.999f) {
+            const float depth = (viewMat * glm::vec4(actor->GetRenderPosition(), 1.0f)).z;
+            transparentActors.push_back({actor, opacityMultiplier, depth});
+            return;
+        }
+        mRenderer->DrawActor(actor);
+    };
+    const auto drawActors = [&](const auto& actors) {
+        for (auto* actor : actors) {
+            drawActor(actor);
+        }
+    };
 
     for (Planet* planet : planets) {
         if (!planet) {
@@ -90,39 +118,54 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
 
         for (Enemy* enemy : planet->GetEnemies()) {
             if (mRenderer->IsActorInsideView(enemy)) {
-                mRenderer->TryDrawActor(enemy, true);
+                drawActor(enemy);
             }
         }
 
         for (Boat* boat : planet->GetBoats()) {
             if (boat && boat->ShouldRenderUnavailablePreview()) {
                 constexpr float unavailableRocketOpacity = 0.2f;
-                mRenderer->DrawInactiveActorPreview(boat, unavailableRocketOpacity);
+                drawActor(boat, unavailableRocketOpacity, true);
                 continue;
             }
-            mRenderer->TryDrawActor(boat);
+            drawActor(boat);
         }
-        mRenderer->TryDrawActors(planet->GetBoatParts());
-        mRenderer->TryDrawActors(planet->GetCrystals());
-        mRenderer->TryDrawActors(planet->GetPlatforms());
-        mRenderer->TryDrawActors(planet->GetStageObjects());
-        mRenderer->TryDrawActors(planet->GetNPCs());
-        mRenderer->TryDrawActors(planet->GetJewelItems());
-        mRenderer->TryDrawActors(planet->GetHazardActors());
+        drawActors(planet->GetBoatParts());
+        drawActors(planet->GetCrystals());
+        drawActors(planet->GetPlatforms());
+        drawActors(planet->GetStageObjects());
+        drawActors(planet->GetNPCs());
+        drawActors(planet->GetJewelItems());
+        drawActors(planet->GetHazardActors());
         if (scene.isDebugEditorShowing) {
-            mRenderer->TryDrawActors(planet->GetTutorialTriggers());
+            drawActors(planet->GetTutorialTriggers());
+            drawActors(planet->GetBoatArrivalPoints());
         }
-        mRenderer->TryDrawActor(planet->GetKey());
-        mRenderer->TryDrawActor(planet->GetStar());
+        drawActor(planet->GetKey());
+        drawActor(planet->GetStar());
 
         if (scene.isDebugMode) {
-            mRenderer->TryDrawActors(planet->GetBoatArrivalPoints());
-            mRenderer->TryDrawActors(planet->GetFallRespawnPoints());
+            drawActors(planet->GetFallRespawnPoints());
         }
     }
 
-    mRenderer->TryDrawActors(scene.runtimeJewels);
+    drawActors(scene.runtimeJewels);
+}
 
+void SceneObjectRenderer::DrawTransparentActors(std::vector<TransparentActorDraw>& actors) const
+{
+    std::stable_sort(actors.begin(), actors.end(),
+                     [](const TransparentActorDraw& first, const TransparentActorDraw& second) {
+                         return first.viewDepth < second.viewDepth;
+                     });
+    for (const TransparentActorDraw& draw : actors) {
+        mRenderer->DrawInactiveActorPreview(draw.actor, draw.opacityMultiplier);
+    }
+}
+
+void SceneObjectRenderer::DrawEnemyEffects(const std::vector<Planet*>& planets, const glm::mat4& viewMat,
+                                           const Player* viewportPlayer, const SceneRenderState& scene) const
+{
     if (!mPlayerEffectRenderer) {
         return;
     }

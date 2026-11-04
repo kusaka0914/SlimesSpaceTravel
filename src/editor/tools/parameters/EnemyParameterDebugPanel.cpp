@@ -115,6 +115,26 @@ void EnemyParameterDebugPanel::DrawCommonSettings(Enemy* normalEnemy, Enemy* bos
     if (ImGui::TreeNode("共通設定")) {
         Enemy* commonSettingsEnemy = normalEnemy ? normalEnemy : bossEnemy;
         if (commonSettingsEnemy) {
+            float animationSpeed = commonSettingsEnemy->GetAttackAnimationSpeed();
+            if (ImGui::SliderFloat("攻撃アニメーション速度", &animationSpeed, 0.25f, 2.0f, "%.2f倍")) {
+                for (Enemy* enemy : allEnemies) {
+                    if (enemy) {
+                        enemy->SetAttackAnimationSpeed(animationSpeed);
+                    }
+                }
+            }
+            float hitDelaySeconds = commonSettingsEnemy->GetAttackHitDelaySeconds();
+            if (ImGui::DragFloat("攻撃アニメーション開始から判定まで（秒）", &hitDelaySeconds, 0.01f, 0.0f, 5.0f,
+                                 "%.2f")) {
+                for (Enemy* enemy : allEnemies) {
+                    if (enemy) {
+                        enemy->SetAttackHitDelaySeconds(hitDelaySeconds);
+                    }
+                }
+            }
+            ImGui::TextDisabled("通常敵・ボス共通。速度と判定待ち時間は独立して調整します。");
+            ImGui::TextDisabled("溜め攻撃カウンターは実際の判定開始前0.3秒以内です。");
+
             float knockBackSpeed = commonSettingsEnemy->GetKnockBackSpeed();
             if (ImGui::SliderFloat("ノックバック速度", &knockBackSpeed, 0.0f, 30.0f, "%.1f")) {
                 knockBackSpeed = std::round(knockBackSpeed * 10.0f) / 10.0f;

@@ -1,7 +1,7 @@
 #include "actor/TutorialTrigger.h"
 
-#include "app/Game.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
 #include "system/scene/TutorialController.h"
@@ -43,7 +43,7 @@ float TutorialTrigger::GetRenderOpacity() const
     if (!mGame || !mGame->GetIsDebugEditorShowing()) {
         return 0.0f;
     }
-    return GetIsEditorSelected() ? 0.22f : 0.08f;
+    return 0.08f;
 }
 
 void TutorialTrigger::OnLoadedModelChanged()

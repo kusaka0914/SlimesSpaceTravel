@@ -6,13 +6,14 @@
 ParameterDebugPanel::ParameterDebugPanel(DebugEditorContext& context, CameraDebugPanel& cameraPanel)
     : mCameraPanel(cameraPanel),
       mPlayerPanel(context),
+      mAudioPanel(context),
       mEnemyPanel(context, mEnemyPresetPanel)
 {
 }
 
 void ParameterDebugPanel::Draw()
 {
-    const char* menus[] = {"プレイヤー", "敵", "カメラ"};
+    const char* menus[] = {"プレイヤー", "敵", "カメラ", "音量"};
 
     ImGui::BeginChild("ParameterEditorLeft", ImVec2(160, 0), true);
 
@@ -37,6 +38,9 @@ void ParameterDebugPanel::Draw()
         break;
     case 2:
         mCameraPanel.Draw();
+        break;
+    case 3:
+        mAudioPanel.Draw();
         break;
     default:
         break;

@@ -1,7 +1,7 @@
 #include "actor/JewelItem.h"
 
-#include "app/Game.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "component/CollectableComponent.h"
 #include "system/AudioSystem.h"
 
@@ -11,7 +11,6 @@ JewelItem::JewelItem(Game* game)
     : Actor(game)
 {
     SetModelPath("crystal.obj");
-    SetTextureOverridePath("textures/jewel.png");
     SetScale(glm::vec3(0.22f));
     SetRadius(0.35f);
 

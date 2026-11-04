@@ -6,6 +6,7 @@
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
+#include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
 
@@ -29,11 +30,22 @@ void PlayerInput::ProcessActor(const PlayerMovement& movement, const PlayerInput
         return;
     }
 
+    const PlayerInputDevice device = ResolvePlayerInputDevice(movement.GetPlayerNum(), context.devices);
+    if ((mHasReadInputDevice && device != mPreviousInputDevice) ||
+        (context.isEditorKeyboardCaptured &&
+         (device == PlayerInputDevice::PrimaryKeyboard || device == PlayerInputDevice::SecondaryKeyboard))) {
+        SuppressCombatInputUntilReleased();
+    }
+    mPreviousInputDevice = device;
+    mHasReadInputDevice = true;
+
+    // 機器切断・操作対象変更のときも、前フレームの押下を残さない。
+    mAttackPressed = mWideAttackPressed = mRecoveryButtonPressed = false;
+    mJumpPressed = mDodgePressed = false;
+    mMoveForward = mMoveLeft = 0.0f;
     ProcessGameController(movement, context.devices);
     ProcessKeyboard(movement, context);
-    UpdateRecoverInput(context.isAssistControlStyle);
     ApplyTutorialInputRestriction(context.isWaitingForTutorialJump);
-    CaptureAttackInput();
 }
 
 void PlayerInput::ClearNonControlledPlayerInput()
@@ -48,10 +60,10 @@ void PlayerInput::ClearNonControlledPlayerInput()
     mJumpPressed = false;
     mAttackPressed = false;
     mWideAttackPressed = false;
-    mSpecialAttackPressed = false;
+    mRecoveryButtonPressed = false;
     mRecoverPressed = false;
 
-    ClearAttackBuffer();
+    SuppressCombatInputUntilReleased();
 }
 
 void PlayerInput::ApplyTutorialInputRestriction(bool isWaitingForTutorialJump)
@@ -67,10 +79,10 @@ void PlayerInput::ApplyTutorialInputRestriction(bool isWaitingForTutorialJump)
     mDodgePressed = false;
     mAttackPressed = false;
     mWideAttackPressed = false;
-    mSpecialAttackPressed = false;
+    mRecoveryButtonPressed = false;
     mRecoverPressed = false;
 
-    ClearAttackBuffer();
+    SuppressCombatInputUntilReleased();
 }
 
 void PlayerInput::ProcessGameController(const PlayerMovement& movement, const PlayerInputDeviceContext& devices)
@@ -99,7 +111,7 @@ void PlayerInput::ProcessGameController(const PlayerMovement& movement, const Pl
     mAttackPressed = mInputSystem.IsControllerButtonPressed(controllerPlayerNum, SDL_CONTROLLER_BUTTON_X);
     mWideAttackPressed = mInputSystem.IsControllerButtonPressed(controllerPlayerNum, SDL_CONTROLLER_BUTTON_Y);
     mDodgePressed = mInputSystem.IsControllerButtonPressed(controllerPlayerNum, SDL_CONTROLLER_BUTTON_B);
-    mSpecialAttackPressed =
+    mRecoveryButtonPressed =
         mInputSystem.IsControllerButtonPressed(controllerPlayerNum, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
 }
 
@@ -118,7 +130,7 @@ void PlayerInput::ProcessKeyboard(const PlayerMovement& movement, const PlayerIn
     mAttackPressed = false;
     mWideAttackPressed = false;
     mDodgePressed = false;
-    mSpecialAttackPressed = false;
+    mRecoveryButtonPressed = false;
     mRecoverPressed = false;
 
     if (context.isEditorKeyboardCaptured) {
@@ -155,49 +167,53 @@ void PlayerInput::ProcessKeyboard(const PlayerMovement& movement, const PlayerIn
     const int attackKey = usesSecondaryKeyboard ? GLFW_KEY_SLASH : GLFW_KEY_K;
     const int wideAttackKey = usesSecondaryKeyboard ? GLFW_KEY_PERIOD : GLFW_KEY_J;
     const int dodgeKey = usesSecondaryKeyboard ? GLFW_KEY_RIGHT_CONTROL : GLFW_KEY_U;
-    const int specialAttackKey = usesSecondaryKeyboard ? GLFW_KEY_RIGHT_ALT : GLFW_KEY_N;
+    const int recoveryKey = usesSecondaryKeyboard ? GLFW_KEY_RIGHT_ALT : GLFW_KEY_N;
 
     mJumpPressed = mInputSystem.IsKeyPressed(jumpKey);
     mAttackPressed = mInputSystem.IsKeyPressed(attackKey);
     mWideAttackPressed = mInputSystem.IsKeyPressed(wideAttackKey);
     mDodgePressed = mInputSystem.IsKeyPressed(dodgeKey);
-    mSpecialAttackPressed = mInputSystem.IsKeyPressed(specialAttackKey);
+    mRecoveryButtonPressed = mInputSystem.IsKeyPressed(recoveryKey);
 }
 
-void PlayerInput::UpdateRecoverInput(bool isAssistControlStyle)
+void PlayerInput::UpdateCombatInput(float deltaTime, bool isAssistStyle, bool isPreparingChargedAttack)
 {
-    const bool isCombinationRecoveryRequested = mSpecialAttackPressed && mJumpPressed;
-    const bool isAssistRecoveryRequested = isAssistControlStyle && mAttackPressed && !mSpecialAttackPressed;
-    mRecoverPressed = isCombinationRecoveryRequested || isAssistRecoveryRequested;
-}
-
-void PlayerInput::CaptureAttackInput()
-{
-    // 特殊攻撃用の同時押しを、通常攻撃の先行入力として二重に予約しない。
-    if (mSpecialAttackPressed) {
+    if (mInputAvailableTimer >= 0.0f) {
+        SuppressCombatInputUntilReleased();
         return;
     }
+    const auto requests = mCombatInput.Update(mWideAttackPressed, mAttackPressed, mRecoveryButtonPressed, isAssistStyle,
+                                              isPreparingChargedAttack, deltaTime);
+    mRecoverPressed = requests.recover;
+    mChargedAttackReleaseRequested = requests.releaseChargedAttack;
+    mContinuousAttackRequested =
+        !isPreparingChargedAttack && mWideAttackPressed && (mContinuousAttackRequested || requests.continuousAttack);
+    mChargeAttackRequested =
+        !isPreparingChargedAttack && mAttackPressed && (mChargeAttackRequested || requests.chargeAttack);
 
-    const bool normalAttackStarted = mAttackPressed && !mAttackPressedPrev;
-    const bool wideAttackStarted = mWideAttackPressed && !mWideAttackPressedPrev;
-
-    if (normalAttackStarted && !mRecoverPressed) {
-        mBufferedAttackInput = PlayerAttackInputKind::Normal;
-        mAttackBufferRemaining = mAttackBufferDuration;
-    } else if (wideAttackStarted) {
-        mBufferedAttackInput = PlayerAttackInputKind::Wide;
+    if (requests.strongAttack || requests.weakAttack) {
+        mBufferedAttackInput = requests.strongAttack ? PlayerAttackInputKind::Normal : PlayerAttackInputKind::Wide;
         mAttackBufferRemaining = mAttackBufferDuration;
     }
+}
+
+void PlayerInput::SuppressCombatInputUntilReleased()
+{
+    mCombatInput.SuppressUntilReleased();
+    mAirDodgeButtonSuppressed = true;
+    ConsumeAirDodgeInput();
+    mContinuousAttackRequested = false;
+    mChargeAttackRequested = false;
+    mChargedAttackReleaseRequested = false;
+    mRecoverPressed = false;
+    ClearAttackBuffer();
 }
 
 void PlayerInput::EndFrame()
 {
     mDodgePressedPrev = mDodgePressed;
     mJumpPressedPrev = mJumpPressed;
-    mAttackPressedPrev = mAttackPressed;
     mWideAttackPressedPrev = mWideAttackPressed;
-    mSpecialAttackPressedPrev = mSpecialAttackPressed;
-    mRecoverPressedPrev = mRecoverPressed;
 }
 
 void PlayerInput::UpdateInputAvailableTimer(float deltaTime)
@@ -230,9 +246,25 @@ void PlayerInput::ClearAttackBuffer()
     mAttackBufferRemaining = 0.0f;
 }
 
-void PlayerInput::SyncAttackButtonPrev()
+void PlayerInput::CaptureAirDodgeInput(bool isAirborne, bool allowsBuffering)
 {
-    mAttackPressedPrev = mAttackPressed;
-    mWideAttackPressedPrev = mWideAttackPressed;
-    mSpecialAttackPressedPrev = mSpecialAttackPressed;
+    if (mAirDodgeButtonSuppressed) {
+        if (!mJumpPressed) {
+            mAirDodgeButtonSuppressed = false;
+        }
+        ConsumeAirDodgeInput();
+        return;
+    }
+    if (!isAirborne || !allowsBuffering) {
+        ConsumeAirDodgeInput();
+        return;
+    }
+    if (mJumpPressed && !mJumpPressedPrev) {
+        mAirDodgeBufferRemaining = 0.2f;
+    }
+}
+
+void PlayerInput::UpdateAirDodgeBuffer(float deltaTime)
+{
+    mAirDodgeBufferRemaining = std::max(0.0f, mAirDodgeBufferRemaining - std::max(0.0f, deltaTime));
 }

@@ -17,9 +17,10 @@ class PlayerAttackResolver {
 public:
     // サービスを借用し、命中通知の関数を保持する。通知先は必須で、サービスは本オブジェクトより長く存続させる。
     // ParticleSystem未設定時は命中エフェクトだけを省略する。
-    PlayerAttackResolver(AudioSystem& audio, ParticleSystem* particles, std::function<void(int)> onAttackHit);
+    PlayerAttackResolver(AudioSystem& audio, ParticleSystem* particles, std::function<void(int)> onAttackHit,
+                         std::function<void(float)> requestHitStop = {});
 
-    // 命中一覧と障害物への反応から結果を適用する。空振りでも攻撃後の硬直・コンボを更新する。
+    // 命中一覧と障害物への反応から結果を適用する。共通コンボの段・硬直は呼び出し側で更新する。
     void ResolveAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, PlayerCombat& combat,
                        const std::vector<Enemy*>& hitEnemies, bool didHitHazardActor, float deltaTime) const;
 
@@ -32,18 +33,21 @@ public:
                               const std::vector<Enemy*>& hitEnemies, float deltaTime) const;
 
     // 空中の敵の叩き落としを開始し、1体以上で開始できればtrue。ダメージは敵の着地時に確定する。
-    // shouldAssignImpactFeedbackがtrueでも、着地時の命中演出は最初に開始した1体だけに割り当てる。
+    // attackHeightは発動時のプレイヤー高度。着地演出はshouldAssignImpactFeedbackがtrueの場合に最初の1体へ割り当てる。
     bool ResolveAirSlamContact(Player& player, const PlayerMovement& movement, const std::vector<Enemy*>& hitEnemies,
                                float enemyDownwardSpeed, float maximumDamage, float fullDamageHeight,
-                               float minimumDamageRatio, bool shouldAssignImpactFeedback) const;
+                               float minimumDamageRatio, float attackHeight, bool shouldAssignImpactFeedback) const;
 
-    // ダメージと回避方向の外力を適用する。enemyLiftHeightが正なら持ち上げ、1体以上の命中でtrue。
+    // ダメージとダッシュ方向の外力を適用する。enemyLiftHeightが正なら持ち上げ、1体以上の命中でtrue。
     bool ResolveAirDodgeAttack(Player& player, const PlayerMovement& movement, const std::vector<Enemy*>& hitEnemies,
                                float damage, float guardDamage, float enemyPushSpeed, float enemyPushDampingPerSecond,
                                float enemyLiftHeight, float deltaTime) const;
 
 private:
+    void ResolveComboAttack(Player& player, PlayerMovement& movement, PlayerCombat& combat,
+                            const std::vector<Enemy*>& hitEnemies, bool didHitHazardActor, float deltaTime) const;
     AudioSystem& mAudio;
     ParticleSystem* mParticles;
     std::function<void(int)> mOnAttackHit;
+    std::function<void(float)> mRequestHitStop;
 };

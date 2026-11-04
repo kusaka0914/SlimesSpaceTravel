@@ -1,6 +1,5 @@
 #include "actor/player/PlayerStateMachine.h"
 
-#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
@@ -10,10 +9,14 @@
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerStatus.h"
 #include "actor/player/PlayerTargetingAssist.h"
+#include "app/Game.h"
 #include "system/AudioSystem.h"
 
+#include <algorithm>
+
 void PlayerStateMachine::UpdateDodging(Player& player, PlayerInput& input, PlayerMovement& movement,
-                                       PlayerGrounding& grounding, PlayerCombat& combat, float deltaTime)
+                                       PlayerGrounding& grounding, PlayerCombat& combat, PlayerStatus& status,
+                                       float deltaTime)
 {
     const glm::vec3 movementStart = player.GetPos();
     movement.ApplyDodgeMovement(player, combat, grounding, deltaTime);
@@ -21,6 +24,7 @@ void PlayerStateMachine::UpdateDodging(Player& player, PlayerInput& input, Playe
 
     movement.ReduceDodgeTimer(deltaTime);
     if (movement.GetDodgeTimer() <= 0.0f) {
+        status.StartDodgeCounterGrace();
         const bool didFinishAirDodge = combat.IsAirDodgeAttackActive() && !player.GetOnGround();
         const bool shouldResumeAirMovementImmediately = didFinishAirDodge && mShouldSkipAirDodgePostHover;
         combat.EndAirDodgeAttack();
@@ -29,7 +33,7 @@ void PlayerStateMachine::UpdateDodging(Player& player, PlayerInput& input, Playe
             movement.StartAirborneActionHover(movement.GetAirDodgePostHoverDurationSeconds());
         }
         if (shouldResumeAirMovementImmediately) {
-            // 攻撃から回避したケースだけは、回避終了フレームから
+            // 攻撃からダッシュしたケースだけは、ダッシュ終了フレームから
             // 空中入力と落下を再開する。これで着地まで停止しない。
             combat.CancelCurrentAttack();
             movement.CancelAirborneActionHover();
@@ -47,6 +51,10 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
         movement.StopAirborneVerticalMovement(player);
     }
 
+    if (player.GetGame()->IsAssistControlStyle() && TryStartAirSlamAttack(player, input, movement, combat)) {
+        return;
+    }
+
     const bool wasAirWeakAttacking = !player.GetOnGround();
     if (TryStartDodging(player, input, movement, combat, status)) {
         if (wasAirWeakAttacking) {
@@ -55,11 +63,14 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
             combat.CancelCurrentAttack();
         }
 
-        // 空中弱攻撃そのものは着地まで移動不能のままにするが、
-        // 回避でキャンセルできた場合は通常操作へ即座に戻す。
+        // 空中攻撃をダッシュでキャンセルした場合は、残りの硬直を持ち越さない。
         mShouldSkipAirDodgePostHover = wasAirWeakAttacking;
         mAllowsAirMovementAfterDodge = wasAirWeakAttacking;
         mAttackDirectionTarget = nullptr;
+        return;
+    }
+
+    if (TryStartAssistAirDodgeAttack(player, input, movement, combat, status)) {
         return;
     }
 
@@ -80,7 +91,7 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
         }
 
         const bool didResolveAttack = combat.UpdatePendingAttackHit(player, movement, status, deltaTime);
-        if (didResolveAttack) {
+        if (didResolveAttack && !combat.HasPendingAttackHit()) {
             mAttackDirectionTarget = nullptr;
         }
         return;
@@ -93,16 +104,6 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
     combat.ReduceAttackMotionTimer(deltaTime);
     if (combat.GetAttackMotionTimer() <= 0.0f) {
         mAttackDirectionTarget = nullptr;
-        const bool isAirWeakAttack = combat.IsAirAttacking();
-        if (!player.GetOnGround() && isAirWeakAttack) {
-            movement.StopAirborneVerticalMovement(player);
-            movement.StartAirborneActionHover(movement.GetAirWeakAttackPostHoverDurationSeconds());
-        }
-        if (isAirWeakAttack) {
-            combat.StartAirWeakAttackCooldown();
-        } else if (combat.GetAttackKind() == PlayerAttackKind::Wide) {
-            combat.StartGroundWeakAttackCooldown();
-        }
         StartIdle();
     }
 }
@@ -195,43 +196,47 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
                                                      PlayerCombat& combat, PlayerJewelGauge& jewelGauge,
                                                      float deltaTime)
 {
-    const float specialChargingTimerPrev = combat.GetSpecialChargingTimer();
+    const bool hasReleaseRequest = input.HasChargedAttackReleaseRequest();
+    if (!input.IsChargeAttackHeld() && !hasReleaseRequest) {
+        // メニューなどによる入力破棄では発射せず、今回消費した分だけ戻す。
+        combat.CancelSpecialAttackAndRefund(jewelGauge);
+        input.ClearAttackBuffer();
+        return;
+    }
+    if (hasReleaseRequest) {
+        if (combat.GetSpecialAttackJewelsConsumed() >= 1) {
+            combat.SpecialAttack(player, movement, jewelGauge, deltaTime);
+            player.RequestStrongAttackAnimation();
+            combat.FinishSpecialAttackCharging();
+        } else {
+            combat.CancelSpecialAttackAndRefund(jewelGauge);
+        }
+        input.ClearAttackBuffer();
+        return;
+    }
+
+    const bool wasReady = combat.GetCanSpecialAttack();
+    const float previousTimer = combat.GetSpecialChargingTimer();
     const float chargeDurationSeconds = combat.GetChargedAttackChargeDurationSeconds();
-    const float firstJewelConsumptionTimeSeconds = chargeDurationSeconds * (2.0f / 3.0f);
-    const float secondJewelConsumptionTimeSeconds = chargeDurationSeconds * (1.0f / 3.0f);
-
-    combat.ReduceSpecialChargingTimer(deltaTime);
-
-    const float specialChargingTimer = combat.GetSpecialChargingTimer();
-    if (specialChargingTimerPrev >= firstJewelConsumptionTimeSeconds &&
-        specialChargingTimer < firstJewelConsumptionTimeSeconds) {
+    combat.ReduceSpecialChargingTimer(std::min(std::max(0.0f, deltaTime), std::max(0.0f, previousTimer)));
+    const float remainingSeconds = combat.GetSpecialChargingTimer();
+    if (combat.GetSpecialAttackJewelsConsumed() == 0 && remainingSeconds <= chargeDurationSeconds * 0.5f) {
+        if (!combat.ConsumeSpecialAttackJewel(jewelGauge)) {
+            combat.CancelSpecialAttackAndRefund(jewelGauge);
+            player.GetGame()->OnPlayerInsufficientJewels(player.GetPlayerNum(), 1);
+            return;
+        }
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 10000, 0, 1000);
-        jewelGauge.Consume(1);
         player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
     }
-    if (specialChargingTimerPrev >= secondJewelConsumptionTimeSeconds &&
-        specialChargingTimer < secondJewelConsumptionTimeSeconds) {
-        player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 20000, 0, 1000);
-        jewelGauge.Consume(1);
-        player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
+    // 2個目が足りなくても1段階目を維持し、離せば半分の威力で発射できる。
+    if (combat.GetSpecialAttackJewelsConsumed() == 1 && remainingSeconds <= 0.0f && jewelGauge.CanConsume(1)) {
+        combat.ConsumeSpecialAttackJewel(jewelGauge);
     }
-    if (specialChargingTimerPrev >= 0.0f && specialChargingTimer < 0.0f) {
+    if (!wasReady && combat.GetSpecialAttackJewelsConsumed() == 2) {
+        combat.SetCanSpecialAttack(true);
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 30000, 0, 1000);
         player.GetGame()->GetAudioSystem()->PlaySE("charged_se");
-    }
-
-    if (specialChargingTimer <= 0.0f) {
-        combat.SetCanSpecialAttack(true);
-    }
-
-    if (specialChargingTimer <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
-        combat.SpecialAttack(player, movement, jewelGauge, deltaTime);
-
-        player.RequestStrongAttackAnimation();
-    }
-
-    if (input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
-        combat.FinishSpecialAttackCharging();
     }
 }
 

@@ -116,6 +116,14 @@ void UICanvasTransformController::DrawGizmo(UILoadSystem* uiLoadSystem, std::str
             mTransformStartState.customElements = uiLoadSystem->GetCustomElements();
             mTransformStartState.textureInfos = uiLoadSystem->GetEditableTextureInfos();
             mTransformStartState.textInfos = uiLoadSystem->GetEditableTextInfos();
+            mTransformStartCustomTransforms.clear();
+            for (const auto& element : mSelection.GetElements()) {
+                ElementTransform transform;
+                if (element.source == SelectionSource::Custom &&
+                    mGeometry.ResolveElementTransform(uiLoadSystem, element, transform)) {
+                    mTransformStartCustomTransforms.emplace(element.customIndex, transform);
+                }
+            }
             mTransformStartSelectionMatrix = matrixBeforeManipulation;
             mIsUsingGizmo = true;
         }
@@ -127,6 +135,7 @@ void UICanvasTransformController::DrawGizmo(UILoadSystem* uiLoadSystem, std::str
     if (mIsUsingGizmo) {
         mIsUsingGizmo = false;
         mTransformStartState = UICanvasEditSnapshot{};
+        mTransformStartCustomTransforms.clear();
         std::string error;
         const bool wasSaved = uiLoadSystem->SaveEditorUI(error);
         statusMessage = wasSaved ? "UIギズモの変更を保存しました" : "UIギズモの変更を保存できませんでした: " + error;
@@ -139,6 +148,11 @@ bool UICanvasTransformController::ResolveTransformStartElement(const ElementRefe
     UIRenderer::CustomElementScreenTransform screenTransform;
     switch (element.source) {
     case SelectionSource::Custom:
+        if (const auto original = mTransformStartCustomTransforms.find(element.customIndex);
+            original != mTransformStartCustomTransforms.end()) {
+            outTransform = original->second;
+            return true;
+        }
         if (element.customIndex >= mTransformStartState.customElements.size()) {
             return false;
         }
@@ -223,6 +237,12 @@ void UICanvasTransformController::ApplySelectionMatrix(UILoadSystem* uiLoadSyste
             UILoadSystem::CustomElement& currentElement = currentElements[element.customIndex];
             const UILoadSystem::CustomElement& originalElement =
                 mTransformStartState.customElements[element.customIndex];
+            UIRenderer::CustomElementScreenTransform authoredTransform;
+            if (!mContext.uiRenderer->CalculateCustomElementScreenTransform(originalElement, authoredTransform)) {
+                continue;
+            }
+            const float layoutScale = originalTransform.size.x / std::max(authoredTransform.size.x, 1.0f);
+            const glm::vec2 authoredSize = newSize / layoutScale;
             currentElement.rotationDegrees = newRotationDegrees;
 
             if (currentElement.type == UILoadSystem::CustomElementType::Text) {
@@ -234,17 +254,18 @@ void UICanvasTransformController::ApplySelectionMatrix(UILoadSystem* uiLoadSyste
                 currentElement.textScaleRatio =
                     std::clamp(originalElement.textScaleRatio * uniformScale, 0.00005f, 0.003f);
             } else {
-                currentElement.widthRatio = newSize.x / framebufferWidth;
-                currentElement.heightRatio = newSize.y / framebufferWidth;
+                currentElement.widthRatio = authoredSize.x / framebufferWidth;
+                currentElement.heightRatio = authoredSize.y / framebufferWidth;
             }
 
-            if (currentElement.centerBased) {
-                currentElement.xRatio = newCenter.x / framebufferWidth;
-                currentElement.yRatio = newCenter.y / framebufferWidth;
-            } else {
-                currentElement.xRatio = (newCenter.x - newSize.x * 0.5f) / framebufferWidth;
-                currentElement.yRatio = (newCenter.y - newSize.y * 0.5f) / framebufferWidth;
-            }
+            // 描画時の配置補正を保存値に混ぜず、操作による差分だけを定義座標へ戻す。
+            const glm::vec2 anchorOffset = currentElement.centerBased ? glm::vec2(0.0f) : newSize * 0.5f;
+            const glm::vec2 originalAnchorOffset =
+                currentElement.centerBased ? glm::vec2(0.0f) : originalTransform.size * 0.5f;
+            const glm::vec2 anchorDelta =
+                (newCenter - anchorOffset) - (originalTransform.center - originalAnchorOffset);
+            currentElement.xRatio = originalElement.xRatio + anchorDelta.x / framebufferWidth;
+            currentElement.yRatio = originalElement.yRatio + anchorDelta.y / (framebufferWidth * layoutScale);
             continue;
         }
 

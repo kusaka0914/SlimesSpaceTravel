@@ -110,7 +110,8 @@ PlayerEffectRenderer::PlayerEffectRenderer(const Renderer3D* renderer)
 
 void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat, std::span<Player* const> players,
                                        bool isDebugEditorShowing, const PhysicsSystem* physicsSystem,
-                                       const SplitGuardRenderState& splitGuard) const
+                                       const SplitGuardRenderState& splitGuard,
+                                       const PlayerSoulPresentation& soul) const
 {
     if (!mRenderer) {
         return;
@@ -120,7 +121,7 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat, std::span<Playe
         return;
     }
 
-    mRenderer->TryDrawActor(players[0]);
+    mRenderer->TryDrawActor(players[0], true, soul);
     DrawPlayerCollisionShape(players[0], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[0]);
 
@@ -136,11 +137,80 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat, std::span<Playe
         return;
     }
 
-    mRenderer->TryDrawActor(players[1]);
+    mRenderer->TryDrawActor(players[1], true, soul);
     DrawPlayerCollisionShape(players[1], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[1]);
     if (players[1] != controlledPlayer) {
         DrawPlayerSplitGuard(viewMat, players[1], splitGuardCount, maximumSplitGuardCount, physicsSystem);
+    }
+    DrawSoulTransfer(viewMat, soul);
+}
+
+void PlayerEffectRenderer::DrawSoulTransfer(const glm::mat4& viewMat, const PlayerSoulPresentation& soul) const
+{
+    if (!mRenderer || !mRenderer->GetShader3D() || !soul.controlledPlayer || soul.transferProgress >= 1.0f) {
+        return;
+    }
+
+    VertexArray* quad = mRenderer->FindVertexArray("quad");
+    const GLuint soulTexture = mRenderer->FindTexture("playerSoul");
+    if (!quad || soulTexture == 0) {
+        return;
+    }
+
+    Shader3D& shader = *mRenderer->GetShader3D();
+    const GLboolean wasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
+    GLboolean previousDepthWriteMask = GL_TRUE;
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &previousDepthWriteMask);
+
+    // 魂は地形に遮られず移動する。カメラが即時切替されても、移動先へ届く光を見せる。
+    glDisable(GL_DEPTH_TEST);
+    mRenderer->StartTransparentDraw();
+    glUniform1i(shader.GetLocIsUnlit(), 1);
+    glUniform1i(shader.GetLocUseSkinning(), 0);
+    glUniform1i(shader.GetLocUseInstancing(), 0);
+    glUniform1i(shader.GetLocUseBackTexture(), 0);
+    glUniform2f(shader.GetLocTextureTiling(), 1.0f, 1.0f);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, soulTexture);
+    glUniform1i(shader.GetLocDiffuseTexture(), 0);
+    glUniform1i(shader.GetLocUseTexture(), 1);
+    quad->SetActive();
+
+    const glm::vec3 start = soul.transferStartPosition + soul.transferUpDirection * 0.18f;
+    const glm::vec3 end = soul.transferEndPosition + soul.controlledPlayer->GetUpVec() * 0.18f;
+    const float progress = glm::clamp(soul.transferProgress, 0.0f, 1.0f);
+    const float fade = 1.0f - glm::smoothstep(0.8f, 1.0f, progress);
+    constexpr int trailSampleCount = 10;
+    for (int sample = trailSampleCount - 1; sample >= 0; --sample) {
+        const float sampleProgress = progress - static_cast<float>(sample) * 0.018f;
+        if (sampleProgress < 0.0f) {
+            continue;
+        }
+
+        const glm::vec3 center = glm::mix(start, end, sampleProgress) +
+                                 soul.transferUpDirection * (std::sin(sampleProgress * glm::pi<float>()) * 0.55f);
+        const float trailStrength = 1.0f - static_cast<float>(sample) / static_cast<float>(trailSampleCount);
+        const float size = 0.18f + trailStrength * 0.26f;
+        glUniform4f(shader.GetLocObjectColor(), 1.0f, 1.0f, 1.0f, trailStrength * fade * 0.85f);
+        const glm::mat4 billboard = mRenderer->CreateBillboard(viewMat, center, soul.transferUpDirection, size, size);
+        glUniformMatrix4fv(shader.GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+
+    const float arrivalStrength = glm::smoothstep(0.55f, 0.85f, progress) * fade;
+    glUniform4f(shader.GetLocObjectColor(), 1.0f, 1.0f, 1.0f, arrivalStrength * 0.65f);
+    const glm::mat4 arrival = mRenderer->CreateBillboard(viewMat, end, soul.controlledPlayer->GetUpVec(), 0.6f, 0.6f);
+    glUniformMatrix4fv(shader.GetLocModel(), 1, GL_FALSE, glm::value_ptr(arrival));
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glUniform4f(shader.GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
+    glUniform1i(shader.GetLocUseTexture(), 0);
+    glUniform1i(shader.GetLocIsUnlit(), 0);
+    mRenderer->EndTransparentDraw();
+    glDepthMask(previousDepthWriteMask);
+    if (wasDepthTestEnabled) {
+        glEnable(GL_DEPTH_TEST);
     }
 }
 
@@ -172,7 +242,7 @@ void PlayerEffectRenderer::DrawPlayerSplitGuard(const glm::mat4& viewMat, const 
     constexpr float fallbackPlayerTopHeight = 0.22f;
     float playerTopHeight = fallbackPlayerTopHeight;
     if (physicsSystem) {
-        const float collisionScaleMultiplier = player->GetCollisionScaleMultiplier();
+        const float collisionScaleMultiplier = player->GetBodyScaleMultiplier();
         playerTopHeight =
             (physicsSystem->GetPlayerCollisionCenterHeight() + physicsSystem->GetPlayerCollisionHeight() * 0.5f) *
             collisionScaleMultiplier;
@@ -351,6 +421,8 @@ void PlayerEffectRenderer::DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewM
         DrawEnemyHp(viewMat, enemy);
     }
 
+    DrawEnemyGuardBreakEffect(viewMat, enemy);
+
     const bool shouldDrawAttackWarning = enemy->ShouldDrawAttackPreview() && enemy->GetStandByAttackTimer() > 0.0f &&
                                          enemy->GetStandByAttackTimer() <= 1.0f;
     const bool shouldDrawAttackImpactFlash = enemy->ShouldDrawAttackImpactFlash();
@@ -367,11 +439,40 @@ void PlayerEffectRenderer::DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewM
 
 void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const
 {
-    if (!mRenderer || !mRenderer->GetShader3D()) {
+    if (!player || !player->GetIsActive() || !player->GetIsTired()) {
         return;
     }
 
-    if (!player || !player->GetIsActive() || !player->GetIsTired()) {
+    const glm::vec3 up =
+        glm::length(player->GetUpVec()) > 0.000001f ? glm::normalize(player->GetUpVec()) : glm::vec3(0.0f, 1.0f, 0.0f);
+    DrawOrbitingStars(viewMat, player->GetPos() + up * 1.35f, up, player->GetFacingForwardVec(), 0.35f, 0.28f);
+}
+
+void PlayerEffectRenderer::DrawEnemyGuardBreakEffect(const glm::mat4& viewMat, const Enemy* enemy) const
+{
+    if (!enemy || !enemy->IsAlive() || enemy->IsOnGround() || enemy->GetMaxGuard() <= 0.0f ||
+        enemy->GetCurrentGuard() > 0.0f) {
+        return;
+    }
+
+    float bodyScale = std::max(0.01f, enemy->GetRadius()) / 0.75f;
+    EnemyCollisionGeometry::ModelBounds bounds;
+    if (EnemyCollisionGeometry::TryCreateModelBounds(*enemy, bounds)) {
+        bodyScale = std::max(bounds.halfExtents.x, bounds.halfExtents.z) / 0.4f;
+    }
+    const glm::vec3 up =
+        glm::length(enemy->GetUpVec()) > 0.000001f ? glm::normalize(enemy->GetUpVec()) : glm::vec3(0.0f, 1.0f, 0.0f);
+
+    // HPバーの上に配置し、ガード復帰・着地・死亡のいずれでも表示を終了する。
+    const glm::vec3 center = enemy->GetPos() + up * (CalculateEnemyGuardHeight(*enemy) + 0.35f * bodyScale);
+    DrawOrbitingStars(viewMat, center, up, enemy->GetForwardVec(), 0.35f * bodyScale, 0.28f * bodyScale);
+}
+
+void PlayerEffectRenderer::DrawOrbitingStars(const glm::mat4& viewMat, const glm::vec3& center,
+                                             const glm::vec3& upDirection, const glm::vec3& forwardDirection,
+                                             float orbitRadius, float starSize) const
+{
+    if (!mRenderer || !mRenderer->GetShader3D()) {
         return;
     }
 
@@ -387,6 +488,7 @@ void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Playe
 
     Shader3D* shader = mRenderer->GetShader3D();
 
+    ConfigureEnemyStatusBarShader(*shader);
     mRenderer->StartTransparentDraw();
 
     glActiveTexture(GL_TEXTURE0);
@@ -398,36 +500,16 @@ void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Playe
     quad->SetActive();
 
     constexpr int starCount = 3;
-    constexpr float orbitRadius = 0.35f;
-    constexpr float headHeight = 1.35f;
-    constexpr float starSize = 0.28f;
     constexpr float rotateSpeed = 4.5f;
-
     const float time = static_cast<float>(glfwGetTime());
-
-    glm::vec3 up = player->GetUpVec();
-    if (glm::length(up) < 1e-6f) {
-        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    const glm::vec3 up = glm::normalize(upDirection);
+    glm::vec3 forward = forwardDirection - up * glm::dot(forwardDirection, up);
+    if (glm::dot(forward, forward) < 0.000001f) {
+        const glm::vec3 reference = std::abs(up.y) < 0.99f ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
+        forward = glm::cross(up, reference);
     }
-    up = glm::normalize(up);
-
-    glm::vec3 forward = player->GetFacingForwardVec();
-    forward = forward - up * glm::dot(forward, up);
-
-    if (glm::length(forward) < 1e-6f) {
-        forward = player->GetForwardVec();
-        forward = forward - up * glm::dot(forward, up);
-    }
-
-    if (glm::length(forward) < 1e-6f) {
-        forward = glm::vec3(0.0f, 0.0f, 1.0f);
-        forward = forward - up * glm::dot(forward, up);
-    }
-
     forward = glm::normalize(forward);
-
-    glm::vec3 left = glm::normalize(glm::cross(up, forward));
-    glm::vec3 center = player->GetPos() + up * headHeight;
+    const glm::vec3 left = glm::normalize(glm::cross(up, forward));
 
     for (int i = 0; i < starCount; ++i) {
         const float angle =
@@ -444,6 +526,7 @@ void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Playe
 
     glUniform1i(shader->GetLocUseTexture(), 0);
     mRenderer->EndTransparentDraw();
+    RestoreEnemyStatusBarShader(*shader);
 }
 
 void PlayerEffectRenderer::DrawEnemyFanAttackRange(Enemy* enemy, float range, float angleRadians,

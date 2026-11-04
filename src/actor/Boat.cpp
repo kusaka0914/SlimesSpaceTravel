@@ -158,7 +158,20 @@ void Boat::UpdateActor(float deltaTime)
 
 void Boat::StartFocus()
 {
+    // 初期出現済みのロケットに、条件達成後の出現演出を重ねない。
+    if (mStartsAppeared && HasAppeared()) {
+        return;
+    }
     mFocusComponent->StartFocus();
+}
+
+void Boat::SetStartsAppeared(bool startsAppeared)
+{
+    mStartsAppeared = startsAppeared;
+    if (!mIsMoving && mProgress < 1.0f) {
+        mIsActive = mStartsAppeared || mGame->IsInBase();
+        mIsActivePrev = mIsActive;
+    }
 }
 
 bool Boat::ShouldRenderUnavailablePreview() const

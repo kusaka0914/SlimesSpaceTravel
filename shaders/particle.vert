@@ -1,6 +1,6 @@
 #version 330 core
 
-// 粒子ごとのサイズ・伸長・回転を反映し、カメラに正対する板ポリゴンを配置する。
+// 粒子ごとのサイズ・伸長・回転と、カメラまたは地面の向きに合わせて板を配置する。
 
 layout(location = 0) in vec2 vertexPosition;
 layout(location = 1) in vec2 vertexTextureCoordinate;
@@ -9,6 +9,9 @@ layout(location = 3) in float instanceSize;
 layout(location = 4) in vec4 instanceColor;
 layout(location = 5) in float instanceRotation;
 layout(location = 6) in float instanceStretch;
+
+// ゼロならビルボード。それ以外は放出時の地面法線を使う。
+layout(location = 7) in vec3 instanceSurfaceNormal;
 
 out vec2 textureCoordinate;
 out vec4 fragmentColor;
@@ -31,8 +34,17 @@ void main()
     vec2 rotatedPosition = vec2(scaledPosition.x * cosineValue - scaledPosition.y * sineValue,
                                 scaledPosition.x * sineValue + scaledPosition.y * cosineValue);
 
-    vec3 worldPosition =
-        instancePosition + cameraRight * rotatedPosition.x * instanceSize + cameraUp * rotatedPosition.y * instanceSize;
+    vec3 rightDirection = cameraRight;
+    vec3 upDirection = cameraUp;
+    if (dot(instanceSurfaceNormal, instanceSurfaceNormal) > 0.000001) {
+        vec3 normal = normalize(instanceSurfaceNormal);
+        vec3 reference = abs(normal.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        rightDirection = normalize(cross(normal, reference));
+        upDirection = cross(normal, rightDirection);
+    }
+
+    vec3 worldPosition = instancePosition +
+        (rightDirection * rotatedPosition.x + upDirection * rotatedPosition.y) * instanceSize;
 
     gl_Position = projectionMatrix * viewMatrix * vec4(worldPosition, 1.0);
     textureCoordinate = vertexTextureCoordinate;

@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <utility>
@@ -321,6 +322,22 @@ LoadedMesh CreateGpuMesh(const aiScene& scene, const aiMesh& sourceMesh, const c
         return std::any_of(vertex.boneWeights.begin(), vertex.boneWeights.end(),
                            [](float boneWeight) { return boneWeight > 0.0f; });
     });
+
+    if (!loadedMesh.hasBoneInfluences) {
+        auto triangles = std::make_shared<std::vector<MeshTriangle>>();
+        triangles->reserve(indices.size() / 3);
+        for (std::size_t offset = 0; offset + 2 < indices.size(); offset += 3) {
+            MeshTriangle triangle;
+            for (std::size_t corner = 0; corner < 3; ++corner) {
+                const unsigned int index = indices[offset + corner];
+                triangle.indices[corner] = index;
+                const auto& position = vertices[index].position;
+                triangle.center += glm::vec3(position[0], position[1], position[2]) / 3.0f;
+            }
+            triangles->push_back(triangle);
+        }
+        loadedMesh.triangles = std::move(triangles);
+    }
 
     if (scene.mMaterials && sourceMesh.mMaterialIndex < scene.mNumMaterials) {
         const aiMaterial* material = scene.mMaterials[sourceMesh.mMaterialIndex];

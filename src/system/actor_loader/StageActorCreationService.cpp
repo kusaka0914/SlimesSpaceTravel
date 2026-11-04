@@ -3,6 +3,7 @@
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/BoatParts.h"
+#include "actor/CameraZone.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
@@ -10,6 +11,7 @@
 #include "actor/JewelItem.h"
 #include "actor/Key.h"
 #include "actor/NPC.h"
+#include "actor/OperationGuideZone.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
@@ -178,6 +180,7 @@ Platform* StageActorCreationService::CreatePlatform(const YAML::Node& node, int 
             if (node["ugcGeneratedPlatform"] && node["ugcGeneratedPlatform"].as<bool>(false)) {
                 platform->SetUGCGeneratedLayer(node["ugcGridLayer"] ? node["ugcGridLayer"].as<int>() : 0);
             }
+            platform->GetCameraSettings().Load(node["camera"]);
             ApplyPlatformStageConfig(*platform, ParsePlatformStageConfig(node));
         });
     if (platform) {
@@ -194,6 +197,7 @@ Platform* StageActorCreationService::CreateLegacyMovingPlatform(const YAML::Node
         [stageYamlIndex](Platform* platform, const YAML::Node& node) {
             platform->SetPlatformId(node["platformId"] ? node["platformId"].as<std::string>()
                                                        : "legacy_movingPlatforms_" + std::to_string(stageYamlIndex));
+            platform->GetCameraSettings().Load(node["camera"]);
             ApplyPlatformStageConfig(*platform, ParsePlatformStageConfig(node, true));
         });
     if (platform) {
@@ -257,4 +261,28 @@ StageObject* StageActorCreationService::CreateStageObject(const YAML::Node& node
             const bool collisionEnabled = node["collision"] ? node["collision"].as<bool>() : true;
             stageObject->SetCollisionEnabled(collisionEnabled);
         });
+}
+
+CameraZone* StageActorCreationService::CreateCameraZone(const YAML::Node& node, int stageYamlIndex)
+{
+    auto* zone = mActorFactory.CreatePlacedActorFromStageNode<CameraZone>(
+        node, stageYamlIndex, 2.0f, glm::vec3(6.0f), "cameraZone.obj",
+        [](Planet* planet, CameraZone* actor) { planet->AddStageObject(actor); },
+        [](CameraZone* actor, const YAML::Node& config) { actor->GetSettings().Load(config["camera"]); });
+    if (zone) {
+        zone->SetStageSequenceName("cameraZones");
+    }
+    return zone;
+}
+
+OperationGuideZone* StageActorCreationService::CreateOperationGuideZone(const YAML::Node& node, int stageYamlIndex)
+{
+    auto* zone = mActorFactory.CreatePlacedActorFromStageNode<OperationGuideZone>(
+        node, stageYamlIndex, 2.0f, glm::vec3(6.0f), "cameraZone.obj",
+        [](Planet* planet, OperationGuideZone* actor) { planet->AddStageObject(actor); },
+        [](OperationGuideZone* actor, const YAML::Node& config) { actor->LoadGuide(config["guide"]); });
+    if (zone) {
+        zone->SetStageSequenceName("operationGuideZones");
+    }
+    return zone;
 }

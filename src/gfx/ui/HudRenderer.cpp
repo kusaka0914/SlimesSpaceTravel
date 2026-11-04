@@ -3,11 +3,12 @@
 // GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "gfx/UIRenderer.h"
 #include "system/SceneSystem.h"
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -15,6 +16,61 @@ HudRenderer::HudRenderer(Game* game, UIRenderer* renderer)
     : mGame(game),
       mRenderer(renderer)
 {
+}
+
+void HudRenderer::UpdateConsumptionFeedback(float deltaTime)
+{
+    const bool isTwoPlayer = mGame->GetIsPlayer2Joined();
+    if (mWasTwoPlayer != isTwoPlayer) {
+        ResetConsumptionFeedback();
+        mWasTwoPlayer = isTwoPlayer;
+    }
+    const auto* scene = mGame->GetSceneSystem();
+    const bool allowsFeedback = scene && scene->IsPlaying() && !scene->IsTransitionActive() &&
+                                !mGame->GetIsPauseMenuOpen() && !mGame->GetIsDebugEditorShowing();
+    const auto& players = mGame->GetPlayers();
+    for (std::size_t index = 0; index < mHpFeedback.size(); ++index) {
+        const Player* player = isTwoPlayer ? (index < players.size() ? players[index] : nullptr)
+                                           : (index == 0 ? mGame->GetMainPlayer() : nullptr);
+        if (!player) {
+            mHpFeedback[index].Reset();
+            mJewelFeedback[index].Reset();
+            continue;
+        }
+        const bool allowsPlayerFeedback = allowsFeedback && player->GetIsActive();
+        mHpFeedback[index].Update(player->GetHp(), static_cast<int>(player->GetMaxHp()), deltaTime,
+                                  allowsPlayerFeedback);
+        mJewelFeedback[index].Update(static_cast<float>(player->GetJewelCount()), player->GetMaxJewelCount(), deltaTime,
+                                     allowsPlayerFeedback);
+    }
+    mGuardFeedback.Update(static_cast<float>(mGame->GetPlayerSplitGuardCount()),
+                          mGame->GetMaximumPlayerSplitGuardCount(), deltaTime,
+                          allowsFeedback && !isTwoPlayer && mGame->GetIsPlayerSplit());
+}
+
+void HudRenderer::ResetConsumptionFeedback()
+{
+    for (auto& feedback : mHpFeedback) {
+        feedback.Reset();
+    }
+    for (auto& feedback : mJewelFeedback) {
+        feedback.Reset();
+    }
+    mGuardFeedback.Reset();
+}
+
+void HudRenderer::DrawDamageFeedback()
+{
+    const auto* scene = mGame->GetSceneSystem();
+    if (!scene || !scene->IsPlaying() || scene->IsTransitionActive() || mGame->GetIsPauseMenuOpen()) {
+        return;
+    }
+    const bool isTwoPlayer = mGame->GetIsPlayer2Joined();
+    const float viewportHeight = mRenderer->GetFbHeight() * (isTwoPlayer ? 0.5f : 1.0f);
+    const std::size_t count = isTwoPlayer ? 2 : 1;
+    for (std::size_t index = 0; index < count; ++index) {
+        mRenderer->DrawDamageVignette(viewportHeight * index, viewportHeight, 0.2f * mHpFeedback[index].GetStrength());
+    }
 }
 
 void HudRenderer::DrawDefaultUI()
@@ -96,15 +152,10 @@ void HudRenderer::DrawPlayerStatusUIForPlayer(const Player* player, float screen
         return;
     }
 
-    const int hp = player->GetHp();
-    if (hp > 0) {
-        DrawHpUI(hp, screenTopY, uiScale);
-    }
-
-    const int jewelCount = player->GetJewelCount();
-    if (jewelCount > 0) {
-        DrawJewelUI(jewelCount, screenTopY, uiScale);
-    }
+    const std::size_t index = mGame->GetIsPlayer2Joined() && player->GetPlayerNum() == 2 ? 1 : 0;
+    DrawHpUI(static_cast<int>(player->GetHp()), static_cast<int>(player->GetMaxHp()), screenTopY, uiScale,
+             mHpFeedback[index]);
+    DrawJewelUI(player->GetJewelCount(), player->GetMaxJewelCount(), screenTopY, uiScale, mJewelFeedback[index]);
 
     if (!mGame->GetIsPlayer2Joined()) {
         DrawSplitGuardUI(screenTopY, uiScale);
@@ -122,16 +173,21 @@ void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, flo
     }
 }
 
-void HudRenderer::DrawHpUI(int hp, float screenTopY, float uiScale)
+void HudRenderer::DrawHpUI(int hp, int maximumHp, float screenTopY, float uiScale,
+                           const ResourceConsumptionFeedback& feedback)
 {
-    const float hpGap = mRenderer->GetFbWidth() / 28.0f;
-    mRenderer->DrawLinedUpTexture("default", "hpTexture", "hp", hpGap, hp, screenTopY, uiScale);
+    const UIRenderer::TextureSlotFlash flash{
+        feedback.GetFirstSlot(), feedback.GetEndSlot(), feedback.GetStrength(), {1.0f, 0.85f, 0.85f}};
+    mRenderer->DrawLinedUpTextureSlots("default", "hpTexture", "hp", hp, maximumHp, 0.3f, screenTopY, uiScale, &flash);
 }
 
-void HudRenderer::DrawJewelUI(int jewelCount, float screenTopY, float uiScale)
+void HudRenderer::DrawJewelUI(int jewelCount, int maximumJewelCount, float screenTopY, float uiScale,
+                              const ResourceConsumptionFeedback& feedback)
 {
-    const float jewelGap = mRenderer->GetFbWidth() / 20.0f;
-    mRenderer->DrawLinedUpTexture("default", "jewelTexture", "jewel", jewelGap, jewelCount, screenTopY, uiScale);
+    const UIRenderer::TextureSlotFlash flash{
+        feedback.GetFirstSlot(), feedback.GetEndSlot(), feedback.GetStrength(), {0.6f, 0.85f, 1.0f}};
+    mRenderer->DrawLinedUpTextureSlots("default", "jewelTexture", "jewel", jewelCount, maximumJewelCount, 0.3f,
+                                       screenTopY, uiScale, &flash);
 }
 
 void HudRenderer::DrawSplitGuardUI(float screenTopY, float uiScale)
@@ -141,11 +197,15 @@ void HudRenderer::DrawSplitGuardUI(float screenTopY, float uiScale)
         return;
     }
 
+    const bool isSplit = mGame->GetIsPlayerSplit();
     const int guardCount = mGame->GetPlayerSplitGuardCount();
-    const float guardGap = mRenderer->GetFbWidth() * 0.025f;
-    constexpr float depletedGuardOpacity = 0.2f;
-    mRenderer->DrawLinedUpTextureSlots("default", "splitGuardTexture", "guard", guardGap, guardCount, maximumGuardCount,
-                                       depletedGuardOpacity, screenTopY, uiScale);
+    const UIRenderer::TextureSlotFlash flash{
+        mGuardFeedback.GetFirstSlot(), mGuardFeedback.GetEndSlot(), mGuardFeedback.GetStrength(), {0.3f, 0.65f, 1.0f}};
+    constexpr float depletedGuardBrightness = 0.12f;
+    constexpr float unavailableGuardOpacity = 0.45f;
+    mRenderer->DrawLinedUpTextureSlots("default", "splitGuardTexture", "guard", guardCount, maximumGuardCount,
+                                       depletedGuardBrightness, screenTopY, uiScale, isSplit ? &flash : nullptr,
+                                       isSplit ? 1.0f : unavailableGuardOpacity);
 }
 
 void HudRenderer::UpdateTalkableUIVisibility(const std::vector<Player*>& players, bool allowsPrompt)
@@ -192,7 +252,7 @@ void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
 
 void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float screenHeight)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(player, "state", "recommendReduceTiredText", screenTopY, screenHeight);
+    mRenderer->DrawFatigueRecoveryPrompt(player, screenTopY, screenHeight);
 }
 
 void HudRenderer::DrawUGCClearVerificationGuide()

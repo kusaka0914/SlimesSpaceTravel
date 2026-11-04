@@ -46,6 +46,14 @@ uniform bool applyOutputGamma;
 uniform vec3 emissiveColor;
 uniform float emissiveIntensity;
 
+// スイッチの赤い背景だけを作動中は青、達成済みは緑へ変え、達成時に短時間発光させる。
+uniform bool activeSwitch;
+uniform bool completedSwitch;
+uniform float switchCompletionFlash;
+
+// 非操作側の分裂Playerだけに適用する硬化表現。通常のActorでは0にする。
+uniform float hardeningAmount;
+
 // 平行光源のシャドウマップと、深度比較の誤差を吸収するバイアス。
 uniform mat4 lightSpaceMatrix;
 uniform sampler2D shadowMap;
@@ -137,7 +145,12 @@ vec3 CalculateLighting(vec3 baseColor)
     // 拡散光を段階化し、toonStrengthで通常の陰影とトゥーン調の陰影を混ぜる。
     float diffuseAmount = max(sunAlignment, 0.0);
     float toonLevelCount = max(toonLevels, 1.0);
-    float toonDiffuse = floor(diffuseAmount * toonLevelCount) / toonLevelCount;
+    float scaledDiffuse = diffuseAmount * toonLevelCount;
+
+    // 段の境界だけ滑らかにつなぎ、画面上の変化量に応じて遠景のちらつきも抑える。
+    float transitionWidth = clamp(max(fwidth(scaledDiffuse) * 1.5, 0.12), 0.12, 0.5);
+    float bandTransition = smoothstep(1.0 - transitionWidth, 1.0, fract(scaledDiffuse));
+    float toonDiffuse = (floor(scaledDiffuse) + bandTransition) / toonLevelCount;
     float finalDiffuse = mix(diffuseAmount, toonDiffuse, toonStrength);
     vec3 diffuseLight = finalDiffuse * sunColor * sunIntensity;
     float shadow = CalculateShadow(worldPosition, surfaceNormal, lightDirection);
@@ -175,10 +188,16 @@ vec3 ApplyColorAdjustments(vec3 finalColor)
 void main()
 {
     vec4 baseColor = CalculateBaseColor();
+    // 黒いスライムと金属枠は素材のまま残し、赤が優勢な背景部分だけを置き換える。
+    float switchBackgroundMask = activeSwitch
+        ? smoothstep(0.12, 0.32, baseColor.r - max(baseColor.g, baseColor.b)) : 0.0;
+    vec3 switchBackgroundColor = completedSwitch ? baseColor.grb : baseColor.bgr;
+    baseColor.rgb = mix(baseColor.rgb, switchBackgroundColor, switchBackgroundMask);
+    vec3 switchGlow = vec3(0.3, 1.0, 0.45) * switchBackgroundMask * switchCompletionFlash * 1.5;
 
-    // 非ライティング描画は、照明・発光・後段の色補正を通さずベース色を返す。
+    // 非ライティング描画では、通常の照明・発光・色補正を通さず、操作状態の発光だけを加える。
     if (isUnlit) {
-        outputColor = baseColor;
+        outputColor = vec4(baseColor.rgb + switchGlow, baseColor.a);
         return;
     }
 
@@ -186,8 +205,16 @@ void main()
 
     // 反射に使う色へ下限を設け、黒い材質が照明を完全に失わないようにする。
     vec3 visibleBaseColor = max(baseColor.rgb, vec3(materialMinimumReflectance));
+
+    // 硬化した体は陰影の境界を少し明確にする。形状やベース色は変えない。
+    if (hardeningAmount > 0.0) {
+        vec3 hardenedLighting = floor(lighting * 6.0 + 0.5) / 6.0;
+        lighting = mix(lighting, hardenedLighting, hardeningAmount * 0.6);
+    }
     vec3 finalColor = visibleBaseColor * lighting;
     finalColor += baseColor.rgb * emissiveColor * emissiveIntensity;
+    finalColor += switchGlow;
+
     finalColor = ApplyColorAdjustments(finalColor);
 
     outputColor = vec4(finalColor, baseColor.a);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "actor/Actor.h"
+#include "system/camera/zones/CameraZoneSettings.h"
 
 #include <string>
 #include <unordered_map>
@@ -77,6 +78,10 @@ public:
     void RemoveLatchedGroupSwitchComponent();
     PlatformLatchedGroupSwitchComponent* GetLatchedGroupSwitchComponent() const { return mLatchedGroupSwitchComponent; }
 
+    // 足場上への接地で適用する構図。既存の足場は無効で、空中維持・双方向判定はカメラゾーンと共通。
+    CameraZoneSettings& GetCameraSettings() { return mCameraSettings; }
+    const CameraZoneSettings& GetCameraSettings() const { return mCameraSettings; }
+
     void StartFocus();
     FocusComponent* GetFocusComponent() const { return mFocusComponent; }
 
@@ -101,6 +106,14 @@ public:
     float GetRenderOpacity() const override;
     glm::vec2 GetRenderTextureTiling() const override;
     const std::string& GetRenderTextureOverridePath() const override;
+
+    // 降りても成立状態を保持するスイッチだけtrue。2人用はグループ成立後に全床でtrueになる。
+    bool IsSwitchCompleted() const;
+    bool IsSwitchOn() const;
+
+    // 達成した瞬間に呼び、背景部分の短い発光を開始する。
+    void StartSwitchCompletionFlash();
+    float GetSwitchCompletionFlash() const;
     bool GetCollisionEnabled() const;
     bool UsesKinematicPhysics() const;
 
@@ -125,6 +138,10 @@ private:
     PlatformLatchedGroupSwitchComponent* mLatchedGroupSwitchComponent = nullptr;
     FocusComponent* mFocusComponent = nullptr;
 
+    static constexpr float switchCompletionFlashDurationSeconds = 0.35f;
+    float mSwitchCompletionFlashRemainingSeconds = 0.0f;
+
+    CameraZoneSettings mCameraSettings;
     std::string mPlatformId;
     bool mIsUGCGenerated = false;
     int mUGCGridLayer = 0;

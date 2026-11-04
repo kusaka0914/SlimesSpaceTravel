@@ -3,8 +3,10 @@
 #include "actor/player/PlayerAttackHitDetector.h"
 #include "actor/player/PlayerAttackResolver.h"
 #include "actor/player/PlayerCombatDependencies.h"
+#include "actor/player/PlayerComboSettings.h"
 #include "actor/player/PlayerTypes.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -19,38 +21,48 @@ class PhysicsSystem;
 // 時間は秒、攻撃範囲はワールド距離、角度はラジアン。
 class PlayerCombat {
 public:
-    // 通知・状態取得コールバックが空ならstd::invalid_argument。借用サービスは戦闘処理より長く保持する。
+    // 命中通知・振動コールバックが空ならstd::invalid_argument。借用サービスは戦闘処理より長く保持する。
     explicit PlayerCombat(const PlayerCombatDependencies& dependencies);
 
     bool IsAttacking() const;
+
+    // 弱攻撃を2段以上終え、コンボ継続猶予内にある場合だけ強攻撃へ派生できる。
+    bool CanStartComboFinisher() const
+    {
+        return mAttackComboIndex >= 2 && mAttackComboIndex <= 4 && mComboKeepTimer > 0.0f && !mHasPendingAttackHit;
+    }
 
     // 判定を実行するたびに増える攻撃番号。障害物が同じ攻撃へ重複反応するのを防ぐために使う。
     std::uint64_t GetResolvedAttackSequence() const { return mResolvedAttackSequence; }
     bool HasPendingAttackHit() const { return mHasPendingAttackHit; }
     bool CanMoveDuringAttack() const
     {
-        return mAirAttackMovementUnlockedByDodge || (mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking);
+        return !IsAirComboFallSuppressed() &&
+               (mAirAttackMovementUnlockedByDodge ||
+                (mAttackMoveLockRemaining <= 0.0f && (!mIsAirAttacking || mIsComboAttack)));
     }
     bool CanDodgeDuringAttack() const { return mAttackDodgeLockRemaining <= 0.0f; }
     bool IsSpecialCharging() const { return mSpecialChargingTimer >= 0.0f; }
     bool IsContinuousAttacking() const { return mContinuousAttackingTimer >= 0.0f; }
+    bool IsAirComboFallSuppressed() const { return mAirComboHoverRemainingSeconds > 0.0f; }
+    float GetAirComboHoverRemainingSeconds() const { return mAirComboHoverRemainingSeconds; }
     bool IsAirAttacking() const { return mIsAirAttacking; }
     bool IsAirDodgeAttackActive() const { return mIsAirDodgeAttackActive; }
     bool IsEnhancedAirDodgeAttackActive() const { return mIsEnhancedAirDodgeAttackActive; }
-    bool CanStartAirAttack() const { return mAirAttackCount < maximumAirAttackCount; }
 
     // Normal/Wide入力と接地状態から攻撃を設定し、遅延命中判定を予約する。
-    // クールダウンの確認は呼び出し側で行う。
+    // Normalは派生条件を満たさなければ何もしない。クールダウンの確認は呼び出し側で行う。
     void StartAttacking(Player& player, PlayerAttackInputKind attackInput, PlayerMovement& movement,
                         PlayerStatus& status, float deltaTime);
     void StartAssistStrongAttacking(Player& player, float deltaTime);
     void FinishSpecialAttackCharging();
-    void StartAirSlamAttack();
+    // 予備上昇前のプレイヤー高度を保存し、叩きつけの威力基準にする。
+    void StartAirSlamAttack(const Player& player);
 
     // 着地衝撃を解決して叩き落とし状態を終了する。trueは今回、接地中の敵に命中したことを表す。
     bool ResolveAirSlamImpact(Player& player, PlayerMovement& movement, float deltaTime);
 
-    // 今回初めて触れた空中の敵だけを叩き落とす。1体以上で開始できればtrue。
+    // 同じ惑星の空中敵全体を一度ずつ叩き落とす。1体以上で開始できればtrue。
     bool UpdateAirSlamContact(Player& player, const PlayerMovement& movement);
 
     void Attack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
@@ -64,33 +76,65 @@ public:
 
     // 予約済みの遅延を進め、今回攻撃判定を実行した場合にtrue。命中の成否とは区別する。
     bool UpdatePendingAttackHit(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
+
+    // 次に開始する通常攻撃へ地上・空中共通の設定を反映する。進行中の段は開始時の設定を保持する。
+    void ConfigureCombo(PlayerComboSettings settings);
+    void NotifyComboHit(int playerNumber, bool didHitEnemy) const;
+    const PlayerComboSettings& GetComboSettings() const { return mComboSettings; }
+    const PlayerComboAttackSettings& GetCurrentComboAttackSettings() const { return mCurrentComboAttack; }
+    bool IsComboAttack() const { return mIsComboAttack; }
+
+    bool IsComboFinisher() const { return mIsComboAttack && mIsComboFinisher; }
+    bool IsGroundFifthComboAttack() const { return mIsComboAttack && !mIsAirAttacking && mCurrentComboStageIndex == 4; }
+
     void StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status);
 
     void StartSpecialAttackCharging();
+
+    // 溜めの進行に応じて1個消費し、計2個まで返還対象として記録する。溜め中でない場合や不足時はfalse。
+    bool ConsumeSpecialAttackJewel(PlayerJewelGauge& jewelGauge);
+    int GetSpecialAttackJewelsConsumed() const { return mSpecialAttackJewelsConsumed; }
+
+    // 入力破棄などで発射せず中断する際、今回の溜めで消費した分だけ返還する。
+    void CancelSpecialAttackAndRefund(PlayerJewelGauge& jewelGauge);
+
+    float GetInputMovementSpeedMultiplier() const
+    {
+        return IsSpecialCharging() || GetCanSpecialAttack() ? 0.75f : 1.0f;
+    }
     void StartContinuousAttacking();
     void EndContinuousAttacking();
 
-    // 疲労状態にし、移動・回避・攻撃をlockTime秒間制限する。
+    // 疲労状態にし、移動・ダッシュ・攻撃をlockTime秒間制限する。
     void StartTiredLock(PlayerStatus& status, PlayerMovement& movement, float lockTime);
     void ReduceTiredLock(PlayerStatus& status, PlayerMovement& movement, float reduceTime);
     void EndTiredLock(PlayerStatus& status, PlayerMovement& movement);
 
-    // 特殊攻撃の溜め・発動可能状態と連続攻撃を解除する。通常攻撃の予約は解除しない。
+    // 特殊攻撃の溜め・発動可能状態と連続攻撃を解除する。ジュエルは返還せず、通常攻撃の予約も解除しない。
     void CancelSpecialAttack();
 
-    // 遅延命中判定、攻撃モーション、移動・回避の硬直、空中攻撃中フラグを解除する。
+    // 遅延命中判定、攻撃モーション、移動・ダッシュの硬直、空中攻撃中フラグを解除する。
     void CancelCurrentAttack();
 
     // 現在の攻撃を中断し、StartAttackingまたはOnLandedが呼ばれるまで空中の入力移動を許可する。
     void CancelAirAttackForDodge();
 
-    // 空中攻撃の回数・命中履歴と回避攻撃をリセットする。通常攻撃の予約は解除しない。
+    // 空中攻撃の命中履歴とダッシュ攻撃をリセットする。通常攻撃の予約は解除しない。
     void OnLanded();
     void PrepareAssistAirCombo();
+
+    // 自動追撃のダッシュ中に、続行可能だったコンボの猶予だけが失効するのを防ぐ。
+    void PreserveComboDuringAssistDodge(float dodgeSeconds)
+    {
+        if (mAttackComboIndex > 0 && mComboKeepTimer > 0.0f) {
+            mComboKeepTimer =
+                std::max(mComboKeepTimer, std::max(0.0f, dodgeSeconds) + mComboSettings.continuationWindowSeconds);
+        }
+    }
     void RecordAirWeakAttackHit() { mHasAirWeakHitForNextDodge = true; }
     void StartAirDodgeAttack();
 
-    // ワールド座標の移動区間で命中を調べる。同じ回避中は同じ敵へ重複適用せず、命中時に空中回避を回復する。
+    // ワールド座標の移動区間で命中を調べる。同じダッシュ中は同じ敵へ重複適用せず、命中時に空中ダッシュを回復する。
     void UpdateAirDodgeAttack(Player& player, PlayerMovement& movement, const glm::vec3& movementStart,
                               const glm::vec3& movementEnd, float deltaTime);
     void EndAirDodgeAttack();
@@ -98,6 +142,15 @@ public:
     void StartAirWeakAttackCooldown();
 
     void UpdateAttackCooldown(float deltaTime);
+
+    // 分裂・操作切替で攻撃の待ち時間やコンボ進行を初期化しない。
+    // 予約中の命中判定やモーション、攻撃番号は複製しない。
+    void InheritControlRestrictions(const PlayerCombat& source);
+    bool IsControlTransferRecoveryActive() const { return mControlTransferRecoveryRemaining > 0.0f; }
+
+    // 再利用する体の古い攻撃予約・モーションを解除し、配置元の使用制限だけを引き継ぐ。
+    void ResetForPlacementInheritance(const PlayerCombat& source, bool isAirborne);
+
     void UpdateAttackMoveLock(PlayerStatus& status, float deltaTime);
     void UpdateAttackDodgeLock(float deltaTime);
     void UpdateComboKeepTimer(float deltaTime);
@@ -145,6 +198,7 @@ public:
     void SetChargedAttackRange(float chargedAttackRange) { mChargedAttackRange = chargedAttackRange; }
     void SetChargedAttackAngle(float chargedAttackAngle) { mChargedAttackAngle = chargedAttackAngle; }
     void SetChargedAttackDamage(float chargedAttackDamage) { mChargedAttackDamage = chargedAttackDamage; }
+    // 最大溜めまでの合計時間。半分の時間で1段階目、残り半分で2段階目になる。
     void SetChargedAttackChargeDurationSeconds(float chargeDurationSeconds)
     {
         mChargedAttackChargeDurationSeconds = chargeDurationSeconds;
@@ -173,7 +227,10 @@ public:
     void SetAttackCooldownRemaining(float value) { mAttackCooldownRemaining = value; }
     void SetCanSpecialAttack(bool value) { mCanSpecialAttack = value; }
     void SetStrongAttackHit(bool value) { mIsStrongAttackHit = value; }
-    void ResetGroundAttackCombo()
+    // 地上・空中がコンボ開始時と変わった場合、段数と継続猶予だけをリセットする。
+    void ResetComboOnGroundStateChange(bool isOnGround);
+
+    void ResetAttackCombo()
     {
         mAttackComboIndex = 0;
         mComboKeepTimer = -1.0f;
@@ -181,6 +238,7 @@ public:
 
     PlayerAttackKind GetAttackKind() const { return mAttackKind; }
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
+    float GetAirSlamStartHeight() const { return mAirSlamStartHeight; }
     bool GetIsAssistStrongAttack() const { return mIsAssistStrongAttack; }
     bool GetIsCharged() const { return mIsCharged; }
     bool GetCanSpecialAttack() const { return mCanSpecialAttack; }
@@ -188,7 +246,10 @@ public:
     int GetAttackComboIndex() const { return mAttackComboIndex; }
     float GetAttack() const { return mAttack; }
     float GetAttackSpeed() const { return mAttackSpeed; }
-    float GetAttackCooldownRemaining() const { return mAttackCooldownRemaining; }
+    float GetAttackCooldownRemaining() const
+    {
+        return std::max(mAttackCooldownRemaining, mControlTransferRecoveryRemaining);
+    }
     float GetGroundWeakAttackCooldownSeconds() const { return mGroundWeakAttackCooldownSeconds; }
     float GetAirWeakAttackCooldownSeconds() const { return mAirWeakAttackCooldownSeconds; }
     float GetLastAttackCooldown() const { return mLastAttackCooldown; }
@@ -252,8 +313,6 @@ public:
     bool CanAcceptMovementInput() const;
 
 private:
-    static constexpr int maximumAirAttackCount = 3;
-
     void StartAttackHitDelay();
     void ClearPendingAttackHit();
     void ConfigureStrongAttack();
@@ -268,21 +327,30 @@ private:
     bool mIsCharged = false;
     bool mCanSpecialAttack = false;
     bool mIsAirAttacking = false;
+    float mAirComboHoverRemainingSeconds = 0.0f;
 
-    // 回避キャンセル後に空中弱攻撃の移動ロックを解除し、StartAttackingまたはOnLandedで戻す。
+    // ダッシュキャンセル後に空中弱攻撃の移動ロックを解除し、StartAttackingまたはOnLandedで戻す。
     bool mAirAttackMovementUnlockedByDodge = false;
     bool mIsAirDodgeAttackActive = false;
     bool mHasAirWeakHitForNextDodge = false;
     bool mIsEnhancedAirDodgeAttackActive = false;
     bool mDidAirSlamContactEnemy = false;
+    float mAirSlamStartHeight = 0.0f;
     bool mHasPendingAttackHit = false;
 
+    PlayerComboSettings mComboSettings;
+    PlayerComboAttackSettings mCurrentComboAttack;
+    bool mIsComboAttack = false;
+    bool mIsComboFinisher = false;
+    int mComboHitsRemaining = 0;
     int mAttackComboIndex = 0;
-    int mAirAttackCount = 0;
+    int mCurrentComboStageIndex = 0;
+    bool mComboStartedInAir = false;
 
     float mAttack = 10.0f;
     float mAttackSpeed = 5.0f;
     float mAttackCooldownRemaining = 0.0f;
+    float mControlTransferRecoveryRemaining = 0.0f;
     float mGroundWeakAttackCooldownSeconds = 0.0f;
     float mAirWeakAttackCooldownSeconds = 0.19f;
     float mLastAttackCooldown = 1.0f;
@@ -329,14 +397,15 @@ private:
     float mChargedAttackRange = 2.6f;
     float mChargedAttackAngle = 6.283f;
     float mChargedAttackDamage = 50.0f;
-    float mChargedAttackChargeDurationSeconds = 3.0f;
+    float mChargedAttackChargeDurationSeconds = 4.0f;
     float mContinuousAttackRange = 2.0f;
     float mContinuousAttackAngle = 6.283f;
     float mContinuousAttackDamage = 2.5f;
-    float mContinuousAttackGuardDamage = 2.5f;
+    float mContinuousAttackGuardDamage = 5.0f;
     float mContinuousAttackIntervalSeconds = 0.25f;
     float mContinuousAttackDurationSeconds = 6.0f;
     float mSpecialChargingTimer = -1.0f;
+    int mSpecialAttackJewelsConsumed = 0;
     float mContinuousAttackingTimer = -1.0f;
     float mContinuousAttackingCooldown = -1.0f;
 

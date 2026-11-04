@@ -10,7 +10,7 @@ class Player;
 class EnemyDamageHandler {
 public:
     // Aliveの敵だけにHPダメージを適用し、HPが0以下なら死亡を開始する。playerはこの処理では参照しない。
-    // 強攻撃を受けて生存した場合、打ち上げ終了処理によりガードも回復する。
+    // 通常被弾は攻撃準備を維持する。空中強攻撃の叩き落としでは、打ち上げ終了処理によりガードも回復する。
     void ApplyDamage(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, EnemyMovement& movement,
                      float damage, Player* player);
 

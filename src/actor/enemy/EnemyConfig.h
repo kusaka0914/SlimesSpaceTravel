@@ -55,6 +55,8 @@ struct EnemyConfig {
 
     float defaultStandByAttackTimer = 0.0f;
     float defaultAttackMotionTimer = 0.0f;
+    float attackAnimationSpeed = 1.0f;
+    float attackHitDelaySeconds = 0.25f;
     float attackSpeed = 0.0f;
     float attackPreparationRange = 0.0f;
 

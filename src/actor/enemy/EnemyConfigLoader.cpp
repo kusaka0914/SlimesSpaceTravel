@@ -8,6 +8,10 @@
 namespace {
 void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
+    config.attackAnimationSpeed =
+        YamlRead::ReadOr<float>(enemyNode, "attackAnimationSpeed", config.attackAnimationSpeed);
+    config.attackHitDelaySeconds =
+        YamlRead::ReadOr<float>(enemyNode, "attackHitDelaySeconds", config.attackHitDelaySeconds);
     config.guardValuePerSegment =
         YamlRead::ReadOr<float>(enemyNode, "guardValuePerSegment", config.guardValuePerSegment);
     config.knockBackSpeed = YamlRead::ReadOr<float>(enemyNode, "knockBackSpeed", config.knockBackSpeed);

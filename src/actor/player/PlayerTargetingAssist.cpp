@@ -45,21 +45,6 @@ bool IsActiveLaunchedEnemyOnCurrentPlanet(const Player& player, const Enemy* ene
            enemy->GetCurrentPlanet() == planet;
 }
 
-bool IsLaunchedEnemyNearRecovery(const Enemy& enemy, float maximumLaunchedTimerSeconds)
-{
-    const float launchedTimerSeconds = enemy.GetLaunchedTimer();
-    if (launchedTimerSeconds >= 0.0f) {
-        return launchedTimerSeconds <= maximumLaunchedTimerSeconds;
-    }
-
-    glm::vec3 upDirection;
-    if (!TryNormalize(enemy.GetUpVec(), upDirection)) {
-        return false;
-    }
-
-    return glm::dot(enemy.GetVelocity(), upDirection) <= 0.0f;
-}
-
 float CalculateDistanceSquaredToEnemySurface(const Player& player, const Enemy& enemy)
 {
     EnemyCollisionGeometry::ModelBounds modelBounds;
@@ -144,6 +129,19 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(const Player& player, float attac
 
     // 正面の攻撃範囲内に誰もいない場合だけ、全方向の最寄りへ振り向く。
     return nearestAnyDirectionTarget;
+}
+
+Enemy* PlayerTargetingAssist::FindAirDodgeFollowupTarget(const Player& player, float attackRange, float attackAngle,
+                                                         float dodgeDistance)
+{
+    if (player.GetOnGround() || dodgeDistance <= 0.0f) {
+        return nullptr;
+    }
+    if (FindAttackTarget(player, attackRange, attackAngle, true)) {
+        return nullptr;
+    }
+    const float reach = dodgeDistance + attackRange;
+    return FindAttackTarget(player, reach, attackAngle, true);
 }
 
 Enemy* PlayerTargetingAssist::FindAssistStrongTarget(const Player& player, float maxDistance, float attackAngle)
@@ -242,11 +240,10 @@ Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(const Pla
     return nearestTarget;
 }
 
-Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetNearRecoveryOnCurrentPlanet(const Player& player,
-                                                                                   float maximumLaunchedTimerSeconds)
+Enemy* PlayerTargetingAssist::FindRecoveryWarningTarget(const Player& player, float attackRange)
 {
     Planet* planet = player.GetCurrentPlanet();
-    if (!planet || maximumLaunchedTimerSeconds < 0.0f) {
+    if (!planet || attackRange <= 0.0f) {
         return nullptr;
     }
 
@@ -254,13 +251,12 @@ Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetNearRecoveryOnCurrentPlan
     float nearestDistanceSquared = std::numeric_limits<float>::max();
 
     for (Enemy* enemy : planet->GetEnemies()) {
-        if (!IsActiveLaunchedEnemyOnCurrentPlanet(player, enemy) ||
-            !IsLaunchedEnemyNearRecovery(*enemy, maximumLaunchedTimerSeconds)) {
+        if (!IsValidEnemy(player, enemy) || !enemy->IsRecoveryWarningActive()) {
             continue;
         }
 
         const float distanceSquared = CalculateDistanceSquaredToEnemySurface(player, *enemy);
-        if (distanceSquared >= nearestDistanceSquared) {
+        if (distanceSquared > attackRange * attackRange || distanceSquared >= nearestDistanceSquared) {
             continue;
         }
 

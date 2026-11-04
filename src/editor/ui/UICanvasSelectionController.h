@@ -1,8 +1,8 @@
 #pragma once
 
-#include "gfx/UIRenderer.h"
 #include "editor/core/DebugEditorContext.h"
 #include "editor/ui/UICanvasEditorTypes.h"
+#include "gfx/UIRenderer.h"
 #include "system/UILoadSystem.h"
 
 #include "imgui.h"
@@ -23,6 +23,9 @@ public:
     // UI描画後のImGuiフレーム内で呼ぶ。ギズモ操作中は新しい選択入力を処理しない。
     void UpdateCanvasSelection(const UILoadSystem* uiLoadSystem, bool isUsingGizmo);
     void DrawSelectionOverlay(const UILoadSystem* uiLoadSystem) const;
+
+    // 現在のマウス位置に選択可能なUIがあるか調べる。選択状態は変更しない。
+    bool HasElementAtMouse(const UILoadSystem* uiLoadSystem) const;
 
     void SetSingleSelection(const UICanvasElementReference& element);
     void ToggleSelection(const UICanvasElementReference& element);

@@ -8,6 +8,7 @@
 #include "system/PhysicsSystem.h"
 
 #include <cmath>
+#include <cstdio>
 #include <string>
 
 PlayerParameterDebugPanel::PlayerParameterDebugPanel(DebugEditorContext& context)
@@ -40,6 +41,8 @@ void PlayerParameterDebugPanel::Draw()
 
     DrawMovementSettings(player);
 
+    DrawComboSettings(player);
+    DrawHitStopSettings(player);
     DrawAttackSettings(player);
 
     DrawTimerSettings(player);
@@ -180,14 +183,8 @@ void PlayerParameterDebugPanel::DrawMovementSettings(Player* player)
             player->SetJumpApexHoverDurationSeconds(jumpApexHoverDurationSeconds);
         }
 
-        float airWeakAttackPostHoverDurationSeconds = player->GetAirWeakAttackPostHoverDurationSeconds();
-        if (ImGui::DragFloat("空中弱攻撃後の待機時間（秒）", &airWeakAttackPostHoverDurationSeconds, 0.01f, 0.0f, 2.0f,
-                             "%.2f")) {
-            player->SetAirWeakAttackPostHoverDurationSeconds(airWeakAttackPostHoverDurationSeconds);
-        }
-
         float airDodgePostHoverDurationSeconds = player->GetAirDodgePostHoverDurationSeconds();
-        if (ImGui::DragFloat("空中回避後の待機時間（秒）", &airDodgePostHoverDurationSeconds, 0.01f, 0.0f, 2.0f,
+        if (ImGui::DragFloat("空中ダッシュ後の待機時間（秒）", &airDodgePostHoverDurationSeconds, 0.01f, 0.0f, 2.0f,
                              "%.2f")) {
             player->SetAirDodgePostHoverDurationSeconds(airDodgePostHoverDurationSeconds);
         }
@@ -205,19 +202,19 @@ void PlayerParameterDebugPanel::DrawMovementSettings(Player* player)
         }
 
         float dodgeDuration = player->GetDodgeDuration();
-        if (ImGui::SliderFloat("回避時間", &dodgeDuration, 0.0f, 3.0f, "%.2f")) {
+        if (ImGui::SliderFloat("ダッシュ時間", &dodgeDuration, 0.0f, 3.0f, "%.2f")) {
             dodgeDuration = std::round(dodgeDuration * 100.0f) / 100.0f;
             player->SetDodgeDuration(dodgeDuration);
         }
 
         float dodgeCooldownTime = player->GetDodgeCooldownTime();
-        if (ImGui::SliderFloat("回避クールタイム", &dodgeCooldownTime, 0.0f, 5.0f, "%.2f")) {
+        if (ImGui::SliderFloat("ダッシュクールタイム", &dodgeCooldownTime, 0.0f, 5.0f, "%.2f")) {
             dodgeCooldownTime = std::round(dodgeCooldownTime * 100.0f) / 100.0f;
             player->SetDodgeCooldownTime(dodgeCooldownTime);
         }
 
         float dodgeDistance = player->GetDodgeDistance();
-        if (ImGui::SliderFloat("回避距離", &dodgeDistance, 0.0f, 20.0f, "%.1f")) {
+        if (ImGui::SliderFloat("ダッシュ距離", &dodgeDistance, 0.0f, 20.0f, "%.1f")) {
             dodgeDistance = std::round(dodgeDistance * 10.0f) / 10.0f;
             player->SetDodgeDistance(dodgeDistance);
         }
@@ -234,7 +231,7 @@ void PlayerParameterDebugPanel::DrawMovementSettings(Player* player)
 
 void PlayerParameterDebugPanel::DrawAttackSettings(Player* player)
 {
-    if (ImGui::TreeNode("強攻撃（K / X）")) {
+    if (ImGui::TreeNode("強攻撃の基礎値（地上・空中共通）")) {
         float normalAttackRange = player->GetNormalAttackRange();
         if (ImGui::SliderFloat("強攻撃範囲", &normalAttackRange, 0.0f, 20.0f, "%.2f")) {
             normalAttackRange = std::round(normalAttackRange * 100.0f) / 100.0f;
@@ -255,7 +252,7 @@ void PlayerParameterDebugPanel::DrawAttackSettings(Player* player)
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("弱攻撃（J / Y）")) {
+    if (ImGui::TreeNode("弱攻撃の基礎値（地上・空中共通）")) {
         float wideAttackRange = player->GetWideAttackRange();
         if (ImGui::SliderFloat("弱攻撃範囲", &wideAttackRange, 0.0f, 20.0f, "%.2f")) {
             wideAttackRange = std::round(wideAttackRange * 100.0f) / 100.0f;
@@ -273,24 +270,12 @@ void PlayerParameterDebugPanel::DrawAttackSettings(Player* player)
             player->SetWideAttack(wideAttack);
         }
 
-        float groundWeakAttackCooldownSeconds = player->GetGroundWeakAttackCooldownSeconds();
-        if (ImGui::DragFloat("地上弱攻撃後クールタイム（秒）", &groundWeakAttackCooldownSeconds, 0.01f, 0.0f, 5.0f,
-                             "%.2f")) {
-            player->SetGroundWeakAttackCooldownSeconds(groundWeakAttackCooldownSeconds);
-        }
-
-        float airWeakAttackCooldownSeconds = player->GetAirWeakAttackCooldownSeconds();
-        if (ImGui::DragFloat("空中弱攻撃後クールタイム（秒）", &airWeakAttackCooldownSeconds, 0.01f, 0.0f, 5.0f,
-                             "%.2f")) {
-            player->SetAirWeakAttackCooldownSeconds(airWeakAttackCooldownSeconds);
-        }
-
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("空中回避攻撃（空中U / B）")) {
+    if (ImGui::TreeNode("空中ダッシュ攻撃（空中U / B）")) {
         float attackDamage = player->GetAirDodgeAttackDamage();
-        if (ImGui::DragFloat("攻撃力##空中回避攻撃", &attackDamage, 0.1f, 0.0f, 999.0f, "%.1f")) {
+        if (ImGui::DragFloat("攻撃力##空中ダッシュ攻撃", &attackDamage, 0.1f, 0.0f, 999.0f, "%.1f")) {
             player->SetAirDodgeAttackDamage(attackDamage);
         }
 
@@ -317,7 +302,7 @@ void PlayerParameterDebugPanel::DrawAttackSettings(Player* player)
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("連続攻撃（N + J / L + Y）")) {
+    if (ImGui::TreeNode("連続攻撃（J / Y長押し）")) {
         float attackRange = player->GetContinuousAttackRange();
         if (ImGui::SliderFloat("連続攻撃範囲", &attackRange, 0.0f, 20.0f, "%.2f")) {
             player->SetContinuousAttackRange(attackRange);
@@ -346,7 +331,7 @@ void PlayerParameterDebugPanel::DrawAttackSettings(Player* player)
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("溜め攻撃（N + K / L + X）")) {
+    if (ImGui::TreeNode("溜め攻撃（K / X長押し）")) {
         float attackRange = player->GetChargedAttackRange();
         if (ImGui::SliderFloat("溜め攻撃範囲", &attackRange, 0.0f, 20.0f, "%.2f")) {
             player->SetChargedAttackRange(attackRange);
@@ -358,61 +343,158 @@ void PlayerParameterDebugPanel::DrawAttackSettings(Player* player)
         }
 
         float attackDamage = player->GetChargedAttackDamage();
-        if (ImGui::DragFloat("溜め攻撃力", &attackDamage, 1.0f, 0.0f, 999.0f, "%.0f")) {
+        if (ImGui::DragFloat("2段階目の溜め攻撃力", &attackDamage, 1.0f, 0.0f, 999.0f, "%.0f")) {
             player->SetChargedAttackDamage(attackDamage);
         }
 
         float chargeDurationSeconds = player->GetChargedAttackChargeDurationSeconds();
-        if (ImGui::DragFloat("溜め時間（秒）", &chargeDurationSeconds, 0.1f, 0.1f, 10.0f, "%.1f")) {
+        if (ImGui::DragFloat("最大溜めまでの時間（秒）", &chargeDurationSeconds, 0.1f, 0.1f, 10.0f, "%.1f")) {
             player->SetChargedAttackChargeDurationSeconds(chargeDurationSeconds);
         }
+        ImGui::TextDisabled("半分の時間で1個目を消費して半分の威力。残り半分で2個目を消費して最大威力");
 
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("空中強攻撃（空中K / X）")) {
-        float strongAttackRange = player->GetStrongAttackRange();
-        if (ImGui::SliderFloat("空中強攻撃範囲", &strongAttackRange, 0.0f, 20.0f, "%.2f")) {
-            strongAttackRange = std::round(strongAttackRange * 100.0f) / 100.0f;
-            player->SetStrongAttackRange(strongAttackRange);
+    if (ImGui::TreeNode("空中強攻撃・叩きつけ（K / X短押し）")) {
+        float damage = player->GetStrongAttack();
+        if (ImGui::DragFloat("最大攻撃力", &damage, 1.0f, 0.0f, 999.0f)) {
+            player->SetStrongAttack(damage);
         }
-
-        int strongAttack = player->GetStrongAttack();
-        if (ImGui::SliderInt("対空攻撃力", &strongAttack, 0, 999)) {
-            player->SetStrongAttack(strongAttack);
+        float fullDamageHeight = player->GetAirSlamFullDamageHeight();
+        if (ImGui::DragFloat("最大威力になるプレイヤー高度", &fullDamageHeight, 0.1f, 0.1f, 50.0f)) {
+            player->SetAirSlamFullDamageHeight(fullDamageHeight);
         }
-
-        float strongAttackSpeed = player->GetStrongAttackSpeed();
-        if (ImGui::SliderFloat("空中強攻撃速度", &strongAttackSpeed, 0.0f, 100.0f, "%.1f")) {
-            strongAttackSpeed = std::round(strongAttackSpeed * 10.0f) / 10.0f;
-            player->SetStrongAttackSpeed(strongAttackSpeed);
+        float minimumDamageRatio = player->GetAirSlamMinimumDamageRatio();
+        if (ImGui::SliderFloat("最低威力の倍率", &minimumDamageRatio, 0.0f, 1.0f, "%.2f")) {
+            player->SetAirSlamMinimumDamageRatio(minimumDamageRatio);
         }
-
-        ImGui::SeparatorText("空中強攻撃の移動");
-
-        float airSlamRiseHeight = player->GetAirSlamRiseHeight();
-        if (ImGui::DragFloat("上昇高さ", &airSlamRiseHeight, 0.01f, 0.0f, 5.0f, "%.2f")) {
-            player->SetAirSlamRiseHeight(airSlamRiseHeight);
+        ImGui::TextDisabled("通常ジャンプの高さ + 0.2からオーラを表示。最大威力で大きく発光");
+        float range = player->GetStrongAttackRange();
+        if (ImGui::DragFloat("攻撃範囲", &range, 0.1f, 0.0f, 20.0f)) {
+            player->SetStrongAttackRange(range);
         }
-
-        float airSlamRiseDurationSeconds = player->GetAirSlamRiseDurationSeconds();
-        if (ImGui::DragFloat("上昇時間（秒）##空中X", &airSlamRiseDurationSeconds, 0.01f, 0.05f, 3.0f, "%.2f")) {
-            player->SetAirSlamRiseDurationSeconds(airSlamRiseDurationSeconds);
+        float riseHeight = player->GetAirSlamRiseHeight();
+        if (ImGui::DragFloat("上昇高さ", &riseHeight, 0.01f, 0.0f, 5.0f)) {
+            player->SetAirSlamRiseHeight(riseHeight);
         }
-
-        float airSlamHoverDurationSeconds = player->GetAirSlamHoverDurationSeconds();
-        if (ImGui::DragFloat("空中停止時間（秒）", &airSlamHoverDurationSeconds, 0.01f, 0.0f, 3.0f, "%.2f")) {
-            player->SetAirSlamHoverDurationSeconds(airSlamHoverDurationSeconds);
+        float riseSeconds = player->GetAirSlamRiseDurationSeconds();
+        if (ImGui::DragFloat("上昇時間（秒）", &riseSeconds, 0.01f, 0.05f, 3.0f)) {
+            player->SetAirSlamRiseDurationSeconds(riseSeconds);
         }
-
-        float defaultStrongAttackTimer = player->GetDefaultStrongAttackTimer();
-        if (ImGui::SliderFloat("空中強攻撃時間", &defaultStrongAttackTimer, 0.0f, 5.0f, "%.2f")) {
-            defaultStrongAttackTimer = std::round(defaultStrongAttackTimer * 100.0f) / 100.0f;
-            player->SetDefaultStrongAttackTimer(defaultStrongAttackTimer);
+        float hoverSeconds = player->GetAirSlamHoverDurationSeconds();
+        if (ImGui::DragFloat("空中停止時間（秒）", &hoverSeconds, 0.01f, 0.0f, 3.0f)) {
+            player->SetAirSlamHoverDurationSeconds(hoverSeconds);
         }
-
         ImGui::TreePop();
     }
+}
+
+void PlayerParameterDebugPanel::DrawComboSettings(Player* player)
+{
+    if (!ImGui::TreeNode("5段コンボ（地上・空中共通）")) {
+        return;
+    }
+    auto settings = player->GetComboSettings();
+    bool changed = false;
+    changed |=
+        ImGui::DragFloat("空中命中時のプレイヤー上昇量", &settings.airHitPlayerLiftHeight, 0.01f, 0.0f, 1.0f, "%.2f");
+    ImGui::TextDisabled("空中5段目のクールタイムは地上5段目と共通");
+    changed |= ImGui::DragFloat("空中各段：クールタイム後の滞空時間（秒）", &settings.airAttackHoverExtraSeconds, 0.05f,
+                                0.0f, 5.0f, "%.2f");
+    changed |= ImGui::DragFloat("次段へつなげる猶予（秒）", &settings.continuationWindowSeconds, 0.01f, 0.05f, 5.0f);
+    changed |= ImGui::DragFloat("こまかく：先行入力（秒）", &settings.inputBufferSeconds, 0.01f, 0.05f, 5.0f);
+    changed |= ImGui::DragFloat("らくらく：先行入力（秒）", &settings.assistInputBufferSeconds, 0.01f, 0.05f, 5.0f);
+    const auto drawAttack = [&](PlayerComboAttackSettings& attack, bool finisher) {
+        bool edited = false;
+        edited |= ImGui::DragFloat("基礎攻撃力への倍率", &attack.damageMultiplier, 0.05f, 0.0f, 10.0f);
+        edited |= ImGui::DragFloat("ガードへのダメージ", &attack.guardDamage, 0.5f, 0.0f, 100.0f);
+        if (!finisher) {
+            edited |= ImGui::SliderInt("1入力のヒット数", &attack.hitCount, 1, 2);
+        }
+        edited |= ImGui::DragFloat("初回命中まで（秒）", &attack.hitDelaySeconds, 0.01f, 0.0f, 3.0f);
+        edited |= ImGui::DragFloat("2ヒット目まで（秒）", &attack.hitIntervalSeconds, 0.01f, 0.01f, 1.0f);
+        edited |= ImGui::DragFloat("最終命中後のモーション（秒）", &attack.motionSeconds, 0.01f, 0.01f, 3.0f);
+        edited |= ImGui::DragFloat("最終命中後の移動ロック（秒）", &attack.moveLockSeconds, 0.01f, 0.0f, 3.0f);
+        edited |= ImGui::DragFloat("ダッシュキャンセル解禁まで（秒）", &attack.dodgeCancelSeconds, 0.01f, 0.0f, 3.0f);
+        edited |= ImGui::DragFloat("最終命中後のクールダウン（秒）", &attack.cooldownSeconds, 0.01f, 0.0f, 3.0f);
+        if (finisher) {
+            edited |= ImGui::DragFloat("押し戻し速度", &attack.knockBackSpeed, 0.1f, 0.0f, 30.0f);
+            edited |= ImGui::DragFloat("押し戻し時間（秒）", &attack.knockBackSeconds, 0.01f, 0.0f, 3.0f);
+        }
+        edited |= ImGui::DragFloat("命中エフェクト倍率", &attack.effectScale, 0.05f, 0.0f, 5.0f);
+        edited |= ImGui::DragFloat("アニメーション速度倍率", &attack.animationSpeed, 0.05f, 0.25f, 2.0f, "%.2f");
+        char animation[128], sound[128];
+        std::snprintf(animation, sizeof(animation), "%s", attack.animation.c_str());
+        std::snprintf(sound, sizeof(sound), "%s", attack.sound.c_str());
+        if (ImGui::InputText("アニメーションID", animation, sizeof(animation))) {
+            attack.animation = animation;
+            edited = true;
+        }
+        if (ImGui::InputText("命中SEのID", sound, sizeof(sound))) {
+            attack.sound = sound;
+            edited = true;
+        }
+        return edited;
+    };
+    for (std::size_t index = 0; index + 1 < settings.stages.size(); ++index) {
+        ImGui::PushID(static_cast<int>(index));
+        if (ImGui::TreeNode("stage", "%d段目%s", static_cast<int>(index + 1),
+                            index == 3 ? "：空中5段目も共用" : "：地上・空中共通")) {
+            changed |= drawAttack(settings.stages[index], false);
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    }
+    if (ImGui::TreeNode("強攻撃（地上K派生・地上5段目）")) {
+        changed |= drawAttack(settings.stages.back(), true);
+        ImGui::TreePop();
+    }
+    if (changed) {
+        // 同じ操作設定を使う2人目・待機中の分身にも反映し、切替後だけ調整が失われるのを防ぐ。
+        for (Player* target : mContext.game->GetPlayers()) {
+            if (target) {
+                target->SetComboSettings(settings);
+            }
+        }
+    }
+    ImGui::TreePop();
+}
+
+void PlayerParameterDebugPanel::DrawHitStopSettings(Player* player)
+{
+    if (!ImGui::TreeNode("ヒットストップ（秒）")) {
+        return;
+    }
+    auto settings = mContext.game->GetHitStopSettings();
+    bool changed = false;
+    changed |= ImGui::DragFloat("ガード破壊・打ち上げ", &settings.guardBreakSeconds, 0.005f, 0.0f, 1.0f, "%.3f");
+    changed |= ImGui::DragFloat("叩きつけ着地", &settings.airSlamSeconds, 0.005f, 0.0f, 1.0f, "%.3f");
+    changed |= ImGui::DragFloat("カウンター", &settings.counterSeconds, 0.005f, 0.0f, 1.0f, "%.3f");
+    if (changed) {
+        mContext.game->SetHitStopSettings(settings);
+    }
+
+    auto combo = player->GetComboSettings();
+    bool comboChanged = false;
+    for (std::size_t index = 0; index + 1 < combo.stages.size(); ++index) {
+        ImGui::PushID(static_cast<int>(index));
+        const std::string label = "通常攻撃：" + std::to_string(index + 1) + "段目";
+        comboChanged |=
+            ImGui::DragFloat(label.c_str(), &combo.stages[index].hitStopSeconds, 0.005f, 0.0f, 0.3f, "%.3f");
+        ImGui::PopID();
+    }
+    comboChanged |= ImGui::DragFloat("強攻撃（地上K派生・地上5段目）", &combo.stages.back().hitStopSeconds, 0.005f,
+                                     0.0f, 0.3f, "%.3f");
+    ImGui::TextUnformatted("0で停止なし。ガード破壊時は通常命中より破壊用の設定を優先します。");
+    if (comboChanged) {
+        for (Player* target : mContext.game->GetPlayers()) {
+            if (target) {
+                target->SetComboSettings(combo);
+            }
+        }
+    }
+    ImGui::TreePop();
 }
 
 void PlayerParameterDebugPanel::DrawTimerSettings(Player* player)
@@ -434,23 +516,6 @@ void PlayerParameterDebugPanel::DrawTimerSettings(Player* player)
         if (ImGui::SliderFloat("ダメージ時間", &defaultDamageTimer, 0.0f, 10.0f, "%.2f")) {
             defaultDamageTimer = std::round(defaultDamageTimer * 100.0f) / 100.0f;
             player->SetDefaultDamageTimer(defaultDamageTimer);
-        }
-
-        float defaultAttackMotionTimer = player->GetDefaultAttackMotionTimer();
-        if (ImGui::SliderFloat("攻撃モーション時間", &defaultAttackMotionTimer, 0.0f, 5.0f, "%.2f")) {
-            defaultAttackMotionTimer = std::round(defaultAttackMotionTimer * 100.0f) / 100.0f;
-            player->SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
-        }
-
-        float attackHitDelaySeconds = player->GetAttackHitDelay();
-        if (ImGui::DragFloat("攻撃判定までの時間（秒）", &attackHitDelaySeconds, 0.01f, 0.0f, 5.0f, "%.2f")) {
-            player->SetAttackHitDelay(attackHitDelaySeconds);
-        }
-
-        float lastAttackCooldown = player->GetLastAttackCooldown();
-        if (ImGui::SliderFloat("最終攻撃クールタイム", &lastAttackCooldown, 0.0f, 5.0f, "%.2f")) {
-            lastAttackCooldown = std::round(lastAttackCooldown * 100.0f) / 100.0f;
-            player->SetLastAttackCooldown(lastAttackCooldown);
         }
 
         ImGui::TreePop();
