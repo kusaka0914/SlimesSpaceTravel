@@ -22,7 +22,7 @@ C++ / OpenGLで制作した、個人制作のステージクリア型3Dアクシ
 - **開発要点書（READMEのみでも作品の概要・主な実装を確認できます。さらに詳しく知りたい方向けの補足資料）:** [summary.pdf](summary.pdf)
 - **ポートフォリオサイト（他の制作物も紹介しています）:** https://kusaka0914.github.io
 
-<img width="1280" alt="Slime's Space Travel" src="https://github.com/user-attachments/assets/28071dbf-166d-465a-a26b-8b4e9404c04b" />
+<img width="1512" height="945" alt="スクリーンショット 2026-10-28 3 49 12" src="https://github.com/user-attachments/assets/4089f622-254b-4132-801b-b15e8ebeafbc" />
 
 ---
 
@@ -47,7 +47,7 @@ C++ / OpenGLで制作した、個人制作のステージクリア型3Dアクシ
 - 1ボタン連打でコンボや空中追撃ができる、アクションが苦手な人向けの「らくらくスタイル」
 - 2Dグリッドと3Dプレビューを組み合わせ、積み木感覚で3Dステージを作れるプレイヤー向けステージ作成機能
 
-<img width="1275" alt="Slime's Space Travel gameplay" src="https://github.com/user-attachments/assets/df8a8d36-4e73-4384-b31f-5915db8f8ca3" />
+<img width="1512" height="945" alt="スクリーンショット 2026-10-28 4 14 30" src="https://github.com/user-attachments/assets/2ebaf342-bb48-44e6-9b52-e19bb517efac" />
 
 ---
 
